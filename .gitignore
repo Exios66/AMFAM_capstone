@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environment variables / secrets
+.env
+.env.local
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Generated outputs
+*.png
+*.jpg
+*.jpeg
+*.gif
+eda_report.json
+processing_summary.json
+sampling_log.json
+verification_log.json
+
+# Generated directories (large datasets and processed files)
+data/*
+!data/.gitkeep
+rvlcdip_dataset/
+processed_documents/
+processed_balanced_dataset/
+
+# Logs
+*.log
