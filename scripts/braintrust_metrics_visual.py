@@ -521,13 +521,15 @@ def print_doc_section(results: list[dict], experiment_name: str, meta: dict):
     input_price_per_m = 0.15
     output_price_per_m = 0.60
 
+    images_per_class = total // 16 if total else 0
+
     section = f"""
 ---
 
-## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
+## Experiment: `google/gemini-2.5-flash` — {total} Images ({images_per_class} per class × 16 classes)
 
 **Experiment ID:** {experiment_name}
-**Dataset:** `2550x3300_10perclass_160/images/` (2550×3300 padded PNGs, 300 DPI)
+**Dataset:** 2550×3300 padded PNGs, 300 DPI
 **Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
 **Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
 **Image size:** `2550×3300`
@@ -574,11 +576,18 @@ def main():
     # Print doc section
     section = print_doc_section(results, experiment_name, meta)
 
-    # Append to doc file
-    doc_path = OUTPUT_DIR / "10pic_cost_est_prompt_tst.md"
-    with open(doc_path, "a", encoding="utf-8") as f:
-        f.write(section)
-    print(f"\nAppended results to: {doc_path}")
+    # Append to doc file (skip if experiment already recorded)
+    doc_path = OUTPUT_DIR / "experiment_log.md"
+    existing_content = ""
+    if doc_path.exists():
+        existing_content = doc_path.read_text(encoding="utf-8")
+
+    if experiment_name in existing_content:
+        print(f"\nSkipping append — {experiment_name} already in {doc_path}")
+    else:
+        with open(doc_path, "a", encoding="utf-8") as f:
+            f.write(section)
+        print(f"\nAppended results to: {doc_path}")
     print("Done.")
 
 

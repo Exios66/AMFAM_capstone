@@ -112,6 +112,11 @@
 | Duration (avg) | 0.00s |
 | Errors | 0 |
 
+### Notes
+
+- Switching from 1024×1024 to full-res 2550×3300 doubled prompt tokens (1,637 → 3,701) but accuracy dropped slightly (74.38% → 73.75%), suggesting higher resolution does not help and may add noise.
+- Cost per image roughly doubled vs 1024×1024 ($0.64 vs $0.40 for 800 images) with no accuracy gain — 1024×1024 is the better cost/performance tradeoff.
+
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
 **Pricing:** $0.15/M input tokens, $0.6/M output tokens
@@ -124,11 +129,11 @@
 
 ---
 
-## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
+## Experiment: `google/gemini-2.5-flash` — 800 Images (50 per class × 16 classes)
 
 **Experiment ID:** main-1785272634
-**Dataset:** `2550x3300_10perclass_160/images/` (2550×3300 padded PNGs, 300 DPI)
-**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
+**Dataset:** `2550x3300_50perclass_800/images/` (2550×3300 padded PNGs, 300 DPI)
+**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py` (baseline, pre-disambiguation)
 **Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
 **Image size:** `2550×3300`
 
@@ -144,37 +149,14 @@
 | Duration (avg) | 0.00s |
 | Errors | 0 |
 
-### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
+### Notes
 
-**Pricing:** $0.15/M input tokens, $0.6/M output tokens
-
-| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
-|--------|---:|---:|---:|---:|
-| 800 | 2,960,800 | 333,902 | 3,294,701 | **$0.64** |
-| 25,000 | 92,525,000 | 10,434,437 | 102,959,437 | **$20.14** |
-| 320,000 | 1,184,320,000 | 133,560,800 | 1,317,880,799 | **$257.78** |
-
----
-
-## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
-
-**Experiment ID:** main-1785272634
-**Dataset:** `2550x3300_10perclass_160/images/` (2550×3300 padded PNGs, 300 DPI)
-**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
-**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
-**Image size:** `2550×3300`
-
-### Results
-
-| Metric | Value |
-|--------|------:|
-| **Accuracy (exact_match)** | **72.88%** (583/800 correct) |
-| Prompt tokens (avg) | 3,701.00 |
-| Prompt cached tokens (avg) | 0.00 |
-| Completion tokens (avg) | 417.38 |
-| Total tokens (avg) | 4,118.38 |
-| Duration (avg) | 0.00s |
-| Errors | 0 |
+- Scaling from 160 → 800 images held steady at ~73% accuracy, confirming the 10-per-class sample is representative.
+- `form` (30%), `presentation` (36%), and `specification` (46%) are the worst-performing classes — `scientific_report` is massively over-predicted with 64 false positives across 7 classes.
+- Reasoning trace analysis revealed the model confuses fax cover sheets with memos, specs with scientific reports, and press releases with news articles — leading to the disambiguation prompt update.
+- See `docs/50pic_cost_est_tst.md` for full per-class accuracy breakdown and confused pairs analysis.
+- See `docs/confusion_matrix_main-1785272634.md` for confusion matrix.
+- See `docs/misclassification_reasoning_main-1785270444.md` for reasoning trace analysis.
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
@@ -185,67 +167,3 @@
 | 800 | 2,960,800 | 333,902 | 3,294,701 | **$0.64** |
 | 25,000 | 92,525,000 | 10,434,437 | 102,959,437 | **$20.14** |
 | 320,000 | 1,184,320,000 | 133,560,800 | 1,317,880,799 | **$257.78** |
-
----
-
-## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
-
-**Experiment ID:** main-1785270444
-**Dataset:** `2550x3300_10perclass_160/images/` (2550×3300 padded PNGs, 300 DPI)
-**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
-**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
-**Image size:** `2550×3300`
-
-### Results
-
-| Metric | Value |
-|--------|------:|
-| **Accuracy (exact_match)** | **73.75%** (118/160 correct) |
-| Prompt tokens (avg) | 3,701.00 |
-| Prompt cached tokens (avg) | 0.00 |
-| Completion tokens (avg) | 418.19 |
-| Total tokens (avg) | 4,119.19 |
-| Duration (avg) | 0.00s |
-| Errors | 0 |
-
-### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
-
-**Pricing:** $0.15/M input tokens, $0.6/M output tokens
-
-| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
-|--------|---:|---:|---:|---:|
-| 800 | 2,960,800 | 334,555 | 3,295,355 | **$0.64** |
-| 25,000 | 92,525,000 | 10,454,843 | 102,979,843 | **$20.15** |
-| 320,000 | 1,184,320,000 | 133,822,000 | 1,318,142,000 | **$257.94** |
-
----
-
-## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
-
-**Experiment ID:** main-1785270444
-**Dataset:** `2550x3300_10perclass_160/images/` (2550×3300 padded PNGs, 300 DPI)
-**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
-**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
-**Image size:** `2550×3300`
-
-### Results
-
-| Metric | Value |
-|--------|------:|
-| **Accuracy (exact_match)** | **73.75%** (118/160 correct) |
-| Prompt tokens (avg) | 3,701.00 |
-| Prompt cached tokens (avg) | 0.00 |
-| Completion tokens (avg) | 418.19 |
-| Total tokens (avg) | 4,119.19 |
-| Duration (avg) | 0.00s |
-| Errors | 0 |
-
-### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
-
-**Pricing:** $0.15/M input tokens, $0.6/M output tokens
-
-| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
-|--------|---:|---:|---:|---:|
-| 800 | 2,960,800 | 334,555 | 3,295,355 | **$0.64** |
-| 25,000 | 92,525,000 | 10,454,843 | 102,979,843 | **$20.15** |
-| 320,000 | 1,184,320,000 | 133,822,000 | 1,318,142,000 | **$257.94** |
