@@ -167,3 +167,42 @@
 | 800 | 2,960,800 | 333,902 | 3,294,701 | **$0.64** |
 | 25,000 | 92,525,000 | 10,434,437 | 102,959,437 | **$20.14** |
 | 320,000 | 1,184,320,000 | 133,560,800 | 1,317,880,799 | **$257.78** |
+
+---
+
+## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785277280
+**Dataset:** 2550×3300 padded PNGs, 300 DPI
+**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+**Image size:** `2550×3300`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **83.75%** (134/160 correct) |
+| Prompt tokens (avg) | 4,368.00 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 412.39 |
+| Total tokens (avg) | 4,780.39 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
+
+**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 3,494,400 | 329,915 | 3,824,315 | **$0.72** |
+| 25,000 | 109,200,000 | 10,309,843 | 119,509,843 | **$22.57** |
+| 320,000 | 1,397,760,000 | 131,966,000 | 1,529,726,000 | **$288.84** |
+
+### Notes
+
+- **+10% accuracy jump** (73.75% → 83.75%) from adding disambiguation rules to the prompt — largest single improvement across all experiments.
+- Prompt tokens increased from 3,701 → 4,368 due to longer prompt with disambiguation rules, but the accuracy gain far outweighs the ~$0.08 cost increase per 800 images.
+- Only 26 errors remain (down from 42). Top confusion is now `presentation → file_folder` (4 errors) where cover/divider pages get misclassified.
+- See `docs/confusion_matrix_main-1785277280.md` and `docs/misclassification_reasoning_main-1785277280.md` for detailed breakdown.
