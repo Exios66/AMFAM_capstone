@@ -30,8 +30,16 @@ verification_log.json
 data/*
 !data/.gitkeep
 rvlcdip_dataset/
+rvlcdip_test_2.5kperclass_40k/
 processed_documents/
-processed_balanced_dataset/
+processed_balanced_dataset
+50perclass_800/
+1024x1024_10perclass_160/
+2550x3300_10perclass_160/
+2550x3300_50perclass_800/
+1024x1024_50perclass_800/
+fixed_size_sampled/
+
 
 # Logs
 *.log

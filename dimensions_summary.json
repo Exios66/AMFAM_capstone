@@ -1,0 +1,86 @@
+{
+  "rvlcdip_test": {
+    "count": 39996,
+    "skipped": 1,
+    "width": {
+      "mean": 766.21,
+      "median": 759.0,
+      "min": 606,
+      "max": 2542,
+      "std": 27.62
+    },
+    "height": {
+      "mean": 1000,
+      "median": 1000.0,
+      "min": 1000,
+      "max": 1000,
+      "std": 0.0
+    },
+    "aspect_ratio": {
+      "mean": 0.77,
+      "median": 0.76,
+      "min": 0,
+      "max": 2,
+      "std": 0.03
+    }
+  },
+  "balanced_50_per_class": {
+    "count": 800,
+    "skipped": 0,
+    "width": {
+      "mean": 766.54,
+      "median": 762.0,
+      "min": 607,
+      "max": 873,
+      "std": 22.56
+    },
+    "height": {
+      "mean": 1000,
+      "median": 1000.0,
+      "min": 1000,
+      "max": 1000,
+      "std": 0.0
+    },
+    "aspect_ratio": {
+      "mean": 0.77,
+      "median": 0.76,
+      "min": 0,
+      "max": 0,
+      "std": 0.02
+    }
+  },
+  "processed_balanced": {
+    "count": 800,
+    "skipped": 0,
+    "width": {
+      "mean": 3193.42,
+      "median": 3175.0,
+      "min": 2529,
+      "max": 3637,
+      "std": 94.07
+    },
+    "height": {
+      "mean": 4166,
+      "median": 4166.0,
+      "min": 4166,
+      "max": 4166,
+      "std": 0.0
+    },
+    "aspect_ratio": {
+      "mean": 0.77,
+      "median": 0.76,
+      "min": 0,
+      "max": 0,
+      "std": 0.02
+    }
+  },
+  "processed_documents": {
+    "count": 0,
+    "skipped": 0
+  },
+  "overall": {
+    "count": 41596,
+    "width_mean": 812.9,
+    "height_mean": 1060.89
+  }
+}
