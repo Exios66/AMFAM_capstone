@@ -12,25 +12,19 @@ Usage:
     python scripts/braintrust_prompt_eval.py
 """
 
-import base64
-import os
 import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Optional: load from .env file
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    print("Note: python-dotenv is not installed; relying on existing environment variables.")
-
 import braintrust
 from openai import OpenAI
 
+from src.env_utils import require_env
+from src.image_utils import encode_image_base64
 from src.openrouter_classifier import CLASSIFICATION_PROMPT, VALID_CLASSES, clean_prediction
+from src.openrouter_utils import OPENROUTER_BASE_URL, build_vision_messages
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -47,21 +41,7 @@ PROJECT_NAME = "AMFAM-Doc-Classification"
 
 def get_api_keys() -> tuple[str, str]:
     """Load required API keys from environment."""
-    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
-    braintrust_key = os.environ.get("BRAINTRUST_API_KEY")
-
-    missing = []
-    if not openrouter_key:
-        missing.append("OPENROUTER_API_KEY")
-    if not braintrust_key:
-        missing.append("BRAINTRUST_API_KEY")
-
-    if missing:
-        print(f"Error: Missing environment variables: {', '.join(missing)}")
-        print("Set them in your .env file or terminal.")
-        sys.exit(1)
-
-    return openrouter_key, braintrust_key
+    return require_env("OPENROUTER_API_KEY", "BRAINTRUST_API_KEY")
 
 
 def extract_class_from_filename(filename: str) -> str:
@@ -73,15 +53,6 @@ def extract_class_from_filename(filename: str) -> str:
     if len(parts) >= 2:
         return parts[1]
     return "unknown"
-
-
-def encode_image_base64(image_path: Path) -> str:
-    """Encode image file to base64 string."""
-    try:
-        with open(image_path, "rb") as f:
-            return base64.b64encode(f.read()).decode("utf-8")
-    except OSError as e:
-        raise RuntimeError(f"Could not read image {image_path}: {e}") from e
 
 
 def load_dataset_images(dataset_dir: Path) -> list[dict]:
@@ -130,7 +101,7 @@ def run_eval() -> int:
     # Wrap OpenAI client pointed at OpenRouter with Braintrust logging
     client = braintrust.wrap_openai(
         OpenAI(
-            base_url="https://openrouter.ai/api/v1",
+            base_url=OPENROUTER_BASE_URL,
             api_key=openrouter_key,
         )
     )
@@ -154,20 +125,7 @@ def run_eval() -> int:
 
         response = client.chat.completions.create(
             model=MODEL,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": CLASSIFICATION_PROMPT},
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/png;base64,{image_b64}"
-                            },
-                        },
-                    ],
-                }
-            ],
+            messages=build_vision_messages(CLASSIFICATION_PROMPT, image_b64),
             max_tokens=1024,
             temperature=0.1,
             extra_body={

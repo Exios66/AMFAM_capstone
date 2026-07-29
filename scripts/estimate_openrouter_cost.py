@@ -7,33 +7,19 @@ accidentally processing the entire dataset.
 """
 
 import json
-import os
 import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.env_utils import require_env
 from src.openrouter_classifier import OpenRouterError, classify_image
-
-# Optional: load from .env file if python-dotenv is installed
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    print("Note: python-dotenv is not installed; relying on existing environment variables.")
 
 
 def get_api_key() -> str:
     """Load OpenRouter API key from environment variable."""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        print("Error: OPENROUTER_API_KEY environment variable is not set.")
-        print("Set it in your terminal with:")
-        print('    $env:OPENROUTER_API_KEY="sk-or-v1-..."')
-        print("Or create a .env file with:")
-        print("    OPENROUTER_API_KEY=sk-or-v1-...")
-        sys.exit(1)
+    (api_key,) = require_env("OPENROUTER_API_KEY")
     return api_key
 
 

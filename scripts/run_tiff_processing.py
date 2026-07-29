@@ -8,6 +8,7 @@ import json
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.cli_utils import print_header
 from src.document_processor import ClassOrganizedBatchProcessor
 
 def main() -> int:
@@ -18,10 +19,8 @@ def main() -> int:
     if not Path(INPUT_DIR).is_dir():
         print(f"Error: input directory does not exist: {INPUT_DIR}")
         return 1
-    
-    print("="*60)
-    print("Processing Balanced TIFF Dataset")
-    print("="*60)
+
+    print_header("Processing Balanced TIFF Dataset")
     print(f"Input: {INPUT_DIR}")
     print(f"Output: {OUTPUT_DIR}")
     print()
@@ -47,9 +46,7 @@ def main() -> int:
         return 1
     
     print()
-    print("="*60)
-    print("Processing Summary")
-    print("="*60)
+    print_header("Processing Summary")
     
     successful = sum(1 for r in results if r['status'] == 'success')
     failed = len(results) - successful

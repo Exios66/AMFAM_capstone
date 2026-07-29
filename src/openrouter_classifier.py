@@ -4,15 +4,16 @@ Sends only the document image to a vision-capable LLM for classification
 """
 
 import json
-import base64
 import logging
 import os
 from pathlib import Path
 import requests
 
-logger = logging.getLogger(__name__)
+from src.constants import DOCUMENT_CLASSES
+from src.image_utils import encode_image_base64
+from src.openrouter_utils import OPENROUTER_API_URL, build_vision_messages
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+logger = logging.getLogger(__name__)
 
 # Recommended vision models on OpenRouter
 VISION_MODELS = []
@@ -62,25 +63,11 @@ Output only the class name. No explanation, no JSON, no additional text.
 Example: If the document has "INVOICE" header, line items table, and total amount, output only:
 invoice"""
 
-VALID_CLASSES = [
-    "advertisement", "budget", "email", "file_folder", "form", "handwritten",
-    "invoice", "letter", "memo", "news_article", "presentation",
-    "questionnaire", "resume", "scientific_publication", "scientific_report",
-    "specification"
-]
+VALID_CLASSES = list(DOCUMENT_CLASSES)
 
 
 class OpenRouterError(RuntimeError):
     """Raised when the OpenRouter API call fails or returns an unusable response."""
-
-
-def encode_image(image_path: Path) -> str:
-    """Encode image to base64 string for vision model input"""
-    try:
-        with open(image_path, "rb") as f:
-            return base64.b64encode(f.read()).decode("utf-8")
-    except OSError as e:
-        raise OpenRouterError(f"Could not read image {image_path}: {e}") from e
 
 
 def clean_prediction(text: str | None) -> str:
@@ -100,24 +87,14 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
     Classify a document image using a vision model through OpenRouter API.
     Sends only the image to the vision model - no OCR text or feature data.
     """
-    image_base64 = encode_image(image_path)
+    try:
+        image_base64 = encode_image_base64(image_path)
+    except OSError as e:
+        raise OpenRouterError(f"Could not read image {image_path}: {e}") from e
 
     payload = {
         "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": CLASSIFICATION_PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_base64}"
-                        }
-                    }
-                ]
-            }
-        ],
+        "messages": build_vision_messages(CLASSIFICATION_PROMPT, image_base64),
         "max_tokens": 20,
         "temperature": 0.1
     }

@@ -13,23 +13,17 @@ Usage:
 """
 
 import json
-import os
 import sys
 import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    print("Note: python-dotenv is not installed; relying on existing environment variables.")
-
 import matplotlib.pyplot as plt
 import numpy as np
 import requests
 
+from src.env_utils import MissingEnvironmentError, get_env
 from src.openrouter_classifier import VALID_CLASSES
 
 # ---------------------------------------------------------------------------
@@ -55,9 +49,10 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
     """Fetch results from a Braintrust experiment via REST API.
     If target_experiment is provided, fetch that specific experiment by name.
     Otherwise fetch the most recent. Returns (results, experiment_name, experiment_meta)."""
-    api_key = os.environ.get("BRAINTRUST_API_KEY")
-    if not api_key:
-        raise BraintrustFetchError("BRAINTRUST_API_KEY is not set.")
+    try:
+        (api_key,) = get_env("BRAINTRUST_API_KEY")
+    except MissingEnvironmentError as e:
+        raise BraintrustFetchError(str(e)) from e
 
     headers = {"Authorization": f"Bearer {api_key}"}
 

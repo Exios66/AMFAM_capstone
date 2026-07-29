@@ -14,24 +14,13 @@ from pathlib import Path
 
 from PIL import Image
 
-CLASS_NAMES = (
-    "advertisement",
-    "budget",
-    "email",
-    "file_folder",
-    "form",
-    "handwritten",
-    "invoice",
-    "letter",
-    "memo",
-    "news_article",
-    "presentation",
-    "questionnaire",
-    "resume",
-    "scientific_publication",
-    "scientific_report",
-    "specification",
-)
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.cli_utils import print_header
+from src.constants import DOCUMENT_CLASSES, IMAGE_EXTENSIONS
+from src.image_utils import find_images
+
+CLASS_NAMES = DOCUMENT_CLASSES
 
 
 def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tuple[int, int]) -> dict:
@@ -42,18 +31,9 @@ def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tupl
     output_images_dir = output_dir / "images"
     output_images_dir.mkdir(parents=True, exist_ok=True)
 
-    image_paths = sorted(
-        list(input_dir.glob("*.png"))
-        + list(input_dir.glob("*.jpg"))
-        + list(input_dir.glob("*.jpeg"))
-        + list(input_dir.glob("*.tif"))
-        + list(input_dir.glob("*.tiff"))
-        + list(input_dir.glob("*.bmp"))
-    )
+    image_paths = find_images(input_dir)
 
-    print("=" * 60)
-    print("CREATING FIXED-SIZE DATASET")
-    print("=" * 60)
+    print_header("CREATING FIXED-SIZE DATASET")
     print(f"Input:  {input_dir}")
     print(f"Output: {output_images_dir}")
     print(f"Target size: {target_size}")
@@ -100,9 +80,7 @@ def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tupl
         json.dump(summary, f, indent=2)
 
     print()
-    print("=" * 60)
-    print("FIXED-SIZE DATASET CREATION COMPLETE")
-    print("=" * 60)
+    print_header("FIXED-SIZE DATASET CREATION COMPLETE")
     print(f"Total: {len(log)} | Successful: {successful} | Failed: {failed}")
     print(f"Summary saved: {summary_path}")
 
@@ -165,13 +143,13 @@ def _collect_class_images(
             if not class_dir.is_dir():
                 continue
             for ext in extensions:
-                class_images[class_name].extend(class_dir.rglob(ext))
+                class_images[class_name].extend(class_dir.rglob(f"*{ext}"))
         return class_images
 
     # Otherwise, infer class from the filename prefix
     all_images: list[Path] = []
     for ext in extensions:
-        all_images.extend(input_dir.rglob(ext))
+        all_images.extend(input_dir.rglob(f"*{ext}"))
 
     for img_path in all_images:
         name_lower = img_path.name.lower()
@@ -196,11 +174,7 @@ def create_sampled_fixed_size_dataset(
     output_images_dir = output_dir / "images"
     output_images_dir.mkdir(parents=True, exist_ok=True)
 
-    extensions = ("*.png", "*.jpg", "*.jpeg", "*.tif", "*.tiff", "*.bmp")
-
-    print("=" * 60)
-    print("CREATING SAMPLED FIXED-SIZE DATASET")
-    print("=" * 60)
+    print_header("CREATING SAMPLED FIXED-SIZE DATASET")
     print(f"Output: {output_images_dir}")
     print(f"Target size: {target_size}")
     print(f"Samples per class: {samples_per_class}")
@@ -226,7 +200,7 @@ def create_sampled_fixed_size_dataset(
             })
             continue
 
-        class_images = _collect_class_images(input_dir, CLASS_NAMES, extensions)
+        class_images = _collect_class_images(input_dir, CLASS_NAMES, IMAGE_EXTENSIONS)
 
         for class_name, image_paths in class_images.items():
             available = len(image_paths)
@@ -301,9 +275,7 @@ def create_sampled_fixed_size_dataset(
         json.dump(summary, f, indent=2)
 
     print()
-    print("=" * 60)
-    print("SAMPLED FIXED-SIZE DATASET CREATION COMPLETE")
-    print("=" * 60)
+    print_header("SAMPLED FIXED-SIZE DATASET CREATION COMPLETE")
     print(f"Total: {total_successful + total_failed} | Successful: {total_successful} | Failed: {total_failed}")
     print(f"Summary saved: {summary_path}")
 

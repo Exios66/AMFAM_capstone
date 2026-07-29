@@ -9,6 +9,10 @@ from pathlib import Path
 import random
 import json
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.cli_utils import print_header
+
 class BalancedDatasetCreator:
     """Create a balanced dataset by sampling random images from each class"""
     
@@ -27,9 +31,7 @@ class BalancedDatasetCreator:
         
     def sample_images(self):
         """Sample random images from each class"""
-        print("="*60)
-        print("CREATING BALANCED DATASET")
-        print("="*60)
+        print_header("CREATING BALANCED DATASET")
         print(f"Source: {self.source_path}")
         print(f"Output: {self.output_path}")
         print(f"Samples per class: {self.samples_per_class}")
@@ -90,9 +92,7 @@ class BalancedDatasetCreator:
             json.dump(sampling_log, f, indent=2)
         
         print()
-        print("="*60)
-        print("SAMPLING COMPLETE")
-        print("="*60)
+        print_header("SAMPLING COMPLETE")
         
         # Summary
         total_copied = sum(item['sampled'] for item in sampling_log)
@@ -107,9 +107,7 @@ class BalancedDatasetCreator:
     def verify_dataset(self):
         """Verify the created balanced dataset"""
         print()
-        print("="*60)
-        print("VERIFYING BALANCED DATASET")
-        print("="*60)
+        print_header("VERIFYING BALANCED DATASET")
         
         verification_log = []
         
