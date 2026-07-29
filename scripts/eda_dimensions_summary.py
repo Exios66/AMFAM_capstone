@@ -3,10 +3,14 @@ Compute average image dimensions across all image datasets in the project.
 """
 
 import json
+import sys
 from pathlib import Path
 import statistics
 from PIL import Image
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.image_utils import find_images
 
 DATASETS = {
     "rvlcdip_test": r"c:\Users\grant\AMFAM\rvlcdip_dataset\test",
@@ -14,8 +18,6 @@ DATASETS = {
     "processed_balanced": r"c:\Users\grant\AMFAM\processed_balanced_dataset\images",
     "processed_documents": r"c:\Users\grant\AMFAM\processed_documents\images",
 }
-
-IMAGE_EXTENSIONS = (".tif", ".tiff", ".png", ".jpg", ".jpeg", ".bmp")
 
 
 def collect_dimensions(dataset_path: str):
@@ -26,16 +28,15 @@ def collect_dimensions(dataset_path: str):
     if not root.exists():
         return None, f"Path does not exist: {root}"
 
-    for ext in IMAGE_EXTENSIONS:
-        for img_path in root.rglob(f"*{ext}"):
-            try:
-                with Image.open(img_path) as img:
-                    w, h = img.size
-                    widths.append(w)
-                    heights.append(h)
-                    aspect_ratios.append(w / h if h else 0)
-            except Exception:
-                skipped += 1
+    for img_path in find_images(root, recursive=True):
+        try:
+            with Image.open(img_path) as img:
+                w, h = img.size
+                widths.append(w)
+                heights.append(h)
+                aspect_ratios.append(w / h if h else 0)
+        except Exception:
+            skipped += 1
 
     n = len(widths)
     if n == 0:

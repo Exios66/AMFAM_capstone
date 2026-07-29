@@ -4,10 +4,15 @@ Analyzes class distribution, image properties, and generates visualizations
 """
 
 import os
+import sys
 import json
 from pathlib import Path
 from collections import defaultdict
 import random
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from src.cli_utils import print_header
 
 import pandas as pd
 import numpy as np
@@ -69,9 +74,8 @@ class DocumentDatasetEDA:
         
     def analyze_class_distribution(self):
         """Analyze and visualize class distribution"""
-        print("\n" + "="*60)
-        print("CLASS DISTRIBUTION ANALYSIS")
-        print("="*60)
+        print()
+        print_header("CLASS DISTRIBUTION ANALYSIS")
         
         class_counts = self.df['class'].value_counts().sort_values(ascending=False)
         
@@ -113,9 +117,8 @@ class DocumentDatasetEDA:
     
     def analyze_image_dimensions(self):
         """Analyze image dimensions and aspect ratios"""
-        print("\n" + "="*60)
-        print("IMAGE DIMENSIONS ANALYSIS")
-        print("="*60)
+        print()
+        print_header("IMAGE DIMENSIONS ANALYSIS")
         
         # Width statistics
         print(f"\nWidth Statistics:")
@@ -199,9 +202,8 @@ class DocumentDatasetEDA:
     
     def analyze_file_sizes(self):
         """Analyze file size distribution"""
-        print("\n" + "="*60)
-        print("FILE SIZE ANALYSIS")
-        print("="*60)
+        print()
+        print_header("FILE SIZE ANALYSIS")
         
         # Convert to MB
         self.df['size_mb'] = self.df['size_bytes'] / (1024 * 1024)
@@ -228,9 +230,8 @@ class DocumentDatasetEDA:
     
     def analyze_image_modes(self):
         """Analyze image color modes"""
-        print("\n" + "="*60)
-        print("IMAGE MODE ANALYSIS")
-        print("="*60)
+        print()
+        print_header("IMAGE MODE ANALYSIS")
         
         mode_counts = self.df['mode'].value_counts()
         
@@ -255,9 +256,8 @@ class DocumentDatasetEDA:
     
     def visualize_sample_images(self, samples_per_class=3):
         """Visualize sample images from each class"""
-        print("\n" + "="*60)
-        print("SAMPLE IMAGE VISUALIZATION")
-        print("="*60)
+        print()
+        print_header("SAMPLE IMAGE VISUALIZATION")
         
         fig, axes = plt.subplots(len(self.classes), samples_per_class, 
                                 figsize=(samples_per_class * 3, len(self.classes) * 3))
@@ -288,9 +288,8 @@ class DocumentDatasetEDA:
     
     def generate_summary_report(self):
         """Generate comprehensive summary report"""
-        print("\n" + "="*60)
-        print("EDA SUMMARY REPORT")
-        print("="*60)
+        print()
+        print_header("EDA SUMMARY REPORT")
         
         report = {
             'dataset_path': str(self.dataset_path),
@@ -345,9 +344,7 @@ class DocumentDatasetEDA:
     
     def run_full_eda(self, sample_size=None):
         """Run complete EDA pipeline"""
-        print("="*60)
-        print("STARTING EXPLORATORY DATA ANALYSIS")
-        print("="*60)
+        print_header("STARTING EXPLORATORY DATA ANALYSIS")
         
         # Collect data
         self.collect_image_data(sample_size=sample_size)
@@ -365,9 +362,8 @@ class DocumentDatasetEDA:
         # Generate report
         report = self.generate_summary_report()
         
-        print("\n" + "="*60)
-        print("EDA COMPLETE - All visualizations and reports saved")
-        print("="*60)
+        print()
+        print_header("EDA COMPLETE - All visualizations and reports saved")
         
         return report
 

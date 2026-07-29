@@ -4,12 +4,13 @@ Sends only the document image to a vision-capable LLM for classification
 """
 
 import json
-import base64
-import os
 from pathlib import Path
 import requests
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+from src.constants import DOCUMENT_CLASSES
+from src.env_utils import require_env
+from src.image_utils import encode_image_base64
+from src.openrouter_utils import OPENROUTER_API_URL, build_vision_messages
 
 # Recommended vision models on OpenRouter
 VISION_MODELS = []
@@ -59,29 +60,7 @@ Output only the class name. No explanation, no JSON, no additional text.
 Example: If the document has "INVOICE" header, line items table, and total amount, output only:
 invoice"""
 
-VALID_CLASSES = [
-    "advertisement", "budget", "email", "file_folder", "form", "handwritten",
-    "invoice", "letter", "memo", "news_article", "presentation",
-    "questionnaire", "resume", "scientific_publication", "scientific_report",
-    "specification"
-]
-
-
-def get_api_key() -> str:
-    """Read the OpenRouter API key from the environment."""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        raise RuntimeError(
-            "OPENROUTER_API_KEY is not set. Add it to your .env file or export it "
-            "in your shell before running."
-        )
-    return api_key
-
-
-def encode_image(image_path: Path) -> str:
-    """Encode image to base64 string for vision model input"""
-    with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+VALID_CLASSES = list(DOCUMENT_CLASSES)
 
 
 def clean_prediction(text: str | None) -> str:
@@ -100,24 +79,11 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
     Classify a document image using a vision model through OpenRouter API.
     Sends only the image to the vision model - no OCR text or feature data.
     """
-    image_base64 = encode_image(image_path)
+    image_base64 = encode_image_base64(image_path)
 
     payload = {
         "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": CLASSIFICATION_PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_base64}"
-                        }
-                    }
-                ]
-            }
-        ],
+        "messages": build_vision_messages(CLASSIFICATION_PROMPT, image_base64),
         "max_tokens": 20,
         "temperature": 0.1
     }
@@ -163,7 +129,7 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
 
 
 if __name__ == "__main__":
-    API_KEY = get_api_key()
+    (API_KEY,) = require_env("OPENROUTER_API_KEY")
 
     IMAGE_PATH = Path(r"c:\Users\grant\AMFAM\processed_balanced_dataset\images\advertisement_0000139610_page_0001.png")
 
