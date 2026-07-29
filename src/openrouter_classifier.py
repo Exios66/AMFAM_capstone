@@ -4,11 +4,11 @@ Sends only the document image to a vision-capable LLM for classification
 """
 
 import json
-import os
 from pathlib import Path
 import requests
 
 from src.constants import DOCUMENT_CLASSES
+from src.env_utils import require_env
 from src.image_utils import encode_image_base64
 from src.openrouter_utils import OPENROUTER_API_URL, build_vision_messages
 
@@ -102,7 +102,7 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
 
     try:
         response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
+    except requests.exceptions.HTTPError:
         try:
             error_body = response.json()
         except Exception:
@@ -129,7 +129,7 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
 
 
 if __name__ == "__main__":
-    API_KEY = os.environ.get("OPENROUTER_API_KEY", "your-api-key-here")
+    (API_KEY,) = require_env("OPENROUTER_API_KEY")
 
     IMAGE_PATH = Path(r"c:\Users\grant\AMFAM\processed_balanced_dataset\images\advertisement_0000139610_page_0001.png")
 
