@@ -5,6 +5,7 @@ for downstream LLM processing.
 """
 
 import io
+import re
 import time
 import json
 from pathlib import Path
@@ -26,6 +27,22 @@ except Exception:
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+_UNSAFE_NAME_CHARS = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def sanitize_document_name(document_name: str) -> str:
+    """
+    Reduce a document name to a single safe path component.
+
+    Names come from untrusted input (uploaded filenames, dataset directory names),
+    so path separators and parent references are stripped before the name is used
+    to build an output path.
+    """
+    name = _UNSAFE_NAME_CHARS.sub("_", str(document_name)).strip("._")
+    if not name:
+        raise ValueError(f"Document name {document_name!r} has no usable characters")
+    return name[:200]
 
 
 class DocumentProcessor:
@@ -162,7 +179,7 @@ class DocumentProcessor:
         Returns:
             Path to saved image
         """
-        image_filename = f"{document_name}_page_{page_num:04d}.png"
+        image_filename = f"{sanitize_document_name(document_name)}_page_{page_num:04d}.png"
         image_path = self.images_dir / image_filename
         
         # Save with DPI metadata
@@ -225,7 +242,7 @@ class DocumentProcessor:
         Returns:
             Path to saved JSON file
         """
-        json_filename = f"{document_name}_ocr_results.json"
+        json_filename = f"{sanitize_document_name(document_name)}_ocr_results.json"
         json_path = self.json_dir / json_filename
         
         with open(json_path, 'w', encoding='utf-8') as f:

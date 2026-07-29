@@ -59,7 +59,7 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
     headers = {"Authorization": f"Bearer {api_key}"}
 
     # Find the project
-    resp = requests.get(f"{API_BASE}/project", headers=headers)
+    resp = requests.get(f"{API_BASE}/project", headers=headers, timeout=60)
     resp.raise_for_status()
     projects = resp.json().get("objects", [])
     project = next((p for p in projects if p["name"] == PROJECT_NAME), None)
@@ -74,6 +74,7 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
         f"{API_BASE}/experiment",
         headers=headers,
         params={"project_id": project_id},
+        timeout=60,
     )
     resp.raise_for_status()
     experiments = resp.json().get("objects", [])

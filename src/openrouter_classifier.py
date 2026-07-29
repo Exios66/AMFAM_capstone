@@ -67,6 +67,17 @@ VALID_CLASSES = [
 ]
 
 
+def get_api_key() -> str:
+    """Read the OpenRouter API key from the environment."""
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError(
+            "OPENROUTER_API_KEY is not set. Add it to your .env file or export it "
+            "in your shell before running."
+        )
+    return api_key
+
+
 def encode_image(image_path: Path) -> str:
     """Encode image to base64 string for vision model input"""
     with open(image_path, "rb") as f:
@@ -125,7 +136,7 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
 
     try:
         response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
+    except requests.exceptions.HTTPError:
         try:
             error_body = response.json()
         except Exception:
@@ -152,7 +163,7 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
 
 
 if __name__ == "__main__":
-    API_KEY = os.environ.get("OPENROUTER_API_KEY", "your-api-key-here")
+    API_KEY = get_api_key()
 
     IMAGE_PATH = Path(r"c:\Users\grant\AMFAM\processed_balanced_dataset\images\advertisement_0000139610_page_0001.png")
 
