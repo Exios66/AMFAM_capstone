@@ -206,3 +206,223 @@
 - Prompt tokens increased from 3,701 → 4,368 due to longer prompt with disambiguation rules, but the accuracy gain far outweighs the ~$0.08 cost increase per 800 images.
 - Only 26 errors remain (down from 42). Top confusion is now `presentation → file_folder` (4 errors) where cover/divider pages get misclassified.
 - See `docs/confusion_matrix_main-1785277280.md` and `docs/misclassification_reasoning_main-1785277280.md` for detailed breakdown.
+
+---
+
+## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785361122
+**Dataset:** 1024×1024 padded PNGs
+**Prompt:** `CLASSIFICATION_PROMPT` v1 (with disambiguation rules)
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+**Image size:** `1024×1024`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **85.00%** (136/160 correct) |
+| Prompt tokens (avg) | 2,304.00 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 413.77 |
+| Total tokens (avg) | 2,717.77 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`google/gemini-2.5-flash`, `max_tokens=1024`, 1024×1024 images)
+
+**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 1,843,200 | 331,015 | 2,174,215 | **$0.48** |
+| 25,000 | 57,600,000 | 10,344,218 | 67,944,218 | **$14.85** |
+| 320,000 | 737,280,000 | 132,406,000 | 869,686,000 | **$190.04** |
+
+---
+
+## Experiment: `moonshotai/kimi-k3` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785362441
+**Dataset:** 1024×1024 padded PNGs
+**Prompt:** `CLASSIFICATION_PROMPT` v1 (with disambiguation rules)
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+**Image size:** `1024×1024`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **85.00%** (136/160 correct) |
+| Prompt tokens (avg) | 2,454.26 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 91.55 |
+| Total tokens (avg) | 2,545.81 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`moonshotai/kimi-k3`, `max_tokens=1024`, 1024×1024 images)
+
+**Pricing:** $0.30/M input tokens, $15.00/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 1,963,409 | 73,240 | 2,036,650 | **$1.69** |
+| 25,000 | 61,356,562 | 2,288,750 | 63,645,312 | **$52.74** |
+| 320,000 | 785,364,000 | 29,296,000 | 814,660,000 | **$675.05** |
+
+---
+
+## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785364141
+**Dataset:** 1024×1024 padded PNGs
+**Prompt:** `CLASSIFICATION_PROMPT` v2 (expanded disambiguation rules)
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+**Image size:** `1024×1024`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **85.00%** (136/160 correct) |
+| Prompt tokens (avg) | 2,674.00 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 412.06 |
+| Total tokens (avg) | 3,086.06 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`google/gemini-2.5-flash`, `max_tokens=1024`)
+
+**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 2,139,200 | 329,645 | 2,468,845 | **$0.52** |
+| 25,000 | 66,850,000 | 10,301,406 | 77,151,406 | **$16.21** |
+| 320,000 | 855,680,000 | 131,858,000 | 987,538,000 | **$207.47** |
+
+---
+
+## Experiment: `openai/gpt-5.6-terra` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785364901
+**Dataset:** 1024×1024 padded PNGs
+**Prompt:** `CLASSIFICATION_PROMPT` v2 (expanded disambiguation rules)
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+**Image size:** `1024×1024`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **91.25%** (146/160 correct) |
+| Prompt tokens (avg) | 2,451.18 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 22.69 |
+| Total tokens (avg) | 2,473.87 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`openai/gpt-5.6-terra`, `max_tokens=1024`)
+
+**Pricing:** $2.5/M input tokens, $10.0/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 1,960,940 | 18,155 | 1,979,095 | **$5.08** |
+| 25,000 | 61,279,375 | 567,343 | 61,846,718 | **$158.87** |
+| 320,000 | 784,376,000 | 7,262,000 | 791,638,000 | **$2033.56** |
+
+---
+
+## Experiment: `x-ai/grok-4.5` — 159 Images (9 per class × 16 classes)
+
+**Experiment ID:** main-1785365569
+**Dataset:** 1024×1024 padded PNGs
+**Prompt:** `CLASSIFICATION_PROMPT` v2 (expanded disambiguation rules)
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+**Image size:** `1024×1024`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **89.31%** (142/159 correct) |
+| Prompt tokens (avg) | 2,586.00 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 164.55 |
+| Total tokens (avg) | 2,750.55 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`x-ai/grok-4.5`, `max_tokens=1024`)
+
+**Pricing:** $2.0/M input tokens, $6.0/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 2,068,800 | 131,640 | 2,200,440 | **$4.93** |
+| 25,000 | 64,650,000 | 4,113,750 | 68,763,750 | **$153.98** |
+| 320,000 | 827,520,000 | 52,656,000 | 880,176,000 | **$1,970.98** |
+
+---
+
+## Experiment: `anthropic/claude-sonnet-5` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785366469
+**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **90.62%** (145/160 correct) |
+| Prompt tokens (avg) | 3,620.00 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 5.00 |
+| Total tokens (avg) | 3,625.00 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`anthropic/claude-sonnet-5`, `max_tokens=1024`)
+
+**Pricing:** $3.0/M input tokens, $15.0/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 2,896,000 | 4,000 | 2,900,000 | **$8.75** |
+| 25,000 | 90,500,000 | 125,000 | 90,625,000 | **$273.38** |
+| 320,000 | 1,158,400,000 | 1,600,000 | 1,160,000,000 | **$3499.20** |
+
+---
+
+## Experiment: `google/gemini-3.6-flash` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785367223
+**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **91.88%** (147/160 correct) |
+| Prompt tokens (avg) | 2,473.82 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 311.05 |
+| Total tokens (avg) | 2,784.87 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`google/gemini-3.6-flash`, `max_tokens=1024`)
+
+**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 1,979,055 | 248,840 | 2,227,895 | **$0.45** |
+| 25,000 | 61,845,468 | 7,776,250 | 69,621,718 | **$13.94** |
+| 320,000 | 791,622,000 | 99,536,000 | 891,158,000 | **$178.46** |
