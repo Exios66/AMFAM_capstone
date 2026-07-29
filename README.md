@@ -1,93 +1,99 @@
 # Document Intelligence Pipeline with OpenRouter Vision Models
 
-A Python toolkit for downloading the RVL-CDIP document image dataset, preprocessing pages, running exploratory data analysis, and classifying documents with vision models through OpenRouter.
+A Python toolkit for downloading the RVL-CDIP document image dataset, preprocessing pages, running exploratory data analysis, and evaluating vision model classification accuracy across multiple providers via OpenRouter and Braintrust.
 
-## What's Included
+## Project Structure
 
-- `download_dataset.py` — Download the RVL-CDIP dataset from Kaggle.
-- `create_balanced_dataset.py` — Sample a balanced subset (50 images per class) from RVL-CDIP.
-- `eda_analysis.py` — Exploratory data analysis: class distribution, dimensions, file sizes, visualizations.
-- `document_processor.py` — Convert TIFF/PDF pages to 300 DPI grayscale PNGs and run OCR with bounding boxes.
-- `run_tiff_processing.py` — Batch process the balanced TIFF dataset with `document_processor.py`.
-- `openrouter_classifier.py` — Send a document image to an OpenRouter vision model for one of 16 class predictions.
-- `estimate_openrouter_cost.py` — Run one image through an OpenRouter vision model and extrapolate token usage/cost for 800, 25,000, and 320,000 images.
-- `openrouter_token_calculation.md` — Cost projections based on actual API responses.
-- `requirements.txt` — Python dependencies.
-- `.env.example` — Template for API key environment variable.
+```
+src/
+  openrouter_classifier.py    — Classification prompt & prediction logic (16 classes)
+scripts/
+  download_dataset.py         — Download the RVL-CDIP dataset from Kaggle
+  create_balanced_dataset.py  — Sample balanced subsets from RVL-CDIP
+  create_fixed_size_dataset.py — Resize/pad images to fixed dimensions (e.g. 1024×1024)
+  eda_analysis.py             — Exploratory data analysis & visualizations
+  run_tiff_processing.py      — Batch convert TIFF pages to 300 DPI PNGs
+  estimate_openrouter_cost.py — Single-image cost estimation & extrapolation
+  braintrust_openrouter_input.py — Run Braintrust evaluation experiments
+  braintrust_metrics_visual.py   — Generate confusion matrices, misclassification reports, and experiment logs
+docs/
+  experiment_log.md           — Full experiment history with metrics & cost projections
+  model_comparison_1024x1024_160.md — Side-by-side model comparison table
+  confusion_matrix_*.md       — Per-experiment confusion matrices
+  misclassification_reasoning_*.md — Per-experiment error analysis with model reasoning
+```
 
 ## Setup
 
-1. Install system dependencies:
-   - [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki)
-   - [Poppler](https://github.com/oschwartz10612/poppler-windows) (for `pdf2image`)
-
-2. Install Python dependencies:
+1. Install Python dependencies:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Copy `.env.example` to `.env` and add your OpenRouter API key:
+2. Set environment variables (or use a `.env` file):
 
    ```bash
-   cp .env.example .env
+   export OPENROUTER_API_KEY=sk-or-v1-...
+   export BRAINTRUST_API_KEY=...
    ```
 
-   Edit `.env`:
+## Experiment Workflow
 
-   ```text
-   OPENROUTER_API_KEY=sk-or-v1-...
-   ```
+### 1. Prepare the dataset
 
-## Usage Workflow
+```bash
+python scripts/create_balanced_dataset.py
+python scripts/create_fixed_size_dataset.py
+```
 
-1. **Download the dataset**
+This creates padded 1024×1024 PNG images, balanced across 16 document classes (10 per class = 160 images for quick experiments).
 
-   ```bash
-   python download_dataset.py
-   ```
+### 2. Choose a model
 
-2. **Create a balanced subset**
+Edit `MODEL` in `scripts/braintrust_openrouter_input.py`:
 
-   ```bash
-   python create_balanced_dataset.py
-   ```
+```python
+MODEL = "google/gemini-3.6-flash"  # or any OpenRouter vision model
+```
 
-3. **Run EDA**
+### 3. Run the evaluation
 
-   ```bash
-   python eda_analysis.py
-   ```
+```bash
+python scripts/braintrust_openrouter_input.py
+```
 
-4. **Process TIFF pages to PNGs**
+This sends all images to the model via OpenRouter, scores predictions against ground truth, and logs results to Braintrust. The experiment ID is printed at the end (e.g., `main-1785367223`).
 
-   ```bash
-   python run_tiff_processing.py
-   ```
+### 4. Generate reports
 
-5. **Estimate OpenRouter cost for a model**
+```bash
+python scripts/braintrust_metrics_visual.py main-1785367223
+```
 
-   Edit `MODEL` in `estimate_openrouter_cost.py`, then run:
+This produces:
+- Confusion matrix (markdown + PNG)
+- Misclassification reasoning document with model chain-of-thought
+- Experiment log entry with accuracy, token usage, and cost projections
 
-   ```bash
-   python estimate_openrouter_cost.py
-   ```
+### 5. Compare models
 
-   This updates `openrouter_token_calculation.md` automatically.
+See `docs/model_comparison_1024x1024_160.md` for a summary table:
 
-6. **Classify a single image**
+| Model | Cost | Accuracy | Pricing (per M tokens) |
+|-------|-----:|---------:|------------------------|
+| `google/gemini-3.6-flash` | $0.97 | **91.88%** | $0.15 in / $0.60 out |
+| `openai/gpt-5.6-terra` | $0.72 | 91.25% | $2.50 in / $10.00 out |
+| `anthropic/claude-sonnet-5` | $1.17 | 90.62% | $3.00 in / $15.00 out |
+| `x-ai/grok-4.5` | $0.60 | 89.31% | $2.00 in / $6.00 out |
+| `google/gemini-2.5-flash` | $0.28 | 85.00% | $0.15 in / $0.60 out |
+| `moonshotai/kimi-k3` | $1.07 | 85.00% | $0.30 in / $15.00 out |
 
-   ```bash
-   python openrouter_classifier.py
-   ```
+## Classification Prompt
+
+The prompt in `src/openrouter_classifier.py` defines 16 document classes with detailed descriptions and critical disambiguation rules to reduce common confusions (e.g., presentation vs file_folder, budget vs invoice, form vs memo).
 
 ## Security Notes
 
 - **Never commit `.env` or any file containing your API key.** `.env` is excluded by `.gitignore`.
-- `.env.example` is safe to commit because it contains a placeholder value only.
-- Generated datasets, images, and report files are excluded from version control by `.gitignore`.
-
-## Notes
-
-- The scripts contain example `__main__` blocks with hardcoded paths for local testing. Update the `*_PATH` variables in each script to match your environment before running.
-- Cost projections are linear extrapolations from a single representative image per model. Actual costs may vary with image size, content, and OpenRouter pricing changes.
+- Generated datasets and image files are excluded from version control by `.gitignore`.
