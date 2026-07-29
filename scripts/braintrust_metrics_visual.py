@@ -24,7 +24,7 @@ try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    pass
+    print("Note: python-dotenv is not installed; relying on existing environment variables.")
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -47,25 +47,27 @@ OUTPUT_DIR = Path(__file__).parent.parent / "docs"
 API_BASE = "https://api.braintrust.dev/v1"
 
 
+class BraintrustFetchError(RuntimeError):
+    """Raised when experiment results cannot be fetched from Braintrust."""
+
+
 def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list[dict], str, dict]:
     """Fetch results from a Braintrust experiment via REST API.
     If target_experiment is provided, fetch that specific experiment by name.
     Otherwise fetch the most recent. Returns (results, experiment_name, experiment_meta)."""
     api_key = os.environ.get("BRAINTRUST_API_KEY")
     if not api_key:
-        print("Error: BRAINTRUST_API_KEY not set.")
-        sys.exit(1)
+        raise BraintrustFetchError("BRAINTRUST_API_KEY is not set.")
 
     headers = {"Authorization": f"Bearer {api_key}"}
 
     # Find the project
-    resp = requests.get(f"{API_BASE}/project", headers=headers)
+    resp = requests.get(f"{API_BASE}/project", headers=headers, timeout=60)
     resp.raise_for_status()
     projects = resp.json().get("objects", [])
     project = next((p for p in projects if p["name"] == PROJECT_NAME), None)
     if not project:
-        print(f"Error: Project '{PROJECT_NAME}' not found.")
-        sys.exit(1)
+        raise BraintrustFetchError(f"Project '{PROJECT_NAME}' not found.")
 
     project_id = project["id"]
 
@@ -74,20 +76,21 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
         f"{API_BASE}/experiment",
         headers=headers,
         params={"project_id": project_id},
+        timeout=60,
     )
     resp.raise_for_status()
     experiments = resp.json().get("objects", [])
     if not experiments:
-        print("No experiments found.")
-        sys.exit(1)
+        raise BraintrustFetchError(f"No experiments found in project '{PROJECT_NAME}'.")
 
     # Pick the target or most recent experiment
     if target_experiment:
         latest = next((e for e in experiments if e["name"] == target_experiment), None)
         if not latest:
-            print(f"Error: Experiment '{target_experiment}' not found.")
-            print(f"Available: {[e['name'] for e in experiments]}")
-            sys.exit(1)
+            raise BraintrustFetchError(
+                f"Experiment '{target_experiment}' not found. "
+                f"Available: {[e['name'] for e in experiments]}"
+            )
     else:
         latest = sorted(experiments, key=lambda e: e.get("created", ""))[-1]
     experiment_id = latest["id"]
@@ -113,7 +116,7 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
                 resp.raise_for_status()
                 break
             except requests.exceptions.HTTPError as e:
-                if resp.status_code == 429 and attempt < max_retries - 1:
+                if e.response is not None and e.response.status_code == 429 and attempt < max_retries - 1:
                     wait = 10 * (2 ** attempt)  # 10, 20, 40, 80, 160s
                     print(f"  Rate limited, waiting {wait}s (retry {attempt + 1}/{max_retries})")
                     time.sleep(wait)
@@ -123,14 +126,24 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
                     time.sleep(wait)
                 else:
                     raise
-            except requests.exceptions.Timeout as e:
+            except requests.exceptions.RequestException as e:
                 if attempt < max_retries - 1:
                     wait = 10 * (attempt + 1)
-                    print(f"  Timeout, retry {attempt + 1}/{max_retries} after {wait}s")
+                    print(f"  {type(e).__name__}, retry {attempt + 1}/{max_retries} after {wait}s")
                     time.sleep(wait)
                 else:
                     raise
-        data = resp.json()
+        else:
+            raise BraintrustFetchError(
+                f"Could not fetch experiment rows after {max_retries} attempts."
+            )
+
+        try:
+            data = resp.json()
+        except ValueError as e:
+            raise BraintrustFetchError(
+                f"Braintrust returned a non-JSON response: {resp.text[:500]}"
+            ) from e
         batch = data.get("events", [])
         rows.extend(batch)
         cursor = data.get("cursor")
@@ -164,9 +177,9 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
             prompt_tokens_list.append(metrics["prompt_tokens"])
         if metrics.get("completion_tokens"):
             completion_tokens_list.append(metrics["completion_tokens"])
-        if metrics.get("tokens"):
-            # Some rows report total as 'tokens'
-            pass
+        reasoning_tokens = metrics.get("completion_reasoning_tokens") or metrics.get("reasoning_tokens")
+        if reasoning_tokens:
+            reasoning_tokens_list.append(reasoning_tokens)
         if metrics.get("cached_tokens"):
             cached_tokens_list.append(metrics["cached_tokens"])
         if metrics.get("duration"):
@@ -216,6 +229,11 @@ def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list
     }
 
     print(f"Filtered to {len(results)} eval rows (from {len(rows)} total rows)")
+    if not results:
+        raise BraintrustFetchError(
+            f"Experiment '{experiment_name}' returned {len(rows)} rows but none contained a valid "
+            f"expected class and output."
+        )
     return results, experiment_name, experiment_meta
 
 
@@ -297,6 +315,7 @@ def plot_per_class_accuracy(results: list[dict], experiment_name: str):
     plt.tight_layout()
 
     output_path = OUTPUT_DIR / f"per_class_accuracy_{experiment_name}.png"
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     plt.savefig(output_path, dpi=150, bbox_inches="tight")
     print(f"\nChart saved: {output_path}")
     plt.close()
@@ -371,6 +390,7 @@ def build_confusion_matrix(results: list[dict], experiment_name: str):
     plt.tight_layout()
 
     heatmap_path = OUTPUT_DIR / f"confusion_matrix_{experiment_name}.png"
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     plt.savefig(heatmap_path, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Confusion matrix heatmap saved: {heatmap_path}")
@@ -539,12 +559,12 @@ def print_doc_section(results: list[dict], experiment_name: str, meta: dict):
 | Metric | Value |
 |--------|------:|
 | **Accuracy (exact_match)** | **{accuracy:.2f}%** ({total_correct}/{total} correct) |
+| Errors | {total - total_correct} |
 | Prompt tokens (avg) | {prompt_avg:,.2f} |
 | Prompt cached tokens (avg) | {cached_avg:,.2f} |
 | Completion tokens (avg) | {completion_avg:,.2f} |
 | Total tokens (avg) | {total_tokens_avg:,.2f} |
 | Duration (avg) | {duration_avg:.2f}s |
-| Errors | 0 |
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
@@ -560,10 +580,14 @@ def print_doc_section(results: list[dict], experiment_name: str, meta: dict):
     return section
 
 
-def main():
+def main() -> int:
     # Optional CLI arg: experiment name
     target = sys.argv[1] if len(sys.argv) > 1 else None
-    results, experiment_name, meta = fetch_experiment_results(target)
+    try:
+        results, experiment_name, meta = fetch_experiment_results(target)
+    except (BraintrustFetchError, requests.exceptions.RequestException) as e:
+        print(f"Error: {e}")
+        return 1
     print(f"Fetched {len(results)} results\n")
     plot_per_class_accuracy(results, experiment_name)
 
@@ -585,11 +609,16 @@ def main():
     if experiment_name in existing_content:
         print(f"\nSkipping append — {experiment_name} already in {doc_path}")
     else:
-        with open(doc_path, "a", encoding="utf-8") as f:
-            f.write(section)
+        try:
+            with open(doc_path, "a", encoding="utf-8") as f:
+                f.write(section)
+        except OSError as e:
+            print(f"Error: could not append results to {doc_path}: {e}")
+            return 1
         print(f"\nAppended results to: {doc_path}")
     print("Done.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

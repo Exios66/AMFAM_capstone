@@ -5,9 +5,12 @@ Sends only the document image to a vision-capable LLM for classification
 
 import json
 import base64
+import logging
 import os
 from pathlib import Path
 import requests
+
+logger = logging.getLogger(__name__)
 
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
@@ -67,10 +70,17 @@ VALID_CLASSES = [
 ]
 
 
+class OpenRouterError(RuntimeError):
+    """Raised when the OpenRouter API call fails or returns an unusable response."""
+
+
 def encode_image(image_path: Path) -> str:
     """Encode image to base64 string for vision model input"""
-    with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+    try:
+        with open(image_path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    except OSError as e:
+        raise OpenRouterError(f"Could not read image {image_path}: {e}") from e
 
 
 def clean_prediction(text: str | None) -> str:
@@ -81,6 +91,7 @@ def clean_prediction(text: str | None) -> str:
     for cls in VALID_CLASSES:
         if cls in text:
             return cls
+    logger.warning(f"Model response does not contain a valid class name: {text!r}")
     return text
 
 
@@ -116,31 +127,48 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
         "Content-Type": "application/json"
     }
 
-    response = requests.post(
-        OPENROUTER_API_URL,
-        headers=headers,
-        json=payload,
-        timeout=60
-    )
+    try:
+        response = requests.post(
+            OPENROUTER_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+    except requests.exceptions.RequestException as e:
+        raise OpenRouterError(f"Request to OpenRouter failed for {image_path}: {e}") from e
 
     try:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         try:
             error_body = response.json()
-        except Exception:
+        except ValueError:
             error_body = response.text
-        print(f"OpenRouter API error ({response.status_code}): {error_body}")
-        raise
+        raise OpenRouterError(
+            f"OpenRouter API error ({response.status_code}) for {image_path}: {error_body}"
+        ) from e
 
-    result = response.json()
+    try:
+        result = response.json()
+    except ValueError as e:
+        raise OpenRouterError(
+            f"OpenRouter returned a non-JSON response for {image_path}: {response.text[:500]}"
+        ) from e
+
+    # OpenRouter can report upstream failures in a 200 response body
+    if isinstance(result.get("error"), dict):
+        raise OpenRouterError(f"OpenRouter returned an error for {image_path}: {result['error']}")
 
     try:
         prediction = result["choices"][0]["message"].get("content") or ""
-    except (KeyError, IndexError, AttributeError):
-        prediction = ""
+    except (KeyError, IndexError, TypeError, AttributeError) as e:
+        raise OpenRouterError(
+            f"Unexpected OpenRouter response shape for {image_path}: {json.dumps(result)[:500]}"
+        ) from e
 
     cleaned = clean_prediction(prediction)
+    if not cleaned:
+        logger.warning(f"Model returned an empty prediction for {image_path}")
 
     return {
         "status": "success" if cleaned else "empty_response",
@@ -152,9 +180,18 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
 
 
 if __name__ == "__main__":
-    API_KEY = os.environ.get("OPENROUTER_API_KEY", "your-api-key-here")
+    import sys
+
+    logging.basicConfig(level=logging.INFO)
+
+    API_KEY = os.environ.get("OPENROUTER_API_KEY")
+    if not API_KEY:
+        sys.exit("Error: OPENROUTER_API_KEY environment variable is not set.")
 
     IMAGE_PATH = Path(r"c:\Users\grant\AMFAM\processed_balanced_dataset\images\advertisement_0000139610_page_0001.png")
 
-    result = classify_image(API_KEY, IMAGE_PATH)
+    try:
+        result = classify_image(API_KEY, IMAGE_PATH)
+    except OpenRouterError as e:
+        sys.exit(f"Classification failed: {e}")
     print(json.dumps(result, indent=2))

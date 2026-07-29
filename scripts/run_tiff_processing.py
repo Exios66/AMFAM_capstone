@@ -10,10 +10,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.document_processor import ClassOrganizedBatchProcessor
 
-def main():
+def main() -> int:
     # Configuration
     INPUT_DIR = r"c:\Users\grant\AMFAM\rvlcdip_dataset\balanced_50_per_class"
     OUTPUT_DIR = r"c:\Users\grant\AMFAM\processed_balanced_dataset"
+    
+    if not Path(INPUT_DIR).is_dir():
+        print(f"Error: input directory does not exist: {INPUT_DIR}")
+        return 1
     
     print("="*60)
     print("Processing Balanced TIFF Dataset")
@@ -33,9 +37,14 @@ def main():
     results = processor.process_batch()
     
     # Save processing summary
-    summary_path = f"{OUTPUT_DIR}/processing_summary.json"
-    with open(summary_path, 'w') as f:
-        json.dump(results, f, indent=2)
+    summary_path = Path(OUTPUT_DIR) / "processing_summary.json"
+    try:
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(summary_path, 'w') as f:
+            json.dump(results, f, indent=2)
+    except OSError as e:
+        print(f"Error: could not write processing summary to {summary_path}: {e}")
+        return 1
     
     print()
     print("="*60)
@@ -61,6 +70,18 @@ def main():
     print("Documents per class:")
     for class_name, count in sorted(class_counts.items()):
         print(f"  {class_name}: {count}")
+    
+    if failed:
+        print()
+        print(f"{failed} document(s) failed. First failures:")
+        for result in [r for r in results if r['status'] != 'success'][:10]:
+            print(f"  {result['document_name']}: {result.get('error_type', 'Error')}: {result.get('error', '')}")
+        return 1
+    if not results:
+        print("Error: no documents were processed.")
+        return 1
+    
+    return 0
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

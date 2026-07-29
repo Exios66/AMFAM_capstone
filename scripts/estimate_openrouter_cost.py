@@ -14,14 +14,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.openrouter_classifier import classify_image
+from src.openrouter_classifier import OpenRouterError, classify_image
 
 # Optional: load from .env file if python-dotenv is installed
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    pass
+    print("Note: python-dotenv is not installed; relying on existing environment variables.")
 
 
 def get_api_key() -> str:
@@ -121,7 +121,10 @@ def update_markdown(md_path: Path, section: str, model: str) -> None:
         else:
             content = content.rstrip() + "\n\n" + section
 
-    md_path.write_text(content, encoding="utf-8")
+    try:
+        md_path.write_text(content, encoding="utf-8")
+    except OSError as e:
+        raise RuntimeError(f"Could not write markdown to {md_path}: {e}") from e
 
 
 def estimate_cost_for_dataset(
@@ -149,6 +152,11 @@ def estimate_cost_for_dataset(
     """
     result = classify_image(api_key, image_path, model)
     usage = result.get("usage", {})
+    if not usage:
+        raise OpenRouterError(
+            f"OpenRouter response for {image_path} contained no usage data; "
+            f"cannot project cost."
+        )
 
     prompt_tokens = usage.get("prompt_tokens", 0)
     completion_tokens = usage.get("completion_tokens", 0)
@@ -184,7 +192,7 @@ def estimate_cost_for_dataset(
     return projection
 
 
-if __name__ == "__main__":
+def main() -> int:
     API_KEY = get_api_key()
 
     IMAGE_PATH = Path(r"c:\Users\grant\AMFAM\processed_balanced_dataset\images\advertisement_0000139610_page_0001.png")
@@ -194,15 +202,23 @@ if __name__ == "__main__":
     OUTPUT_PRICE = 15.00
     IMAGE_COUNTS = [800, 25000, 320000]
 
+    if not IMAGE_PATH.is_file():
+        print(f"Error: sample image does not exist: {IMAGE_PATH}")
+        return 1
+
     # Run single image and project cost for full 800-image dataset
-    estimate = estimate_cost_for_dataset(
-        API_KEY,
-        IMAGE_PATH,
-        model=MODEL,
-        num_images=800,
-        input_price_per_million=INPUT_PRICE,
-        output_price_per_million=OUTPUT_PRICE
-    )
+    try:
+        estimate = estimate_cost_for_dataset(
+            API_KEY,
+            IMAGE_PATH,
+            model=MODEL,
+            num_images=800,
+            input_price_per_million=INPUT_PRICE,
+            output_price_per_million=OUTPUT_PRICE
+        )
+    except OpenRouterError as e:
+        print(f"Error: {e}")
+        return 1
 
     section = build_markdown_section(
         MODEL,
@@ -212,6 +228,15 @@ if __name__ == "__main__":
         OUTPUT_PRICE
     )
     md_path = Path(__file__).parent / "openrouter_token_calculation.md"
-    update_markdown(md_path, section, MODEL)
+    try:
+        update_markdown(md_path, section, MODEL)
+    except RuntimeError as e:
+        print(f"Error: {e}")
+        return 1
 
     print(json.dumps(estimate, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

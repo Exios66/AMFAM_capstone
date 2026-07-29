@@ -25,7 +25,7 @@ try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    pass
+    print("Note: python-dotenv is not installed; relying on existing environment variables.")
 
 import braintrust
 from openai import OpenAI
@@ -77,8 +77,11 @@ def extract_class_from_filename(filename: str) -> str:
 
 def encode_image_base64(image_path: Path) -> str:
     """Encode image file to base64 string."""
-    with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
+    try:
+        with open(image_path, "rb") as f:
+            return base64.b64encode(f.read()).decode("utf-8")
+    except OSError as e:
+        raise RuntimeError(f"Could not read image {image_path}: {e}") from e
 
 
 def load_dataset_images(dataset_dir: Path) -> list[dict]:
@@ -86,8 +89,12 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
     Load all images from the fixed-size dataset directory.
     Returns list of dicts with image_path and expected_class.
     """
+    if not dataset_dir.is_dir():
+        raise FileNotFoundError(f"Dataset directory does not exist: {dataset_dir}")
+
     images = sorted(dataset_dir.glob("*.png"))
     dataset = []
+    unlabeled = []
     for img_path in images:
         expected_class = extract_class_from_filename(img_path.name)
         if expected_class in VALID_CLASSES:
@@ -96,6 +103,19 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
                 "filename": img_path.name,
                 "expected": expected_class,
             })
+        else:
+            unlabeled.append(img_path.name)
+
+    if unlabeled:
+        print(
+            f"Warning: skipped {len(unlabeled)} image(s) whose filename carries no valid class "
+            f"label (e.g. {unlabeled[0]})"
+        )
+    if not dataset:
+        raise ValueError(
+            f"No labeled images found in {dataset_dir} (scanned {len(images)} PNG file(s)); "
+            f"expected names like '<dataset>__<class>__<name>.png'."
+        )
     return dataset
 
 
@@ -103,7 +123,7 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
 # Braintrust Eval
 # ---------------------------------------------------------------------------
 
-def run_eval():
+def run_eval() -> int:
     """Run the classification prompt against all dataset images and log to Braintrust."""
     openrouter_key, _ = get_api_keys()
 
@@ -116,7 +136,11 @@ def run_eval():
     )
 
     # Load dataset
-    dataset = load_dataset_images(DATASET_DIR)
+    try:
+        dataset = load_dataset_images(DATASET_DIR)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error: {e}")
+        return 1
     print(f"Loaded {len(dataset)} images from {DATASET_DIR}")
     print(f"Classes represented: {sorted(set(d['expected'] for d in dataset))}")
     print()
@@ -151,11 +175,16 @@ def run_eval():
             },
         )
 
-        raw = response.choices[0].message.content or ""
+        if not response.choices:
+            raise RuntimeError(
+                f"Model returned no choices for {input_data['filename']}: {response}"
+            )
+
+        msg = response.choices[0].message
+        raw = msg.content or ""
 
         # Extract reasoning from response if available
         reasoning_text = ""
-        msg = response.choices[0].message
         if hasattr(msg, "reasoning_content") and msg.reasoning_content:
             reasoning_text = msg.reasoning_content
         elif hasattr(msg, "reasoning") and msg.reasoning:
@@ -182,7 +211,7 @@ def run_eval():
         return 1.0 if output == expected else 0.0
 
     # Run the Braintrust evaluation
-    eval_result = braintrust.Eval(
+    braintrust.Eval(
         PROJECT_NAME,
         data=lambda: [
             {
@@ -202,7 +231,8 @@ def run_eval():
     print("=" * 60)
     print(f"Results logged to Braintrust project: {PROJECT_NAME}")
     print("Open https://www.braintrust.dev to view results and iterate on the prompt.")
+    return 0
 
 
 if __name__ == "__main__":
-    run_eval()
+    sys.exit(run_eval())
