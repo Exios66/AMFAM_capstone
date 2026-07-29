@@ -1,19 +1,25 @@
 """
 Braintrust Prompt Evaluation for Document Classification
 
-Runs the classification prompt against the fixed-size sampled dataset (16 classes)
-and logs results to Braintrust for prompt iteration in their UI.
+Runs the classification prompt against the sampled dataset (16 classes) and logs
+results to Braintrust for prompt iteration in their UI. Images are pulled from a
+Braintrust dataset by default; a local directory of PNGs can be used instead.
 
 Prerequisites:
     pip install braintrust openai
     Set BRAINTRUST_API_KEY and OPENROUTER_API_KEY in your .env file.
 
 Usage:
-    python scripts/braintrust_prompt_eval.py
+    python scripts/braintrust_openrouter_input.py
+    python scripts/braintrust_openrouter_input.py --dataset fixed_size_sampled
+    python scripts/braintrust_openrouter_input.py --images-dir path/to/images
 """
 
+import argparse
+import base64
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -30,7 +36,8 @@ from src.openrouter_utils import OPENROUTER_BASE_URL, build_vision_messages
 # Configuration
 # ---------------------------------------------------------------------------
 
-DATASET_DIR = Path(r"c:\Users\grant\AMFAM\2550x3300_10perclass_160\images")
+DEFAULT_PROJECT = "DSHB_amfam_capstone_2026"
+DEFAULT_DATASET = "fixed_size_sampled"
 MODEL = "google/gemini-2.5-flash"  # reasoning model with visible chain-of-thought
 PROJECT_NAME = "AMFAM-Doc-Classification"
 
@@ -38,6 +45,25 @@ PROJECT_NAME = "AMFAM-Doc-Classification"
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def quiet_reporter() -> braintrust.Reporter:
+    """Reporter that suppresses Braintrust's score summary so stdout carries only
+    the classification results. Task errors are still surfaced on stderr."""
+    def report_eval(evaluator, result, verbose, jsonl) -> bool:
+        failures = [r for r in result.results if r.error]
+        for failure in failures:
+            print(f"ERROR {failure.input['filename']}: {failure.error}", file=sys.stderr)
+        return not failures
+
+    def report_run(results, verbose, jsonl) -> bool:
+        return all(results)
+
+    return braintrust.Reporter(
+        "classification-only",
+        report_eval=report_eval,
+        report_run=report_run,
+    )
+
 
 def get_api_keys() -> tuple[str, str]:
     """Load required API keys from environment."""
@@ -57,8 +83,8 @@ def extract_class_from_filename(filename: str) -> str:
 
 def load_dataset_images(dataset_dir: Path) -> list[dict]:
     """
-    Load all images from the fixed-size dataset directory.
-    Returns list of dicts with image_path and expected_class.
+    Load all images from a local fixed-size dataset directory.
+    Returns list of records with base64 image contents and expected class.
     """
     if not dataset_dir.is_dir():
         raise FileNotFoundError(f"Dataset directory does not exist: {dataset_dir}")
@@ -70,7 +96,7 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
         expected_class = extract_class_from_filename(img_path.name)
         if expected_class in VALID_CLASSES:
             dataset.append({
-                "image_path": str(img_path),
+                "image_b64": encode_image_base64(img_path),
                 "filename": img_path.name,
                 "expected": expected_class,
             })
@@ -80,7 +106,8 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
     if unlabeled:
         print(
             f"Warning: skipped {len(unlabeled)} image(s) whose filename carries no valid class "
-            f"label (e.g. {unlabeled[0]})"
+            f"label (e.g. {unlabeled[0]})",
+            file=sys.stderr,
         )
     if not dataset:
         raise ValueError(
@@ -90,12 +117,50 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
     return dataset
 
 
+def load_braintrust_dataset(project: str, dataset_name: str) -> list[dict]:
+    """
+    Load images from a Braintrust dataset whose rows carry the document image as
+    an attachment under ``input.image`` and the label under ``expected``.
+
+    Rows without a stored attachment (placeholder rows) are skipped.
+    """
+    dataset = braintrust.init_dataset(project=project, name=dataset_name)
+    records = []
+    skipped = 0
+    for row in dataset:
+        expected = row.get("expected")
+        attachment = (row.get("input") or {}).get("image")
+        reference = getattr(attachment, "reference", None) or {}
+        filename = reference.get("filename")
+        if expected not in VALID_CLASSES or not filename:
+            skipped += 1
+            continue
+        records.append({
+            "image_b64": base64.b64encode(attachment.data).decode("utf-8"),
+            "filename": filename,
+            "expected": expected,
+        })
+
+    if skipped:
+        print(
+            f"Warning: skipped {skipped} row(s) in dataset '{dataset_name}' with no stored "
+            f"attachment or no valid expected class.",
+            file=sys.stderr,
+        )
+    if not records:
+        raise ValueError(
+            f"Braintrust dataset '{dataset_name}' in project '{project}' contains no usable rows "
+            f"({skipped} row(s) skipped)."
+        )
+    return records
+
+
 # ---------------------------------------------------------------------------
 # Braintrust Eval
 # ---------------------------------------------------------------------------
 
-def run_eval() -> int:
-    """Run the classification prompt against all dataset images and log to Braintrust."""
+def run_eval(dataset: list[dict]) -> int:
+    """Run the classification prompt against the dataset and log to Braintrust."""
     openrouter_key, _ = get_api_keys()
 
     # Wrap OpenAI client pointed at OpenRouter with Braintrust logging
@@ -106,22 +171,12 @@ def run_eval() -> int:
         )
     )
 
-    # Load dataset
-    try:
-        dataset = load_dataset_images(DATASET_DIR)
-    except (FileNotFoundError, ValueError) as e:
-        print(f"Error: {e}")
-        return 1
-    print(f"Loaded {len(dataset)} images from {DATASET_DIR}")
-    print(f"Classes represented: {sorted(set(d['expected'] for d in dataset))}")
-    print()
+    images_by_index = {i: d["image_b64"] for i, d in enumerate(dataset)}
 
-    # Run eval
     @braintrust.traced
     def classify_document(input_data: dict) -> str:
         """Classify a single document image via the vision model."""
-        image_path = Path(input_data["image_path"])
-        image_b64 = encode_image_base64(image_path)
+        image_b64 = images_by_index[input_data["index"]]
 
         response = client.chat.completions.create(
             model=MODEL,
@@ -168,29 +223,90 @@ def run_eval() -> int:
         """Score 1.0 if prediction matches expected class, else 0.0."""
         return 1.0 if output == expected else 0.0
 
-    # Run the Braintrust evaluation
-    braintrust.Eval(
+    result = braintrust.Eval(
         PROJECT_NAME,
         data=lambda: [
             {
-                "input": {"image_path": d["image_path"], "filename": d["filename"]},
+                "input": {"index": i, "filename": d["filename"]},
                 "expected": d["expected"],
             }
-            for d in dataset
+            for i, d in enumerate(dataset)
         ],
         task=classify_document,
         scores=[exact_match],
+        max_concurrency=8,
+        reporter=quiet_reporter(),
     )
 
-    # Print local summary
-    print()
-    print("=" * 60)
-    print("EVALUATION COMPLETE")
-    print("=" * 60)
-    print(f"Results logged to Braintrust project: {PROJECT_NAME}")
-    print("Open https://www.braintrust.dev to view results and iterate on the prompt.")
+    print_classifications(result)
+
+    failed = [r for r in result.results if r.error is not None]
+    if failed:
+        print(f"{len(failed)} of {len(dataset)} image(s) failed to classify.", file=sys.stderr)
+        return 1
     return 0
 
 
+def print_classifications(result) -> None:
+    """Print only the classification outcome: per-image labels and accuracy."""
+    rows = [
+        (r.input["filename"], r.expected, r.output, r.expected == r.output)
+        for r in result.results
+        if r.error is None
+    ]
+    rows.sort(key=lambda row: (row[1], row[0]))
+
+    for filename, expected, predicted, correct in rows:
+        print(f"{'OK ' if correct else 'MISS'}  {expected:<24} {predicted:<24} {filename}")
+
+    per_class = Counter()
+    per_class_correct = Counter()
+    for _, expected, _, correct in rows:
+        per_class[expected] += 1
+        per_class_correct[expected] += int(correct)
+
+    print()
+    for cls in sorted(per_class):
+        total = per_class[cls]
+        correct = per_class_correct[cls]
+        print(f"{cls:<24} {correct}/{total} ({correct / total:.0%})")
+
+    total = len(rows)
+    correct = sum(1 for row in rows if row[3])
+    print()
+    print(f"exact_match {correct}/{total} ({correct / total:.1%})" if total else "no results")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--project", default=DEFAULT_PROJECT,
+                        help="Braintrust project holding the dataset")
+    parser.add_argument("--dataset", default=DEFAULT_DATASET,
+                        help="Braintrust dataset name to classify")
+    parser.add_argument("--images-dir", type=Path, default=None,
+                        help="Classify local PNGs instead of a Braintrust dataset")
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Classify only the first N images")
+    args = parser.parse_args()
+
+    try:
+        if args.images_dir:
+            dataset = load_dataset_images(args.images_dir)
+        else:
+            dataset = load_braintrust_dataset(args.project, args.dataset)
+    except (FileNotFoundError, ValueError, OSError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+    if args.limit:
+        dataset = dataset[:args.limit]
+
+    if not dataset:
+        print("Error: no labeled images found to classify.", file=sys.stderr)
+        return 1
+
+    return run_eval(dataset)
+
+
 if __name__ == "__main__":
-    sys.exit(run_eval())
+    sys.exit(main())
