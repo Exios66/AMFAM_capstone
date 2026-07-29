@@ -8,6 +8,7 @@ import json
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from src.cli_utils import print_header
 from src.document_processor import ClassOrganizedBatchProcessor
 
 def main():
@@ -15,9 +16,7 @@ def main():
     INPUT_DIR = r"c:\Users\grant\AMFAM\rvlcdip_dataset\balanced_50_per_class"
     OUTPUT_DIR = r"c:\Users\grant\AMFAM\processed_balanced_dataset"
     
-    print("="*60)
-    print("Processing Balanced TIFF Dataset")
-    print("="*60)
+    print_header("Processing Balanced TIFF Dataset")
     print(f"Input: {INPUT_DIR}")
     print(f"Output: {OUTPUT_DIR}")
     print()
@@ -38,9 +37,7 @@ def main():
         json.dump(results, f, indent=2)
     
     print()
-    print("="*60)
-    print("Processing Summary")
-    print("="*60)
+    print_header("Processing Summary")
     
     successful = sum(1 for r in results if r['status'] == 'success')
     failed = len(results) - successful
