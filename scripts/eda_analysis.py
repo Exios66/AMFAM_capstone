@@ -30,8 +30,14 @@ class DocumentDatasetEDA:
     
     def __init__(self, dataset_path: str):
         self.dataset_path = Path(dataset_path)
+        if not self.dataset_path.is_dir():
+            raise FileNotFoundError(f"Dataset directory does not exist: {self.dataset_path}")
         self.classes = sorted([d.name for d in self.dataset_path.iterdir() if d.is_dir()])
+        if not self.classes:
+            raise ValueError(f"No class subdirectories found in {self.dataset_path}")
         self.image_data = []
+        self.df = pd.DataFrame()
+        self.unreadable = []
         self.class_stats = defaultdict(dict)
         
     def collect_image_data(self, sample_size=None):
@@ -66,11 +72,19 @@ class DocumentDatasetEDA:
                         'aspect_ratio': img.width / img.height
                     })
                     img.close()
-                except Exception as e:
+                except (OSError, ValueError) as e:
+                    self.unreadable.append(str(img_path))
                     print(f"Error processing {img_path}: {e}")
         
         self.df = pd.DataFrame(self.image_data)
         print(f"Collected data for {len(self.df)} images")
+        if self.unreadable:
+            print(f"Skipped {len(self.unreadable)} unreadable image(s)")
+        if self.df.empty:
+            raise ValueError(
+                f"No readable images found under {self.dataset_path} "
+                f"({len(self.unreadable)} unreadable). Cannot run analyses."
+            )
         
     def analyze_class_distribution(self):
         """Analyze and visualize class distribution"""
@@ -278,7 +292,8 @@ class DocumentDatasetEDA:
                     ax.set_title(f"{class_name}", fontsize=8)
                     ax.axis('off')
                     img.close()
-                except Exception as e:
+                except (OSError, ValueError) as e:
+                    self.unreadable.append(str(img_path))
                     print(f"Error loading {img_path}: {e}")
         
         plt.tight_layout()
@@ -324,7 +339,8 @@ class DocumentDatasetEDA:
                 'median': float(self.df['size_mb'].median()),
                 'total': float(self.df['size_mb'].sum())
             },
-            'image_modes': self.df['mode'].value_counts().to_dict()
+            'image_modes': self.df['mode'].value_counts().to_dict(),
+            'unreadable_images': self.unreadable
         }
         
         # Save report
@@ -368,18 +384,25 @@ class DocumentDatasetEDA:
         return report
 
 
-def main():
+def main() -> int:
     # Configuration
     DATASET_PATH = r"c:\Users\grant\AMFAM\rvlcdip_dataset\test"
     
     # Run EDA (sample_size=None for full dataset, or set a number for faster analysis)
-    eda = DocumentDatasetEDA(r"c:\Users\grant\AMFAM\rvlcdip_dataset\test")
-    
-    # For full dataset analysis (may take time with 40k images)
-    report = eda.run_full_eda(sample_size=None)
+    try:
+        eda = DocumentDatasetEDA(DATASET_PATH)
+        # For full dataset analysis (may take time with 40k images)
+        eda.run_full_eda(sample_size=None)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error: {e}")
+        return 1
+    except OSError as e:
+        print(f"Error writing EDA output: {e}")
+        return 1
     
     print("\nEDA Analysis Complete!")
+    return 1 if eda.unreadable else 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

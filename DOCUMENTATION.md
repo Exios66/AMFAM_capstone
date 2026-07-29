@@ -240,14 +240,24 @@ processor = DocumentProcessor(output_dir=r"./custom_output_path")
 
 ## Error Handling
 
+Unrecoverable problems raise `DocumentProcessingError` (unreadable image, missing/failing Tesseract,
+failed image or JSON write). Per-document failures inside `BatchProcessor` / `ClassOrganizedBatchProcessor`
+are recorded in the returned results with `status`, `error_type`, and `error` instead of aborting the batch,
+and the batch logs a warning summarizing the failure count.
+
 ```python
+from src.document_processor import DocumentProcessingError, process_pdf_file
+
 try:
     result = process_pdf_file("document.pdf", "./output")
-except FileNotFoundError:
-    print("PDF file not found")
-except Exception as e:
-    print(f"Processing error: {e}")
+except DocumentProcessingError as e:
+    print(f"Processing failed: {e}")
 ```
+
+The CLI scripts (`run_tiff_processing.py`, `create_balanced_dataset.py`, `eda_analysis.py`,
+`eda_dimensions_summary.py`, `create_fixed_size_dataset.py`, `braintrust_metrics_visual.py`,
+`braintrust_openrouter_input.py`, `estimate_openrouter_cost.py`, `download_dataset.py`)
+exit non-zero when inputs are missing or any item fails, so failures are not hidden in log output.
 
 ## Troubleshooting
 

@@ -5,8 +5,10 @@ for downstream LLM processing.
 """
 
 import io
+import sys
 import time
 import json
+import shutil
 from pathlib import Path
 from typing import Union, List, Dict, Any, Optional
 import logging
@@ -15,17 +17,25 @@ from pdf2image import convert_from_path, convert_from_bytes
 from PIL import Image
 import pytesseract
 
-# Configure Tesseract path for Windows
-# Update this path if Tesseract is installed in a different location
-TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-try:
-    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
-except Exception:
-    pass  # Tesseract may already be in PATH
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Configure Tesseract path for Windows
+# Update this path if Tesseract is installed in a different location
+TESSERACT_PATH = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+if Path(TESSERACT_PATH).is_file():
+    pytesseract.pytesseract.tesseract_cmd = TESSERACT_PATH
+elif shutil.which(pytesseract.pytesseract.tesseract_cmd) is None:
+    logger.warning(
+        f"Tesseract not found at {TESSERACT_PATH} nor on PATH as "
+        f"'{pytesseract.pytesseract.tesseract_cmd}'. OCR calls will fail until it is installed "
+        f"or TESSERACT_PATH is updated."
+    )
+
+
+class DocumentProcessingError(Exception):
+    """Raised when a document cannot be converted, OCR'd, or written to disk."""
 
 
 class DocumentProcessor:
@@ -92,8 +102,8 @@ class DocumentProcessor:
             logger.info(f"Converted {len(images)} pages in {conversion_time:.2f}s")
             return images
             
-        except Exception as e:
-            logger.error(f"PDF conversion error: {e}")
+        except Exception:
+            logger.exception("PDF conversion failed")
             raise
     
     def _load_tiff_image(self, image_path: Union[str, Path]) -> Image.Image:
@@ -107,8 +117,10 @@ class DocumentProcessor:
             PIL Image object
         """
         logger.info(f"Loading TIFF image: {image_path}")
-        image = Image.open(image_path)
-        return image
+        try:
+            return Image.open(image_path)
+        except (OSError, ValueError) as e:
+            raise DocumentProcessingError(f"Could not open TIFF image {image_path}: {e}") from e
     
     def _optimize_image(self, image: Image.Image) -> Image.Image:
         """
@@ -129,8 +141,10 @@ class DocumentProcessor:
             dpi_info = image.info['dpi']
             current_dpi = dpi_info[0] if isinstance(dpi_info, tuple) else dpi_info
         
-        # If no DPI metadata, assume 72 DPI (common default)
-        if current_dpi is None:
+        # If DPI metadata is missing or unusable, assume 72 DPI (common default)
+        if not isinstance(current_dpi, (int, float)) or current_dpi <= 0:
+            if current_dpi is not None:
+                logger.warning(f"Ignoring invalid DPI metadata {current_dpi!r}")
             current_dpi = 72
             logger.info(f"No DPI metadata found, assuming {current_dpi} DPI")
         
@@ -166,7 +180,10 @@ class DocumentProcessor:
         image_path = self.images_dir / image_filename
         
         # Save with DPI metadata
-        image.save(image_path, dpi=(self.dpi, self.dpi))
+        try:
+            image.save(image_path, dpi=(self.dpi, self.dpi))
+        except OSError as e:
+            raise DocumentProcessingError(f"Could not save image to {image_path}: {e}") from e
         logger.debug(f"Saved image: {image_path}")
         
         return image_path
@@ -186,11 +203,19 @@ class DocumentProcessor:
             Format: [{"text": "word", "bounding_box": [x, y, x1, y1]}]
         """
         # Get OCR data with spatial information
-        ocr_data = pytesseract.image_to_data(
-            image,
-            output_type=pytesseract.Output.DICT,
-            config='--psm 6'
-        )
+        try:
+            ocr_data = pytesseract.image_to_data(
+                image,
+                output_type=pytesseract.Output.DICT,
+                config='--psm 6'
+            )
+        except pytesseract.TesseractNotFoundError as e:
+            raise DocumentProcessingError(
+                "Tesseract executable not found. Install Tesseract OCR or update TESSERACT_PATH "
+                f"in {__name__}."
+            ) from e
+        except pytesseract.TesseractError as e:
+            raise DocumentProcessingError(f"Tesseract failed to process image: {e}") from e
         
         words_with_boxes = []
         n_boxes = len(ocr_data['text'])
@@ -228,8 +253,11 @@ class DocumentProcessor:
         json_filename = f"{document_name}_ocr_results.json"
         json_path = self.json_dir / json_filename
         
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+        try:
+            with open(json_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        except OSError as e:
+            raise DocumentProcessingError(f"Could not write JSON to {json_path}: {e}") from e
         
         logger.info(f"Saved JSON: {json_path}")
         return json_path
@@ -329,8 +357,8 @@ class DocumentProcessor:
             
             return summary
             
-        except Exception as e:
-            logger.error(f"Processing error: {e}")
+        except Exception:
+            logger.exception(f"PDF processing failed for {document_name or pdf_input!r}")
             raise
     
     def process_tiff(
@@ -416,8 +444,8 @@ class DocumentProcessor:
             
             return summary
             
-        except Exception as e:
-            logger.error(f"Processing error: {e}")
+        except Exception:
+            logger.exception(f"TIFF processing failed for {tiff_path}")
             raise
 
 
@@ -472,10 +500,11 @@ class BatchProcessor:
                 result = self.processor.process_pdf(pdf_path, document_name=pdf_path.stem)
                 results.append(result)
             except Exception as e:
-                logger.error(f"Error processing {pdf_path.name}: {e}")
+                logger.exception(f"Error processing {pdf_path.name}")
                 results.append({
                     "status": "error",
                     "document_name": pdf_path.stem,
+                    "error_type": type(e).__name__,
                     "error": str(e)
                 })
         
@@ -484,6 +513,8 @@ class BatchProcessor:
         failed = len(results) - successful
         
         logger.info(f"Batch processing complete: {successful} successful, {failed} failed")
+        if failed:
+            logger.warning(f"{failed} of {len(results)} documents failed; see 'error' entries in results")
         
         return results
 
@@ -564,11 +595,12 @@ class ClassOrganizedBatchProcessor:
                     results.append(result)
                     
                 except Exception as e:
-                    logger.error(f"Error processing {tiff_path.name}: {e}")
+                    logger.exception(f"Error processing {tiff_path.name}")
                     results.append({
                         "status": "error",
                         "document_name": tiff_path.stem,
                         "class_label": class_name,
+                        "error_type": type(e).__name__,
                         "error": str(e)
                     })
         
@@ -581,6 +613,8 @@ class ClassOrganizedBatchProcessor:
         logger.info(f"Total files processed: {total_files}")
         logger.info(f"Successful: {successful}, Failed: {failed}")
         logger.info("="*60)
+        if failed:
+            logger.warning(f"{failed} of {len(results)} documents failed; see 'error' entries in results")
         
         return results
 
@@ -628,27 +662,28 @@ def process_pdf_bytes(
     return processor.process_pdf(pdf_bytes, document_name=document_name, is_bytes=True)
 
 
-if __name__ == "__main__":
-    # Example usage
-    import json
-    
+def main() -> int:
+    """Run the example single-file and batch workflows, returning a process exit code."""
+    exit_code = 0
+
     # Single file processing
     print("Example: Process single PDF file")
     print("="*60)
-    
+
     try:
         result = process_pdf_file(
             file_path=r"./input_documents/sample.pdf",
             output_dir=r"./processed_documents"
         )
         print(json.dumps(result, indent=2))
-    except Exception as e:
-        print(f"Error: {e}")
-    
+    except Exception:
+        logger.exception("Single-file processing failed")
+        exit_code = 1
+
     # Batch processing
     print("\nExample: Batch process directory")
     print("="*60)
-    
+
     try:
         batch_processor = BatchProcessor(
             input_dir=r"./input_documents",
@@ -656,5 +691,14 @@ if __name__ == "__main__":
         )
         results = batch_processor.process_batch()
         print(f"Processed {len(results)} documents")
-    except Exception as e:
-        print(f"Error: {e}")
+        if any(r["status"] != "success" for r in results):
+            exit_code = 1
+    except Exception:
+        logger.exception("Batch processing failed")
+        exit_code = 1
+
+    return exit_code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

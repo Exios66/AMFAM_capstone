@@ -23,9 +23,11 @@ from src.image_utils import find_images
 CLASS_NAMES = DOCUMENT_CLASSES
 
 
-def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tuple[int, int]):
+def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tuple[int, int]) -> dict:
     input_dir = Path(input_dir)
     output_dir = Path(output_dir)
+    if not input_dir.is_dir():
+        raise FileNotFoundError(f"Input directory does not exist: {input_dir}")
     output_images_dir = output_dir / "images"
     output_images_dir.mkdir(parents=True, exist_ok=True)
 
@@ -54,10 +56,11 @@ def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tupl
                     "new_size": resized.size,
                 })
                 print(f"Resized {img_path.name}: {original_size} -> {resized.size}")
-        except Exception as e:
+        except (OSError, ValueError) as e:
             log.append({
                 "file": img_path.name,
                 "status": "error",
+                "error_type": type(e).__name__,
                 "error": str(e),
             })
             print(f"Error resizing {img_path.name}: {e}")
@@ -80,6 +83,8 @@ def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tupl
     print_header("FIXED-SIZE DATASET CREATION COMPLETE")
     print(f"Total: {len(log)} | Successful: {successful} | Failed: {failed}")
     print(f"Summary saved: {summary_path}")
+
+    return summary
 
 
 def _pad_color_for_mode(mode: str, fill: int | tuple[int, ...]) -> int | tuple[int, ...]:
@@ -163,7 +168,7 @@ def create_sampled_fixed_size_dataset(
     samples_per_class: int = 10,
     seed: int | None = 42,
     fill: int | tuple[int, int, int] = 255,
-):
+) -> dict:
     """Sample images from each class across datasets and resize them to a fixed padded square."""
     output_dir = Path(output_dir)
     output_images_dir = output_dir / "images"
@@ -238,13 +243,14 @@ def create_sampled_fixed_size_dataset(
                             f"Resized {dataset_name}/{class_name}/{img_path.name}: "
                             f"{original_size} -> {padded.size}"
                         )
-                except Exception as e:
+                except (OSError, ValueError) as e:
                     log.append({
                         "dataset": dataset_name,
                         "class": class_name,
                         "source_file": img_path.name,
                         "source_path": str(img_path),
                         "status": "error",
+                        "error_type": type(e).__name__,
                         "error": str(e),
                     })
                     dataset_failed += 1
@@ -261,6 +267,7 @@ def create_sampled_fixed_size_dataset(
         "total_classes": len(CLASS_NAMES),
         "total_successful": total_successful,
         "total_failed": total_failed,
+        "skipped_datasets": [e["dataset"] for e in log if e["status"] == "skipped"],
         "details": log,
     }
     summary_path = output_dir / "resize_summary.json"
@@ -272,8 +279,10 @@ def create_sampled_fixed_size_dataset(
     print(f"Total: {total_successful + total_failed} | Successful: {total_successful} | Failed: {total_failed}")
     print(f"Summary saved: {summary_path}")
 
+    return summary
 
-def main():
+
+def main() -> int:
     DATASETS = {
         "processed_balanced": r"c:\Users\grant\AMFAM\50perclass_800\images",
     }
@@ -302,6 +311,8 @@ def main():
         },
     ]
 
+    problems: list[str] = []
+
     for cfg in configs:
         output_dir = Path(cfg["output_dir"])
         images_dir = output_dir / "images"
@@ -312,14 +323,37 @@ def main():
             continue
 
         print(f"\nBuilding: {output_dir.name}")
-        create_sampled_fixed_size_dataset(
-            DATASETS,
-            str(output_dir),
-            cfg["target_size"],
-            samples_per_class=cfg["samples_per_class"],
-            seed=42,
-        )
+        try:
+            summary = create_sampled_fixed_size_dataset(
+                DATASETS,
+                str(output_dir),
+                cfg["target_size"],
+                samples_per_class=cfg["samples_per_class"],
+                seed=42,
+            )
+        except OSError as e:
+            problems.append(f"{output_dir.name}: {type(e).__name__}: {e}")
+            print(f"Error building '{output_dir.name}': {e}")
+            continue
+
+        if summary["total_failed"]:
+            problems.append(f"{output_dir.name}: {summary['total_failed']} image(s) failed to resize")
+        if summary["skipped_datasets"]:
+            problems.append(
+                f"{output_dir.name}: skipped missing dataset(s) {', '.join(summary['skipped_datasets'])}"
+            )
+        if not summary["total_successful"]:
+            problems.append(f"{output_dir.name}: no images were written")
+
+    if problems:
+        print()
+        print("Completed with problems:")
+        for problem in problems:
+            print(f"  - {problem}")
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
