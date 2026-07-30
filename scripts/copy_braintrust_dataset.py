@@ -13,12 +13,12 @@ import braintrust
 from src.openrouter_classifier import VALID_CLASSES
 
 # Source account (read-only)
-SOURCE_API_KEY = "sk-r9uBzJac6kbiVqRzU1PZepl3jmwIfBNStHTzWph6T2c0WkXZ"
+SOURCE_API_KEY = "SOURCE API"
 SOURCE_PROJECT = "DSHB_amfam_capstone_2026"
 SOURCE_DATASET = "fixed_size_sampled"
 
 # Destination account (write)
-DEST_API_KEY = "sk-yp7Dk9da41UhGbuZAvFM4uifTvXuctcYNrM4LcEWTdzd5g7Y"
+DEST_API_KEY = "DESTINATION API"
 DEST_PROJECT = "AMFAM v2"
 DEST_DATASET = "fixed_size_sampled"
 
