@@ -3,7 +3,7 @@
 ## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
 
 **Experiment ID:** main-1785360515
-**Link:** https://www.braintrust.dev/app/UW-Madison-DSHB/p/AMFAM-Doc-Classification/experiments/main-1785360515
+**Link:** <https://www.braintrust.dev/app/UW-Madison-DSHB/p/AMFAM-Doc-Classification/experiments/main-1785360515>
 **Dataset:** Braintrust dataset `fixed_size_sampled` (project `DSHB_amfam_capstone_2026`), images pulled from row attachments
 **Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
 **Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`, `max_concurrency=8`
@@ -11,7 +11,7 @@
 ### Results
 
 | Metric | Value |
-|--------|------:|
+| -------- | ------: |
 | **Accuracy (exact_match)** | **80.00%** (128/160 correct) |
 | Prompt tokens (avg) | 1,713 |
 | Completion tokens (avg) | 302 |
@@ -23,7 +23,7 @@
 ### Per-class accuracy
 
 | Class | Correct |
-|-------|--------:|
+| ------- | --------: |
 | advertisement | 10/10 (100%) |
 | email | 10/10 (100%) |
 | file_folder | 10/10 (100%) |
@@ -44,7 +44,7 @@
 ### Top confusions (expected → predicted)
 
 | Expected | Predicted | Count |
-|----------|-----------|------:|
+| ---------- | ----------- | ------: |
 | invoice | budget | 4 |
 | presentation | file_folder | 3 |
 | form | budget | 2 |

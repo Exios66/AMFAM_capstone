@@ -12,7 +12,7 @@
 ### Results
 
 | Metric | Value |
-|--------|------:|
+| -------- | ------: |
 | **Accuracy (exact_match)** | **72.9%** (583/800 correct) |
 | Prompt tokens (avg) | 3,701.00 |
 | Prompt cached tokens (avg) | 0.00 |
@@ -24,7 +24,7 @@
 ### Per-Class Accuracy
 
 | Class | Correct | Total | Accuracy |
-|-------|--------:|------:|---------:|
+| ------- | --------: | ------: | ---------: |
 | resume | 49 | 50 | 98% |
 | memo | 48 | 50 | 96% |
 | news_article | 47 | 50 | 94% |
@@ -45,7 +45,7 @@
 ### Top Confused Pairs
 
 | Expected | Predicted As | Count |
-|----------|-------------|------:|
+| ---------- | ------------- | ------: |
 | specification | scientific_report | 25 |
 | form | memo | 13 |
 | budget | invoice | 12 |
@@ -70,7 +70,7 @@
 **Pricing:** $0.15/M input tokens, $0.60/M output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
-|--------|---:|---:|---:|---:|
+| -------- | ---: | ---: | ---: | ---: |
 | 800 | 2,960,800 | 333,904 | 3,294,704 | **$0.64** |
 | 25,000 | 92,525,000 | 10,434,500 | 102,959,500 | **$20.14** |
 | 320,000 | 1,184,320,000 | 133,561,600 | 1,317,881,600 | **$257.78** |

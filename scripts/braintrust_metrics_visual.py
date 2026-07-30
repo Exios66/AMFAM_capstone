@@ -16,6 +16,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import Union
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -41,7 +42,7 @@ OUTPUT_DIR = Path(__file__).parent.parent / "docs"
 API_BASE = "https://api.braintrust.dev/v1"
 
 
-def fetch_experiment_results(target_experiment: str | None = None) -> tuple[list[dict], str, dict]:
+def fetch_experiment_results(target_experiment: Union[str, None] = None) -> tuple[list[dict], str, dict]:
     """Fetch results from a Braintrust experiment via REST API.
     If target_experiment is provided, fetch that specific experiment by name.
     Otherwise fetch the most recent. Returns (results, experiment_name, experiment_meta)."""

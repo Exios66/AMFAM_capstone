@@ -6,6 +6,7 @@ Sends only the document image to a vision-capable LLM for classification
 import json
 import os
 from pathlib import Path
+from typing import Union
 import requests
 
 from src.constants import DOCUMENT_CLASSES
@@ -63,13 +64,16 @@ invoice"""
 VALID_CLASSES = list(DOCUMENT_CLASSES)
 
 
-def clean_prediction(text: str | None) -> str:
-    """Extract valid class name from LLM response"""
+def clean_prediction(text: Union[str, None]) -> str:
+    """Extract valid class name from LLM response using word boundary matching"""
     if not text:
         return ""
     text = text.strip().lower()
     for cls in VALID_CLASSES:
-        if cls in text:
+        # Use word boundary matching to avoid substring false positives
+        # e.g., "information" should not match "form"
+        import re
+        if re.search(r'\b' + re.escape(cls) + r'\b', text):
             return cls
     return text
 

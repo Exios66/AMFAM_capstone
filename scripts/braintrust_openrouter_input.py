@@ -13,10 +13,13 @@ Usage:
     python scripts/braintrust_openrouter_input.py
     python scripts/braintrust_openrouter_input.py --dataset fixed_size_sampled
     python scripts/braintrust_openrouter_input.py --images-dir path/to/images
+    python scripts/braintrust_openrouter_input.py --prompt-version v4 --model qwen/qwen-3.7-flash
+    python scripts/braintrust_openrouter_input.py --project AMFAM_v2 --dataset-project DSHB_amfam_capstone_2026
 """
 
 import argparse
 import base64
+import os
 import re
 import sys
 from collections import Counter
@@ -29,17 +32,20 @@ from openai import OpenAI
 
 from src.env_utils import require_env
 from src.image_utils import encode_image_base64
-from src.openrouter_classifier import CLASSIFICATION_PROMPT, VALID_CLASSES, clean_prediction
+from src.openrouter_classifier import VALID_CLASSES, clean_prediction
 from src.openrouter_utils import OPENROUTER_BASE_URL, build_vision_messages
+from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-DEFAULT_PROJECT = "DSHB_amfam_capstone_2026"
+DEFAULT_PROJECT = "ba0346b3-cad8-463d-b758-afddafd9f0d0"  # AMFAM v2 project for evaluation
+DEFAULT_DATASET_PROJECT = "AMFAM v2"  # Original project with dataset
 DEFAULT_DATASET = "fixed_size_sampled"
-MODEL = "google/gemini-2.5-flash"  # reasoning model with visible chain-of-thought
-PROJECT_NAME = "AMFAM-Doc-Classification"
+DEFAULT_MODEL = "qwen/qwen-3.7-flash"  # cost-efficient model
+DEFAULT_MAX_TOKENS = 2048  # Increased for reasoning models to accommodate both reasoning and output
+PROJECT_NAME = "AMFAM v2"
 
 
 # ---------------------------------------------------------------------------
@@ -98,13 +104,18 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
     return dataset
 
 
-def load_braintrust_dataset(project: str, dataset_name: str) -> list[dict]:
+def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: str = None) -> list[dict]:
     """
     Load images from a Braintrust dataset whose rows carry the document image as
     an attachment under ``input.image`` and the label under ``expected``.
 
     Rows without a stored attachment (placeholder rows) are skipped.
     """
+    # Initialize braintrust with proper login using dataset-specific API key
+    api_key = dataset_api_key or os.environ.get("BRAINTRUST_API_KEY")
+    if api_key:
+        braintrust.login(api_key=api_key)
+    
     dataset = braintrust.init_dataset(project=project, name=dataset_name)
     records = []
     for row in dataset:
@@ -126,9 +137,16 @@ def load_braintrust_dataset(project: str, dataset_name: str) -> list[dict]:
 # Braintrust Eval
 # ---------------------------------------------------------------------------
 
-def run_eval(dataset: list[dict]) -> None:
+def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: str = DEFAULT_PROMPT_VERSION, max_tokens: int = DEFAULT_MAX_TOKENS, project_id: str = DEFAULT_PROJECT, eval_braintrust_key: str = None) -> None:
     """Run the classification prompt against the dataset and log to Braintrust."""
-    openrouter_key, _ = get_api_keys()
+    openrouter_key = os.environ.get("OPENROUTER_API_KEY")
+    braintrust_key = eval_braintrust_key or os.environ.get("BRAINTRUST_API_KEY")
+    
+    # Initialize braintrust with proper login and project using eval-specific key
+    braintrust.login(api_key=braintrust_key)
+    
+    # Get the appropriate prompt version
+    classification_prompt = get_prompt(prompt_version)
 
     # Wrap OpenAI client pointed at OpenRouter with Braintrust logging
     client = braintrust.wrap_openai(
@@ -145,14 +163,17 @@ def run_eval(dataset: list[dict]) -> None:
         """Classify a single document image via the vision model."""
         image_b64 = images_by_index[input_data["index"]]
 
+        # Build extra body based on model capabilities
+        extra_body = {}
+        if "gemini" in model.lower():
+            extra_body = {"reasoning": {"effort": "medium"}}
+        
         response = client.chat.completions.create(
-            model=MODEL,
-            messages=build_vision_messages(CLASSIFICATION_PROMPT, image_b64),
-            max_tokens=1024,
+            model=model,
+            messages=build_vision_messages(classification_prompt, image_b64),
+            max_tokens=max_tokens,
             temperature=0.1,
-            extra_body={
-                "reasoning": {"effort": "medium"},
-            },
+            extra_body=extra_body,
         )
 
         raw = response.choices[0].message.content or ""
@@ -165,8 +186,8 @@ def run_eval(dataset: list[dict]) -> None:
         elif hasattr(msg, "reasoning") and msg.reasoning:
             reasoning_text = msg.reasoning
 
-        # Strip any <think> blocks from visible output to get clean prediction
-        clean_output = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
+        # Strip any ``` blocks from visible output to get clean prediction
+        clean_output = re.sub(r"```.*?```", "", raw, flags=re.DOTALL).strip()
         predicted = clean_prediction(clean_output)
 
         # Log metadata for Braintrust UI — includes reasoning trace
@@ -174,7 +195,9 @@ def run_eval(dataset: list[dict]) -> None:
             metadata={
                 "raw_response": raw,
                 "reasoning": reasoning_text or "(reasoning not exposed by model)",
-                "model": MODEL,
+                "model": model,
+                "prompt_version": prompt_version,
+                "max_tokens": max_tokens,
                 "filename": input_data["filename"],
             }
         )
@@ -236,6 +259,8 @@ def print_classifications(result) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", default=DEFAULT_PROJECT,
+                        help="Braintrust project for evaluation (where results are logged)")
+    parser.add_argument("--dataset-project", default=DEFAULT_DATASET_PROJECT,
                         help="Braintrust project holding the dataset")
     parser.add_argument("--dataset", default=DEFAULT_DATASET,
                         help="Braintrust dataset name to classify")
@@ -243,12 +268,22 @@ def main() -> None:
                         help="Classify local PNGs instead of a Braintrust dataset")
     parser.add_argument("--limit", type=int, default=None,
                         help="Classify only the first N images")
+    parser.add_argument("--model", default=DEFAULT_MODEL,
+                        help=f"Model to use for classification (default: {DEFAULT_MODEL})")
+    parser.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION,
+                        help=f"Prompt version to use (v1, v2, v3, v4) (default: {DEFAULT_PROMPT_VERSION})")
+    parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
+                        help=f"Maximum tokens for model response (default: {DEFAULT_MAX_TOKENS})")
+    parser.add_argument("--dataset-api-key", default=None,
+                        help="Braintrust API key for loading dataset (if different from eval key)")
+    parser.add_argument("--eval-api-key", default=None,
+                        help="Braintrust API key for evaluation (if different from dataset key)")
     args = parser.parse_args()
 
     if args.images_dir:
         dataset = load_dataset_images(args.images_dir)
     else:
-        dataset = load_braintrust_dataset(args.project, args.dataset)
+        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, args.dataset_api_key)
 
     if args.limit:
         dataset = dataset[:args.limit]
@@ -256,7 +291,9 @@ def main() -> None:
     if not dataset:
         sys.exit("No labeled images found to classify.")
 
-    run_eval(dataset)
+    print(f"Running evaluation with {args.model} using prompt {args.prompt_version} on {len(dataset)} images")
+    print(f"Evaluation project: {args.project}, Dataset from: {args.dataset_project}")
+    run_eval(dataset, model=args.model, prompt_version=args.prompt_version, max_tokens=args.max_tokens, project_id=args.project)
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@
 ## specification → scientific_report (5 errors)
 
 ### `processed_balanced__specification__specification_512794525_512794533_page_0001.png`
+
 **Expected:** `specification` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -21,7 +22,9 @@ I'm focusing on deciphering the document's structure and content to assign it to
 I'm currently examining the document's visual cues and textual content, specifically focusing on elements like headings, explicit instructions, and keywords to pinpoint its category. The identified text provides strong indicators of its technical nature.
 
 ---
+
 ### `processed_balanced__specification__specification_504660910_page_0001.png`
+
 **Expected:** `specification` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -38,7 +41,9 @@ I'm now focusing on extracting the core elements, specifically recognizing the t
 I'm now isolating the specific identifiers like "PD 142A," "PD 142B," "PD 142C," and "PD 142D" from the document. These labels, alongside the conditions such as "CC Paper" and "20% CF," are crucial for pinpointing the document's category.
 
 ---
+
 ### `processed_balanced__specification__specification_2057667808_page_0001.png`
+
 **Expected:** `specification` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -55,7 +60,9 @@ My analysis has progressed to identifying specific textual content. I've noted k
 I've pinpointed key product identifiers and specific numerical changes within the document. Terms like "Benson and Hedges Lights 100's Regular," "filler weight," and detailed percentages are now clearly registered. This rich textual data is a primary driver for my classification.
 
 ---
+
 ### `processed_balanced__specification__specification_2057163738_2057163739_page_0001.png`
+
 **Expected:** `specification` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -72,7 +79,9 @@ I've now analyzed the visual structure and key textual elements. The presence of
 My analysis of the visible text and structural elements, particularly the prominent "MATERIAL SAFETY DATA SHEET" heading and sections detailing hazardous ingredients and physical data, leads me to confidently identify this document.
 
 ---
+
 ### `processed_balanced__specification__specification_2031448477_page_0001.png`
+
 **Expected:** `specification` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -89,6 +98,7 @@ I am now focusing on the specific preparation instructions and ingredient quanti
 ## form → memo (4 errors)
 
 ### `processed_balanced__form__form_2077306630_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `memo`
 
 **Reasoning:**
@@ -105,7 +115,9 @@ I'm now extracting specific data points like sender, recipient, date, and transm
 I've analyzed the visual cues and read the prominent text, noting elements like "Confirmation Report," "FACSIMILE TRANSMISSION," sender details, and recipient lists. This strongly suggests a fax cover sheet or confirmation report.
 
 ---
+
 ### `processed_balanced__form__form_2074494016_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `memo`
 
 **Reasoning:**
@@ -122,7 +134,9 @@ I've analyzed the visual and textual elements, noting the prominent "Facsimile T
 I have analyzed the document's layout and text. The presence of a prominent "Facsimile Transmission" header, coupled with fields for sender, recipient, date, and fax numbers, strongly points towards a fax cover sheet. This aligns with a specific category I've been considering.
 
 ---
+
 ### `processed_balanced__form__form_2072135938_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `memo`
 
 **Reasoning:**
@@ -139,7 +153,9 @@ My focus is on pinpointing the document's category. The clear "Facsimile Cover S
 I'm confirming the classification. The distinct fields for sender, recipient, date, and page count, along with the prominent "Facsimile Cover Sheet" heading, strongly align with the characteristics of a "form."
 
 ---
+
 ### `processed_balanced__form__form_2029195014_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `memo`
 
 **Reasoning:**
@@ -160,6 +176,7 @@ I've analyzed the prominent "Telefax Copy" header, the structured fields for sen
 ## scientific_report → scientific_publication (3 errors)
 
 ### `processed_balanced__scientific_report__scientific_report_CTRCONTRACTS008916-8_page_0001.png`
+
 **Expected:** `scientific_report` | **Predicted:** `scientific_publication`
 
 **Reasoning:**
@@ -176,7 +193,9 @@ My analysis confirms this is a scientific manuscript draft. The title, author af
 I'm now integrating the structural elements observed with the textual cues. The presence of a clear title, author details with academic affiliations, and a designated "Send Proofs to" section, coupled with the "DRAFT" marker and editorial annotations, strongly point towards a scientific manuscript in progress.
 
 ---
+
 ### `processed_balanced__scientific_report__scientific_report_50268062-8082_page_0001.png`
+
 **Expected:** `scientific_report` | **Predicted:** `scientific_publication`
 
 **Reasoning:**
@@ -193,7 +212,9 @@ My current focus is on interpreting the visual cues and textual content. The pro
 I'm continuing to parse the title, "CHEMILUMINESCENCE DETECTOR FOR THE MEASUREMENT OF NICKEL CARBONYL IN AIR." This highly specific, technical phrasing strongly suggests a scientific or research-oriented context, reinforcing my preliminary classification.
 
 ---
+
 ### `processed_balanced__scientific_report__scientific_report_2078525149_5187_page_0001.png`
+
 **Expected:** `scientific_report` | **Predicted:** `scientific_publication`
 
 **Reasoning:**
@@ -214,6 +235,7 @@ I've processed the initial structural elements and key textual indicators. My cu
 ## budget → invoice (3 errors)
 
 ### `processed_balanced__budget__budget_tob07125.82_page_0001.png`
+
 **Expected:** `budget` | **Predicted:** `invoice`
 
 **Reasoning:**
@@ -230,7 +252,9 @@ I'm now prioritizing the identification of the document's core purpose. My focus
 My analysis is now heavily leaning towards identifying this as a financial document. The presence of "Statement of Account," invoice details, aged balances, and payment approval sections strongly confirms this direction.
 
 ---
+
 ### `processed_balanced__budget__budget_tcal0468021_8022_page_0001.png`
+
 **Expected:** `budget` | **Predicted:** `invoice`
 
 **Reasoning:**
@@ -247,7 +271,9 @@ I've analyzed the visual and textual cues, including MICR lines and explicit lab
 My analysis of the visual layout, explicit text labels like "CHECK NO" and "AMOUNT," and the presence of MICR lines strongly indicates this document is a financial instrument, specifically a check with its associated stub.
 
 ---
+
 ### `processed_balanced__budget__budget_94008085_94008086_page_0001.png`
+
 **Expected:** `budget` | **Predicted:** `invoice`
 
 **Reasoning:**
@@ -268,6 +294,7 @@ I'm actively distinguishing between check-specific elements like the MICR line a
 ## form → letter (2 errors)
 
 ### `processed_balanced__form__form_99367087_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `letter`
 
 **Reasoning:**
@@ -284,7 +311,9 @@ My analysis confirms this is a fax cover sheet. The prominent "FACSIMILE TRANSMI
 My ongoing analysis of the visual and textual elements strongly corroborates the classification of this document as a fax cover sheet. The presence of the explicit "FACSIMILE TRANSMISSION" header, alongside the standard fields for recipient, sender, date, and fax number, leaves little room for ambiguity. I'm also considering the typical structural components like page counts and contact details.
 
 ---
+
 ### `processed_balanced__form__form_2505411295_1296_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `letter`
 
 **Reasoning:**
@@ -301,6 +330,7 @@ I'm now focusing on the explicit textual cues. The presence of "TELEFAX MESSAGE 
 ## presentation → news_article (2 errors)
 
 ### `processed_balanced__presentation__presentation_2077124953_4954_page_0001.png`
+
 **Expected:** `presentation` | **Predicted:** `news_article`
 
 **Reasoning:**
@@ -317,7 +347,9 @@ My current focus is on pinpointing characteristic phrases and layout elements th
 I'm currently processing the visible text, noting "For Immediate Release," contact details, the headline, and the dateline as significant elements. The phrase "- more -" is also a key structural indicator.
 
 ---
+
 ### `processed_balanced__presentation__presentation_2048857005_page_0001.png`
+
 **Expected:** `presentation` | **Predicted:** `news_article`
 
 **Reasoning:**
@@ -338,6 +370,7 @@ My focus has shifted to pinpointing the document's origin and intent. Evidence l
 ## presentation → scientific_report (2 errors)
 
 ### `processed_balanced__presentation__presentation_2041865546_page_0001.png`
+
 **Expected:** `presentation` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -350,7 +383,9 @@ I'm currently focusing on deciphering the rotated text and its central alignment
 I'm now moving to classify this as a report or presentation based on the title and overview keywords. The structure strongly supports this categorization.
 
 ---
+
 ### `processed_balanced__presentation__presentation_0000128701_page_0001.png`
+
 **Expected:** `presentation` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -367,6 +402,7 @@ I'm now working to categorize this document. Based on the title and authoring de
 ## form → scientific_report (2 errors)
 
 ### `processed_balanced__form__form_2028882198_2199_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -379,7 +415,9 @@ My current focus is on dissecting the visual cues of the document. I'm examining
 I'm now focused on extracting specific data points. I've noted the title, review date, and the distinct table structure detailing reviewed parameters and their status. This information is crucial for classification.
 
 ---
+
 ### `processed_balanced__form__form_1003538570_1003538602_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -400,6 +438,7 @@ I am now focusing on the explicit text and structural cues. The presence of "App
 ## file_folder → form (2 errors)
 
 ### `processed_balanced__file_folder__file_folder_91040436_page_0001.png`
+
 **Expected:** `file_folder` | **Predicted:** `form`
 
 **Reasoning:**
@@ -412,7 +451,9 @@ I'm currently processing the visible text segments. The phrase "Request No. 5" s
 I'm focusing on refining the document's classification. The presence of "Request No. 5" and an associated numerical identifier strongly points towards it being an internal document like a form, memo, or a filing label, rather than something external.
 
 ---
+
 ### `processed_balanced__file_folder__file_folder_2026448946_page_0001.png`
+
 **Expected:** `file_folder` | **Predicted:** `form`
 
 **Reasoning:**
@@ -433,6 +474,7 @@ I've been examining the document for specific fields and labels, noting entries 
 ## file_folder → scientific_report (2 errors)
 
 ### `processed_balanced__file_folder__file_folder_2501200401_page_0001.png`
+
 **Expected:** `file_folder` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -449,7 +491,9 @@ I've identified a page number and a document ID on what is otherwise a very spar
 I'm focusing on the limited legible elements. Having identified a page number and document ID on an otherwise extremely faded and sparse image, I'm now weighing the available classification options, considering it might represent a blank page from a larger document.
 
 ---
+
 ### `processed_balanced__file_folder__file_folder_0060014593_page_0001.png`
+
 **Expected:** `file_folder` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -470,6 +514,7 @@ I'm now considering the visual layout more deeply, specifically the subtle horiz
 ## file_folder → handwritten (2 errors)
 
 ### `processed_balanced__file_folder__file_folder_2048267049_page_0001.png`
+
 **Expected:** `file_folder` | **Predicted:** `handwritten`
 
 **Reasoning:**
@@ -486,7 +531,9 @@ My analysis is now prioritizing the "Judgment" clue for legal or official docume
 I'm now concentrating on the handwritten nature of the "Judgment" text. I'm assessing how the cursive style, combined with the "Judgment" keyword, influences the classification toward "handwritten" as the most fitting category.
 
 ---
+
 ### `processed_balanced__file_folder__file_folder_10033818_page_0001.png`
+
 **Expected:** `file_folder` | **Predicted:** `handwritten`
 
 **Reasoning:**
@@ -507,6 +554,7 @@ I'm primarily evaluating the document's handwritten elements, "Executive (Comm.)
 ## memo → invoice (1 errors)
 
 ### `processed_balanced__memo__memo_71213540_page_0001.png`
+
 **Expected:** `memo` | **Predicted:** `invoice`
 
 **Reasoning:**
@@ -527,6 +575,7 @@ My analysis of the visual and textual components, particularly the prominent "IN
 ## letter → email (1 errors)
 
 ### `processed_balanced__letter__letter_518600431+-0431_page_0001.png`
+
 **Expected:** `letter` | **Predicted:** `email`
 
 **Reasoning:**
@@ -547,6 +596,7 @@ I've refined my classification to strongly indicate an email or a formal interna
 ## invoice → specification (1 errors)
 
 ### `processed_balanced__invoice__invoice_2024476471_page_0001.png`
+
 **Expected:** `invoice` | **Predicted:** `specification`
 
 **Reasoning:**
@@ -567,6 +617,7 @@ I am now consolidating my findings from analyzing the visual and textual element
 ## handwritten → letter (1 errors)
 
 ### `processed_balanced__handwritten__handwritten_518007543_518007544_page_0001.png`
+
 **Expected:** `handwritten` | **Predicted:** `letter`
 
 **Reasoning:**
@@ -587,6 +638,7 @@ My analysis confirms this is a handwritten letter from an individual requesting 
 ## handwritten → questionnaire (1 errors)
 
 ### `processed_balanced__handwritten__handwritten_517517307+-7310_page_0001.png`
+
 **Expected:** `handwritten` | **Predicted:** `questionnaire`
 
 **Reasoning:**
@@ -607,6 +659,7 @@ I'm now synthesizing all gathered information. The strong presence of form field
 ## handwritten → memo (1 errors)
 
 ### `processed_balanced__handwritten__handwritten_503260186_503260190_page_0001.png`
+
 **Expected:** `handwritten` | **Predicted:** `memo`
 
 **Reasoning:**
@@ -627,6 +680,7 @@ I am currently processing the specific textual content of the document. My focus
 ## form → file_folder (1 errors)
 
 ### `processed_balanced__form__form_2054632200_2054632204_page_0001.png`
+
 **Expected:** `form` | **Predicted:** `file_folder`
 
 **Reasoning:**
@@ -643,6 +697,7 @@ I'm now focusing on categorizing this document. Based on its clear tabular struc
 ## questionnaire → letter (1 errors)
 
 ### `processed_balanced__questionnaire__questionnaire_522769191+-9192_page_0001.png`
+
 **Expected:** `questionnaire` | **Predicted:** `letter`
 
 **Reasoning:**
@@ -659,6 +714,7 @@ I'm focusing on the structural components of this communication. I've identified
 ## questionnaire → form (1 errors)
 
 ### `processed_balanced__questionnaire__questionnaire_2028715066_page_0001.png`
+
 **Expected:** `questionnaire` | **Predicted:** `form`
 
 **Reasoning:**
@@ -679,6 +735,7 @@ I'm now synthesizing the visual and textual evidence, confirming the strong indi
 ## presentation → letter (1 errors)
 
 ### `processed_balanced__presentation__presentation_2040742530_2040742574_page_0001.png`
+
 **Expected:** `presentation` | **Predicted:** `letter`
 
 **Reasoning:**
@@ -695,6 +752,7 @@ I'm currently analyzing the visible text and structural cues. The mention of "Ma
 ## news_article → scientific_publication (1 errors)
 
 ### `processed_balanced__news_article__news_article_tob06202.11_tob06202.13_page_0001.png`
+
 **Expected:** `news_article` | **Predicted:** `scientific_publication`
 
 **Reasoning:**
@@ -715,6 +773,7 @@ I'm now analyzing the detailed text for keywords and concepts. Terms like "econo
 ## email → scientific_report (1 errors)
 
 ### `processed_balanced__email__email_521210052+-0053_page_0001.png`
+
 **Expected:** `email` | **Predicted:** `scientific_report`
 
 **Reasoning:**
@@ -735,6 +794,7 @@ I am currently analyzing the document's visual characteristics, noting its predo
 ## budget → scientific_report (1 errors)
 
 ### `processed_balanced__budget__budget_01410567_page_0001.png`
+
 **Expected:** `budget` | **Predicted:** `scientific_report`
 
 **Reasoning:**

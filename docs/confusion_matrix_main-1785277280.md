@@ -9,7 +9,7 @@
 ## Raw Counts
 
 | Expected \ Predicted | `advert` | `budget` | `email` | `file_f` | `form` | `handwr` | `invoic` | `letter` | `memo` | `news_a` | `presen` | `questi` | `resume` | `scient` | `scient` | `specif` | **Total** | **Acc** |
-|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `advertisement` | **10** | . | . | . | . | . | . | . | . | . | . | . | . | . | . | . | 10 | 100% |
 | `budget` | . | **10** | . | . | . | . | . | . | . | . | . | . | . | . | . | . | 10 | 100% |
 | `email` | . | . | **9** | . | . | . | . | . | . | . | . | . | . | . | 1 | . | 10 | 90% |
@@ -30,7 +30,7 @@
 ## Top Confused Pairs
 
 | Expected | Predicted As | Count |
-|----------|-------------|------:|
+| ---------- | ------------- | ------: |
 | `presentation` | `file_folder` | 4 |
 | `form` | `scientific_report` | 2 |
 | `invoice` | `budget` | 2 |
