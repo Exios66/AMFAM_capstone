@@ -37,7 +37,7 @@ from src.openrouter_classifier import CLASSIFICATION_PROMPT, VALID_CLASSES, clea
 # ---------------------------------------------------------------------------
 
 DATASET_DIR = Path(r"c:\Users\grant\AMFAM\1024x1024_10perclass_160\images")
-MODEL = "google/gemini-3.6-flash"  # Google reasoning model
+MODEL = "anthropic/claude-opus-5"  # Anthropic flagship reasoning model
 PROJECT_NAME = "AMFAM-Doc-Classification"
 
 

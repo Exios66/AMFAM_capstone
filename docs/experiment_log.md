@@ -426,3 +426,33 @@
 | 800 | 1,979,055 | 248,840 | 2,227,895 | **$0.45** |
 | 25,000 | 61,845,468 | 7,776,250 | 69,621,718 | **$13.94** |
 | 320,000 | 791,622,000 | 99,536,000 | 891,158,000 | **$178.46** |
+
+---
+
+## Experiment: `anthropic/claude-opus-5` — 160 Images (10 per class × 16 classes)
+
+**Experiment ID:** main-1785371396
+**Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
+**Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
+
+### Results
+
+| Metric | Value |
+|--------|------:|
+| **Accuracy (exact_match)** | **91.88%** (147/160 correct) |
+| Prompt tokens (avg) | 3,620.00 |
+| Prompt cached tokens (avg) | 0.00 |
+| Completion tokens (avg) | 10.65 |
+| Total tokens (avg) | 3,630.65 |
+| Duration (avg) | 0.00s |
+| Errors | 0 |
+
+### Cost Projections (`anthropic/claude-opus-5`, `max_tokens=1024`)
+
+**Pricing:** $15.0/M input tokens, $75.0/M output tokens
+
+| Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
+|--------|---:|---:|---:|---:|
+| 800 | 2,896,000 | 8,520 | 2,904,520 | **$44.08** |
+| 25,000 | 90,500,000 | 266,250 | 90,766,250 | **$1377.47** |
+| 320,000 | 1,158,400,000 | 3,408,000 | 1,161,808,000 | **$17631.60** |

@@ -521,6 +521,7 @@ MODEL_PRICING = {
     "x-ai/grok-4.5": (2.00, 6.00),
     "anthropic/claude-sonnet-5": (3.00, 15.00),
     "google/gemini-3.6-flash": (0.15, 0.60),
+    "anthropic/claude-opus-5": (15.00, 75.00),
 }
 
 
