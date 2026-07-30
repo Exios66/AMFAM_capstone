@@ -40,8 +40,8 @@ from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
 # Configuration
 # ---------------------------------------------------------------------------
 
-DEFAULT_PROJECT = "ba0346b3-cad8-463d-b758-afddafd9f0d0"  # AMFAM v2 project for evaluation
-DEFAULT_DATASET_PROJECT = "AMFAM v2"  # Original project with dataset
+DEFAULT_PROJECT = "AMFAM v2"  # Project name for evaluation
+DEFAULT_DATASET_PROJECT = "DSHB_amfam_capstone_2026"  # Project with dataset (source account)
 DEFAULT_DATASET = "fixed_size_sampled"
 DEFAULT_MODEL = "qwen/qwen-3.7-flash"  # cost-efficient model
 DEFAULT_MAX_TOKENS = 2048  # Increased for reasoning models to accommodate both reasoning and output
@@ -114,17 +114,41 @@ def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: st
     # Initialize braintrust with proper login using dataset-specific API key
     api_key = dataset_api_key or os.environ.get("BRAINTRUST_API_KEY")
     if api_key:
-        braintrust.login(api_key=api_key)
+        # Only force login if using a different API key
+        force = dataset_api_key is not None
+        braintrust.login(api_key=api_key, force_login=force)
     
     dataset = braintrust.init_dataset(project=project, name=dataset_name)
     records = []
-    for row in dataset:
+    for i, row in enumerate(dataset):
         expected = row.get("expected")
-        attachment = (row.get("input") or {}).get("image")
-        reference = getattr(attachment, "reference", None) or {}
-        filename = reference.get("filename")
-        if expected not in VALID_CLASSES or not filename:
+        input_data = row.get("input") or {}
+        attachment = input_data.get("image")
+        metadata = input_data.get("metadata", {})
+        
+        # Skip placeholder rows
+        if metadata.get("placeholder", False):
             continue
+            
+        if expected not in VALID_CLASSES or not attachment:
+            continue
+        
+        # Try to get filename from reference
+        filename = None
+        try:
+            reference = getattr(attachment, "reference", None) or {}
+            filename = reference.get("filename")
+        except (KeyError, AttributeError):
+            pass
+        
+        # If no filename, use document_id or fallback
+        if not filename:
+            doc_id = input_data.get("document_id")
+            if doc_id and doc_id != "generated":
+                filename = f"{doc_id}.png"
+            else:
+                filename = f"document_{i+1}.png"
+            
         records.append({
             "image_b64": base64.b64encode(attachment.data).decode("utf-8"),
             "filename": filename,
@@ -137,12 +161,12 @@ def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: st
 # Braintrust Eval
 # ---------------------------------------------------------------------------
 
-def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: str = DEFAULT_PROMPT_VERSION, max_tokens: int = DEFAULT_MAX_TOKENS, project_id: str = DEFAULT_PROJECT, eval_braintrust_key: str = None) -> None:
+def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: str = DEFAULT_PROMPT_VERSION, max_tokens: int = DEFAULT_MAX_TOKENS, project_id: str = DEFAULT_PROJECT) -> None:
     """Run the classification prompt against the dataset and log to Braintrust."""
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
-    braintrust_key = eval_braintrust_key or os.environ.get("BRAINTRUST_API_KEY")
+    braintrust_key = os.environ.get("BRAINTRUST_API_KEY")
     
-    # Initialize braintrust with proper login and project using eval-specific key
+    # Initialize braintrust with proper login and project using eval API key
     braintrust.login(api_key=braintrust_key)
     
     # Get the appropriate prompt version
@@ -274,16 +298,13 @@ def main() -> None:
                         help=f"Prompt version to use (v1, v2, v3, v4) (default: {DEFAULT_PROMPT_VERSION})")
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
                         help=f"Maximum tokens for model response (default: {DEFAULT_MAX_TOKENS})")
-    parser.add_argument("--dataset-api-key", default=None,
-                        help="Braintrust API key for loading dataset (if different from eval key)")
-    parser.add_argument("--eval-api-key", default=None,
-                        help="Braintrust API key for evaluation (if different from dataset key)")
     args = parser.parse_args()
 
     if args.images_dir:
         dataset = load_dataset_images(args.images_dir)
     else:
-        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, args.dataset_api_key)
+        # Use source API key for loading dataset from DSHB account
+        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, "sk-r9uBzJac6kbiVqRzU1PZepl3jmwIfBNStHTzWph6T2c0WkXZ")
 
     if args.limit:
         dataset = dataset[:args.limit]
