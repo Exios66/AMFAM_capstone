@@ -304,7 +304,7 @@ def main() -> None:
         dataset = load_dataset_images(args.images_dir)
     else:
         # Use source API key for loading dataset from DSHB account
-        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, "sk-r9uBzJac6kbiVqRzU1PZepl3jmwIfBNStHTzWph6T2c0WkXZ")
+        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, "DATA_BRAINTRUST_KEY")
 
     if args.limit:
         dataset = dataset[:args.limit]
