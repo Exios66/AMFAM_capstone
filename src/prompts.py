@@ -439,7 +439,7 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
 ## Ranked decision cascade (check in order)
 
 1. IDENTIFIER-ONLY PAGE -> file_folder
-   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only.
+   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only. A Bates number or archive stamp alone is NOT enough: a page that pairs a Bates number with a photographic image (people, a scene, a slide) or with a bold headline title and subtitle (a document or deck cover, e.g. "Internal Communication 2000 Plan" with "Draft for discussion") carries real content — it is a cover/title page or a photographic slide, which is presentation (check 9), not file_folder. Filing metadata means the page's only purpose is labeling a folder or index entry.
 
 2. MAJORITY-HANDWRITTEN PAGE -> handwritten
    Most of the content is freeform handwriting (notes, letters, memos, drafts) NOT on a printed template. This wins over a typed letter or memo layout. It does NOT win when handwriting merely fills the fields or cells of a printed structured form, table, or questionnaire — that stays form (or the content's own category: a handwritten list of budget categories and dollar amounts — or a handwritten note or log of dated expenses by category (e.g. "Contractor", "Dinner", "Painting", "Houseplant", each with a date) even when amounts are not legible — is budget, not handwritten). This includes meeting-minutes sheets and log tables printed with ruled columns and headers (e.g. a "MEETING" sheet with typed column heads "THEMA"/"ERGEBNIS" whose rows are filled by hand) — the handwriting fills a printed table, so it is a filled form (check 10), not handwritten. A typed page with only a signature, stamp, or margin note is not handwritten.
@@ -468,7 +468,7 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
    Caveat: a product-change authorization or review page — a titled summary describing CHANGES to a specific product (e.g. a "CAMEL Light 83 BOX" prototype change with bullets naming the new blend/filter/packaging) followed by labeled approval/signature blocks (Recommended by, Business Unit Approval, Product Acceptance Committee Concurrence, Reviewed by) — is a specification, not a form. It defines the product's new composition/properties; the approval block is the sign-off on the change, not the page's function. Forms (check 10) capture data; product-change specifications capture WHAT the product will be.
 
 9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
-   Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
+    Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A near-blank cover or title page — mostly empty space with only a bold headline title and perhaps a subtitle, date, or "Draft" note (e.g. "Internal Communication 2000 Plan" with "Draft for discussion"), a deck cover, or a section divider — is a presentation (this check), not file_folder (check 1). A standalone photographic image (people, a scene, an event photo) carrying only a Bates number is a photographic slide (this check), not file_folder (check 1). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
    Caveat: a one-page status/location display sheet — a titled sheet stating where a record range or item is located, printed in slide-style layout with a title, a line of reference numbers, and checkbox-style options (e.g. an "ARCHIVE LOCATION VARIANCE SHEET" listing "THE NUMBER (RANGE) 2060574004-2060574012 IS LOCATED: ( ) IN THE AUDIO CABINET ( ) IN THE VIDEO CABINET ( X ) ON THE OVERSIZE SHELF ...") — is a presentation (this check), not a form. It presents where something is, rather than capturing data for records.
    Caveat: speech text — the typed text of a speech, address, or remarks delivered at a company event (e.g. a "CABARRUS RECOGNITION DINNER" page titled with the event, dated, and opening "Thank you ... and good evening everyone ..." with an RJR-style logo/Bates number) is a presentation (this check), not a letter, memo, or report — a spoken address is presentation content even when it is a prose page.
 
@@ -510,6 +510,7 @@ If nothing matches, choose the label whose defining evidence is closest to what 
 - Publications include named journals AND published conference proceedings (named conference, year, authored/titled paper).
 - Fax sheets are forms; press releases and photographic slides are presentations.
 - Speech text delivered at a company event, and one-page status/location display sheets, are presentations, not letters, memos, or forms.
+- A near-blank page with only a Bates number plus a photograph, or a Bates number plus a bold headline title, is a presentation (photographic slide or cover/title page), not file_folder.
 
 ## Output
 
@@ -542,7 +543,7 @@ After the scratchpad, output your final answer.
 ## The checks
 
 1. IDENTIFIER-ONLY PAGE -> file_folder
-   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only.
+   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only. A Bates number or archive stamp alone is NOT enough: a page that pairs a Bates number with a photographic image (people, a scene, a slide) or with a bold headline title and subtitle (a document or deck cover, e.g. "Internal Communication 2000 Plan" with "Draft for discussion") carries real content — it is a cover/title page or a photographic slide, which is presentation (check 9), not file_folder. Filing metadata means the page's only purpose is labeling a folder or index entry.
 
 2. MAJORITY-HANDWRITTEN PAGE -> handwritten
    Most of the content is freeform handwriting (notes, letters, memos, drafts) NOT on a printed template. This wins over a typed letter or memo layout. It does NOT win when handwriting merely fills the fields or cells of a printed structured form, table, or questionnaire — that stays form (or the content's own category: a handwritten list of budget categories and dollar amounts — or a handwritten note or log of dated expenses by category (e.g. "Contractor", "Dinner", "Painting", "Houseplant", each with a date) even when amounts are not legible — is budget, not handwritten). This includes meeting-minutes sheets and log tables printed with ruled columns and headers (e.g. a "MEETING" sheet with typed column heads "THEMA"/"ERGEBNIS" whose rows are filled by hand) — the handwriting fills a printed table, so it is a filled form (check 10), not handwritten. A typed page with only a signature, stamp, or margin note is not handwritten.
@@ -571,7 +572,7 @@ After the scratchpad, output your final answer.
    Caveat: a product-change authorization or review page — a titled summary describing CHANGES to a specific product (e.g. a "CAMEL Light 83 BOX" prototype change with bullets naming the new blend/filter/packaging) followed by labeled approval/signature blocks (Recommended by, Business Unit Approval, Product Acceptance Committee Concurrence, Reviewed by) — is a specification, not a form. It defines the product's new composition/properties; the approval block is the sign-off on the change, not the page's function. Forms (check 10) capture data; product-change specifications capture WHAT the product will be.
 
 9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
-   Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
+    Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A near-blank cover or title page — mostly empty space with only a bold headline title and perhaps a subtitle, date, or "Draft" note (e.g. "Internal Communication 2000 Plan" with "Draft for discussion"), a deck cover, or a section divider — is a presentation (this check), not file_folder (check 1). A standalone photographic image (people, a scene, an event photo) carrying only a Bates number is a photographic slide (this check), not file_folder (check 1). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
    Caveat: a one-page status/location display sheet — a titled sheet stating where a record range or item is located, printed in slide-style layout with a title, a line of reference numbers, and checkbox-style options (e.g. an "ARCHIVE LOCATION VARIANCE SHEET" listing "THE NUMBER (RANGE) 2060574004-2060574012 IS LOCATED: ( ) IN THE AUDIO CABINET ( ) IN THE VIDEO CABINET ( X ) ON THE OVERSIZE SHELF ...") — is a presentation (this check), not a form. It presents where something is, rather than capturing data for records.
    Caveat: speech text — the typed text of a speech, address, or remarks delivered at a company event (e.g. a "CABARRUS RECOGNITION DINNER" page titled with the event, dated, and opening "Thank you ... and good evening everyone ..." with an RJR-style logo/Bates number) is a presentation (this check), not a letter, memo, or report — a spoken address is presentation content even when it is a prose page.
 
@@ -608,6 +609,7 @@ The evaluation set is balanced — every label is about 1/16 of the pages. No la
 - Pages that present as newspaper, magazine, or encyclopedia editorial content are news_articles even when their topic is scientific.
 - Money wins: any page stating charges owed for goods or services is invoice (check 7) even if printed on a form. Money planning, tracking, or disbursement records are budget (check 7). Provider customer statements (monthly service bills) are budgets, not invoices.
 - Speech text delivered at a company event, and one-page status/location display sheets, are presentations, not letters, memos, or forms.
+- A near-blank page with only a Bates number plus a photograph, or a Bates number plus a bold headline title, is a presentation (photographic slide or cover/title page), not file_folder.
 - Fax sheets are forms; press releases and photographic slides are presentations; publications require a named journal or proceedings.
 - A dated note to a named addressee without a TO:/FROM: block is a letter, not a memo.
 - Technical subject matter alone decides nothing: the page's function decides the label.
@@ -654,7 +656,26 @@ form: no — it has labeled fields and an approvals section (Account Executive, 
 financial: yes — an outside agency (Walt Klein & Associates) lists billable charges for 800-number management (800 Number - Fax, Management, Telephone Operators) with an Estimate, Change Order, and New Estimate total ($100,000.00). Although titled "ESTIMATE CHANGE ORDER" with a "Final invoice to reflect total actual personnel" footer, it states charges owed by the client to the vendor for services performed, so it is invoice — not budget, which is internal money planning/tracking, and not specification, which defines a product's properties.
 Runner-up: budget, ruled out because this is an agency/vendor billing document listing charges and totals owed, not internal planning or tracking.
 </scratchpad>
-<label>invoice</label>"""
+<label>invoice</label>
+
+A fourth example — a near-blank titled cover page:
+
+<scratchpad>
+file_folder: no — although the page is mostly empty with only a Bates number and no body prose, it carries a bold headline title ("Internal Communication 2000 Plan") and subtitle ("Draft for discussion"). A prominent topical title is real content, so the page is a cover/title page, not filing metadata.
+presentation: yes — a near-blank cover or title page with a bold headline and subtitle, deck-cover style, is a presentation. There are no fields (not a form), no prose (not a letter/memo/report), and no journal (not scientific_publication).
+Runner-up: file_folder, ruled out because the headline title makes this a titled cover page with real content, not an identifier-only filing page.
+</scratchpad>
+<label>presentation</label>
+
+A fifth example — a photographic slide:
+
+<scratchpad>
+file_folder: no — the page pairs a Bates number with a photographic image of people/a scene; a photograph is real content, so this is not identifier-only filing metadata.
+advertisement: no — the photo is not a marketing layout with product imagery, slogans, or brand styling.
+presentation: yes — a standalone photographic image (people, a scene, an event photo) with only a Bates number is a photographic slide, which is presentation. Even a grainy or low-quality scan counts.
+Runner-up: file_folder, ruled out because the photographic image is real content, making this a photographic slide rather than a filing-label page.
+</scratchpad>
+<label>presentation</label>"""
 
 PROMPTS = {
     "v1": PROMPT_V1,
