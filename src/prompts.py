@@ -428,7 +428,84 @@ If nothing matches, choose the label whose defining evidence is closest to what 
 
 Output only the class name, lowercase, exactly one of the 16 labels above, with no explanation."""
 
-# Mapping of prompt versions to their content
+# v7: v6 cascade + money-function-overrides-form, questionnaire appendix/transmittal, handwriting-in-form-cells, conference proceedings, memo-vs-letter fixes
+PROMPT_V7 = """You classify scanned business documents (tobacco-industry archive, 300 DPI grayscale) into exactly one of 16 categories.
+
+Judge each page by its FUNCTION, not its subject matter: a page full of technical data can still be a form, and a page about money can still be a form — but a bill is a bill even when it is printed on a form. Walk the checks below in order and commit to the FIRST one with strong, concrete evidence you can actually read on the page (a header, a field label, a masthead, an approval block — not a guess from the topic). Once an earlier check matches, later checks do not override it.
+
+Labels (use these exact strings):
+advertisement, budget, email, file_folder, form, handwritten, invoice, letter, memo, news_article, presentation, questionnaire, resume, scientific_publication, scientific_report, specification
+
+## Ranked decision cascade (check in order)
+
+1. IDENTIFIER-ONLY PAGE -> file_folder
+   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only.
+
+2. MAJORITY-HANDWRITTEN PAGE -> handwritten
+   Most of the content is freeform handwriting (notes, letters, memos, drafts). This wins over a typed letter or memo layout. It does NOT win when handwriting merely fills the fields or cells of a printed structured form, table, or questionnaire — that stays form (or the content's own category: a handwritten list of budget categories and dollar amounts is budget, not handwritten). A typed page with only a signature, stamp, or margin note is not handwritten.
+
+3. FAX TRANSMISSION SHEET -> form
+   A "FACSIMILE", "FACSIMILE TRANSMISSION", "FAX COVER SHEET", "TELEFAX", or "TELEFAX MESSAGE NO." header with To/From/company/phone/page-count fields. Fax sheets are forms, never memo or letter, even though they use To:/From:/Date: labels.
+
+4. SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire
+   The page asks the reader to answer, rate, choose, or commit: opinion items, rating scales, multiple choice, open-response lines, an enrolment/commitment application, or a cover letter transmitting a survey. A page does not have to show questions to be a questionnaire: an appendix page, section cover, transmittal note, or page-numbered part of a survey instrument (e.g. "APPENDIX 1" of a questionnaire, a handwritten note about a revised questionnaire) is still questionnaire, not file_folder.
+
+5. PERSON'S CAREER HISTORY -> resume
+   CV, resume, professional profile, or biographical sketch listing education, positions, honors, and publications — including standardized templates such as PHS 398 "BIOGRAPHICAL SKETCH" pages.
+
+6. PUBLISHED EVIDENCE -> scientific_publication
+   A named journal on the page plus a publication identifier (volume/issue, page range, DOI, journal copyright line, "Reprinted from ..."), OR a formal paper or abstract in published conference proceedings: a named conference/symposium/tagungsband with a year, a titled, authored paper or abstract with an affiliation, and (usually) a page number. An authored, titled, formally formatted paper in conference proceedings is a publication, not a report. A scientific-looking page with no journal or proceedings identifier is NOT a publication.
+
+7. FINANCIAL DOCUMENT -> invoice or budget
+   Money function overrides form layout: a billing or payment page stays financial even when it is printed on a form with fields and approval blocks.
+   invoice: an outside vendor, supplier, or agency states charges owed for goods or services — an "INVOICE" header with line items and amount due, a payment voucher, a vendor's price or hourly-rate schedule, a receipt, a payment request, or an agency/vendor ESTIMATE document: a production estimate report, estimate change order, estimate recap, or itemized billing statement with unit prices, amounts, and totals. It does not have to be titled "INVOICE" — a voucher, estimate, change order, or recap that lists billable charges and totals is an invoice.
+   budget: internal money planning, tracking, or disbursement — budget or expense lines, forecast vs. actual, expense reports, a statement of account, a check face or check stub, a check/payment register, or a status report tracking budget and spend. Also covers money-only records: a contribution/expenditure request or approval form whose whole content is an amount, and a handwritten list of budget categories and dollar amounts.
+   Caveat: an internal expenditure-authorization form ("ADVERTISING AND SELLING AUTHORIZATION", purchase/requisition approval, with an approval signature/date block but no billable charges) is a form (check 10), not budget — authorizing a single expenditure is not planning or tracking money. But an agency/vendor document that lists actual charges and totals owed is an invoice (this check), never a form.
+
+8. PRODUCT OR MATERIAL DOCUMENTATION -> specification
+   Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data), product formulation or preparation/mixing instructions, manufacturing-change authorization, test-analysis tables keyed to product/part codes, tolerances, or "shall/must" requirement language. Product-referenced test data is a specification. But a generic labeled chart or table with no product/part code, no requirement language, and no "shall/must" text is an administrative form (check 10), not a specification.
+
+9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
+   Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
+
+10. ADMINISTRATIVE FORM -> form
+    Filled or blank fields, boxes, checkboxes, and ruled entry lines for capturing factual data; an application (research grant, employment, service request); a records-management inventory or log table; a QA/parameter review sheet. A form does NOT have to be blank — a filled form recording data is still a form, including handwriting in its cells. This also covers: a standalone labeled data chart or table (e.g. "CHART 1" with rows A-Z and numeric values); a filled analytical or lab data sheet ("ANALYTICAL DATA SUMMARY" with COMPOUND:, FORMULA:, FORMULA WEIGHT:, HPLC entries and spectrum captions); and internal authorization/approval forms with an approval signature/date block. It does NOT cover money records: billing documents are invoice (check 7), and money-only forms are budget (check 7).
+
+11. CORRESPONDENCE -> email, memo, or letter
+    email: mail-client header block (From/To/Sent/Subject, cc, attachments) or a forwarded/threaded mail trail. An email page keeps this label even when its body is mostly a data table.
+    memo: internal "TO:/FROM:/RE:/SUBJECT:/DATE:" header block followed by prose. Without that block it is not a memo.
+    letter: letterhead with an external recipient address, date, "Dear ..." salutation, prose body, and a closing with signature — OR a dated note addressed to a named person (e.g. "Mr. T. E. Sandefur") with prose and no TO:/FROM: block.
+
+12. PUBLISHED JOURNALISM -> news_article
+    Newspaper or magazine masthead, byline, dateline, multi-column news typography, "- more -" continuation, or wire-service credit.
+
+13. ORIGINAL RESEARCH WRITE-UP -> scientific_report
+    Running narrative prose with objectives, methods, results, or discussion; a draft manuscript ("DRAFT", "Send Proofs to:"); a lab or technical study title page with authors and an internal affiliation and no journal identifiers. Requires running prose — a page that is only labeled field-value entries (even an "ANALYTICAL DATA SUMMARY" under a contract number with a Principal Investigator line) is a filled form (check 10), not a scientific report.
+
+14. PROMOTIONAL MATERIAL -> advertisement
+    Marketing layout: product imagery, slogans, brand styling, coupons, flyers, brochures.
+
+If nothing matches, choose the label whose defining evidence is closest to what you can actually read — never default to scientific_report.
+
+## Constraints
+
+- Function over subject matter: the page's role decides the label, never its topic.
+- Money wins: any page stating charges owed for goods or services is invoice (check 7) even if printed on a form. Money planning, tracking, or disbursement records are budget (check 7).
+- Filled forms are still forms; a form does not have to be blank.
+- Handwriting that fills a printed form or table is not "handwritten"; freeform handwriting is.
+- Labeled data charts/tables and filled analytical/lab data sheets are forms, not presentations, specifications, or scientific reports.
+- Expenditure/approval authorization forms are forms, not budgets.
+- scientific_report requires running prose; it is never a catch-all.
+- specification requires product/part codes, requirement language, or "shall/must" text.
+- invoice means an outside vendor/agency states what is owed (amount due). Checks, statements of account, and internal payment/contribution records are budgets, not invoices.
+- A dated note to a named addressee without a TO:/FROM: block is a letter, not a memo.
+- Publications include named journals AND published conference proceedings (named conference, year, authored/titled paper).
+- Fax sheets are forms; press releases and photographic slides are presentations.
+
+## Output
+
+Output only the class name, lowercase, exactly one of the 16 labels above, with no explanation."""
+
 PROMPTS = {
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
@@ -436,6 +513,7 @@ PROMPTS = {
     "v4": PROMPT_V4,
     "v5": PROMPT_V5,
     "v6": PROMPT_V6,
+    "v7": PROMPT_V7,
 }
 
 DEFAULT_PROMPT_VERSION = "v4"
