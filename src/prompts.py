@@ -644,6 +644,16 @@ form: no — although it has checkboxes and blank fields at the top (ROOM NO, AR
 financial: yes — a vendor (Hyatt Richmond) states charges owed for a one-off service performed (lodging). No "INVOICE" title, but the header "ACCOMMODATIONS" and the itemized room/tax charges with a balance make it a guest bill/folio, which is invoice. The running BALANCE DUE column does not make it a budget "statement of account" — there is no ongoing account, and no internal money planning or tracking.
 Runner-up: budget, ruled out because this is a bill for a service performed, not a provider's periodic customer statement or internal spend record.
 </scratchpad>
+<label>invoice</label>
+
+A third example — an agency estimate change order:
+
+<scratchpad>
+handwritten: no — the page is typed; only the account executive's signature is handwritten.
+form: no — it has labeled fields and an approvals section (Account Executive, Account VP, Client Approval), but the page's function is billing, not data capture; the approval block is the client's sign-off on the charge.
+financial: yes — an outside agency (Walt Klein & Associates) lists billable charges for 800-number management (800 Number - Fax, Management, Telephone Operators) with an Estimate, Change Order, and New Estimate total ($100,000.00). Although titled "ESTIMATE CHANGE ORDER" with a "Final invoice to reflect total actual personnel" footer, it states charges owed by the client to the vendor for services performed, so it is invoice — not budget, which is internal money planning/tracking, and not specification, which defines a product's properties.
+Runner-up: budget, ruled out because this is an agency/vendor billing document listing charges and totals owed, not internal planning or tracking.
+</scratchpad>
 <label>invoice</label>"""
 
 PROMPTS = {
