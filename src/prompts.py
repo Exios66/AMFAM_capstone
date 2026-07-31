@@ -469,6 +469,8 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
 
 9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
    Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
+   Caveat: a one-page status/location display sheet — a titled sheet stating where a record range or item is located, printed in slide-style layout with a title, a line of reference numbers, and checkbox-style options (e.g. an "ARCHIVE LOCATION VARIANCE SHEET" listing "THE NUMBER (RANGE) 2060574004-2060574012 IS LOCATED: ( ) IN THE AUDIO CABINET ( ) IN THE VIDEO CABINET ( X ) ON THE OVERSIZE SHELF ...") — is a presentation (this check), not a form. It presents where something is, rather than capturing data for records.
+   Caveat: speech text — the typed text of a speech, address, or remarks delivered at a company event (e.g. a "CABARRUS RECOGNITION DINNER" page titled with the event, dated, and opening "Thank you ... and good evening everyone ..." with an RJR-style logo/Bates number) is a presentation (this check), not a letter, memo, or report — a spoken address is presentation content even when it is a prose page.
 
 10. ADMINISTRATIVE FORM -> form
     Filled or blank fields, boxes, checkboxes, and ruled entry lines for capturing factual data; an application (research grant, employment, service request); a records-management inventory or log table; a QA/parameter review sheet. A form does NOT have to be blank — a filled form recording data is still a form, including handwriting in its cells. This also covers: a standalone labeled data chart or table (e.g. "CHART 1" with rows A-Z and numeric values); a filled analytical or lab data sheet ("ANALYTICAL DATA SUMMARY" with COMPOUND:, FORMULA:, FORMULA WEIGHT:, HPLC entries and spectrum captions); and internal authorization/approval forms with an approval signature/date block. It does NOT cover money records: billing documents are invoice (check 7), and money-only forms are budget (check 7). It does NOT cover product-change authorization pages: a page that specifies WHAT a product will be (composition/property changes with labeled approval blocks) is a specification (check 8), not a form.
@@ -506,6 +508,7 @@ If nothing matches, choose the label whose defining evidence is closest to what 
 - A dated note to a named addressee without a TO:/FROM: block is a letter, not a memo.
 - Publications include named journals AND published conference proceedings (named conference, year, authored/titled paper).
 - Fax sheets are forms; press releases and photographic slides are presentations.
+- Speech text delivered at a company event, and one-page status/location display sheets, are presentations, not letters, memos, or forms.
 
 ## Output
 
