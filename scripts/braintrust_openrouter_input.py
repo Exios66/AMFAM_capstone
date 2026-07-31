@@ -426,7 +426,7 @@ def main() -> None:
     parser.add_argument("--model", default=DEFAULT_MODEL,
                         help=f"Model to use for classification (default: {DEFAULT_MODEL})")
     parser.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION,
-                        help=f"Prompt version to use (v1, v2, v3, v4) (default: {DEFAULT_PROMPT_VERSION})")
+                        help=f"Prompt version to use (v1-v6) (default: {DEFAULT_PROMPT_VERSION})")
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
                         help=f"Maximum tokens for model response (default: {DEFAULT_MAX_TOKENS})")
     parser.add_argument("--experiment-name", default=None,

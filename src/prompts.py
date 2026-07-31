@@ -352,6 +352,82 @@ Runner-up: budget, ruled out because the page states what is owed to a vendor ra
 </scratchpad>
 <label>invoice</label>"""
 
+# v6: Smooth ranked cascade (no scratchpad), v3 style with the v4/v5 form/budget/scientific_report fixes folded in
+PROMPT_V6 = """You classify scanned business documents (tobacco-industry archive, 300 DPI grayscale) into exactly one of 16 categories.
+
+Judge each page by its FUNCTION, not its subject matter: a page full of technical data can still be a form, and a page about money can still be a form. Walk the checks below in order and commit to the FIRST one with strong, concrete evidence you can actually read on the page (a header, a field label, a masthead, an approval block — not a guess from the topic). Once an earlier check matches, later checks do not override it.
+
+Labels (use these exact strings):
+advertisement, budget, email, file_folder, form, handwritten, invoice, letter, memo, news_article, presentation, questionnaire, resume, scientific_publication, scientific_report, specification
+
+## Ranked decision cascade (check in order)
+
+1. IDENTIFIER-ONLY PAGE -> file_folder
+   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title.
+
+2. MAJORITY-HANDWRITTEN PAGE -> handwritten
+   Most of the content is handwritten. This wins even over a letter, memo, note, or a filled-in form layout. A typed page with only a handwritten signature, stamp, or margin note is NOT handwritten.
+
+3. FAX TRANSMISSION SHEET -> form
+   A "FACSIMILE", "FACSIMILE TRANSMISSION", "FAX COVER SHEET", "TELEFAX", or "TELEFAX MESSAGE NO." header with To/From/company/phone/page-count fields. Fax sheets are forms, never memo or letter, even though they use To:/From:/Date: labels.
+
+4. SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire
+   The page asks the reader to answer, rate, choose, or commit: opinion items, rating scales, multiple choice, open-response lines, an enrolment/commitment application, or a cover letter transmitting a survey.
+
+5. PERSON'S CAREER HISTORY -> resume
+   CV, resume, professional profile, or biographical sketch listing education, positions, honors, and publications — including standardized templates such as PHS 398 "BIOGRAPHICAL SKETCH" pages.
+
+6. PUBLISHED-JOURNAL EVIDENCE -> scientific_publication
+   A named journal on the page plus at least one publication identifier: volume/issue, page range, DOI, journal copyright line, or "Reprinted from ...". Without such identifiers a scientific-looking page is NOT a publication.
+
+7. FINANCIAL DOCUMENT -> invoice or budget
+   invoice: a vendor/supplier states what is owed — an "INVOICE" header with line items and amount due, a payment voucher, a vendor's price or hourly-rate schedule, a receipt, or a payment request.
+   budget: internal planning or tracking of money — budget or expense lines, forecast vs. actual, expense reports, a statement of account, a check face or check stub, a check/payment register, or a status report tracking budget and spend.
+   Caveat: an internal expenditure-authorization or approval form ("ADVERTISING AND SELLING AUTHORIZATION", purchase/requisition approval, "DO NOT ... AUTHORIZE ANY EXPENDITURE ... UNTIL EXECUTIVE APPROVAL", with an approval signature/date block) is a form (check 10), not a budget — authorizing a single expenditure is not planning or tracking money.
+
+8. PRODUCT OR MATERIAL DOCUMENTATION -> specification
+   Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data), product formulation or preparation/mixing instructions, manufacturing-change authorization, test-analysis tables keyed to product/part codes, tolerances, or "shall/must" requirement language. Product-referenced test data is a specification. But a generic labeled chart or table with no product/part code, no requirement language, and no "shall/must" text is an administrative form (check 10), not a specification.
+
+9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
+   Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, or a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
+
+10. ADMINISTRATIVE FORM -> form
+    Filled or blank fields, boxes, checkboxes, and ruled entry lines for capturing factual data; an application (research grant, employment, service request); a records-management inventory or log table; a QA/parameter review sheet. A form does NOT have to be blank — a filled form recording data is still a form. This also covers: a standalone labeled data chart or table (e.g. "CHART 1" with rows A-Z and numeric values); a filled analytical or lab data sheet ("ANALYTICAL DATA SUMMARY" with COMPOUND:, FORMULA:, FORMULA WEIGHT:, HPLC INSTRUMENT/COLUMN/DETECTOR/PURITY entries and spectrum captions); and internal authorization/approval forms with an approval signature/date block.
+
+11. CORRESPONDENCE -> email, memo, or letter
+    email: mail-client header block (From/To/Sent/Subject, cc, attachments) or a forwarded/threaded mail trail. An email page keeps this label even when its body is mostly a data table.
+    memo: internal "TO:/FROM:/RE:/SUBJECT:/DATE:" block followed by prose.
+    letter: letterhead with an external recipient address, date, "Dear ..." salutation, prose body, and a closing with signature.
+
+12. PUBLISHED JOURNALISM -> news_article
+    Newspaper or magazine masthead, byline, dateline, multi-column news typography, "- more -" continuation, or wire-service credit.
+
+13. ORIGINAL RESEARCH WRITE-UP -> scientific_report
+    Running narrative prose with objectives, methods, results, or discussion; a draft manuscript ("DRAFT", "Send Proofs to:"); a lab or technical study title page with authors and an internal affiliation and no journal identifiers. Requires running prose — a page that is only labeled field-value entries (even an "ANALYTICAL DATA SUMMARY" under a contract number with a Principal Investigator line) is a filled form (check 10), not a scientific report.
+
+14. PROMOTIONAL MATERIAL -> advertisement
+    Marketing layout: product imagery, slogans, brand styling, coupons, flyers, brochures.
+
+If nothing matches, choose the label whose defining evidence is closest to what you can actually read — never default to scientific_report.
+
+## Constraints
+
+- Function over subject matter: the page's role decides the label, never its topic.
+- The evaluation set is balanced, so no label should dominate your predictions.
+- scientific_report and form are the most over-predicted labels. Use them only when their own positive evidence (checks 13 and 10) is present.
+- Filled forms are still forms; a form does not have to be blank.
+- Labeled data charts/tables and filled analytical/lab data sheets are forms, not presentations, specifications, or scientific reports.
+- Expenditure/approval authorization forms are forms, not budgets.
+- scientific_report requires running prose; it is never a catch-all.
+- specification requires product/part codes, requirement language, or "shall/must" text.
+- budget plans or tracks money over a period; it does not authorize a single spend.
+- invoice means a vendor states what is owed (amount due). Checks and statements of account are budgets, not invoices.
+- Fax sheets are forms; press releases are presentations; publications require a named journal.
+
+## Output
+
+Output only the class name, lowercase, exactly one of the 16 labels above, with no explanation."""
+
 # Mapping of prompt versions to their content
 PROMPTS = {
     "v1": PROMPT_V1,
@@ -359,6 +435,7 @@ PROMPTS = {
     "v3": PROMPT_V3,
     "v4": PROMPT_V4,
     "v5": PROMPT_V5,
+    "v6": PROMPT_V6,
 }
 
 DEFAULT_PROMPT_VERSION = "v4"
