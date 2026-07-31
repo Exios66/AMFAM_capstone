@@ -442,7 +442,7 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
    Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only.
 
 2. MAJORITY-HANDWRITTEN PAGE -> handwritten
-   Most of the content is freeform handwriting (notes, letters, memos, drafts). This wins over a typed letter or memo layout. It does NOT win when handwriting merely fills the fields or cells of a printed structured form, table, or questionnaire — that stays form (or the content's own category: a handwritten list of budget categories and dollar amounts is budget, not handwritten). A typed page with only a signature, stamp, or margin note is not handwritten.
+   Most of the content is freeform handwriting (notes, letters, memos, drafts) NOT on a printed template. This wins over a typed letter or memo layout. It does NOT win when handwriting merely fills the fields or cells of a printed structured form, table, or questionnaire — that stays form (or the content's own category: a handwritten list of budget categories and dollar amounts is budget, not handwritten). This includes meeting-minutes sheets and log tables printed with ruled columns and headers (e.g. a "MEETING" sheet with typed column heads "THEMA"/"ERGEBNIS" whose rows are filled by hand) — the handwriting fills a printed table, so it is a filled form (check 10), not handwritten. A typed page with only a signature, stamp, or margin note is not handwritten.
 
 3. FAX TRANSMISSION SHEET -> form
    A "FACSIMILE", "FACSIMILE TRANSMISSION", "FAX COVER SHEET", "TELEFAX", or "TELEFAX MESSAGE NO." header with To/From/company/phone/page-count fields. Fax sheets are forms, never memo or letter, even though they use To:/From:/Date: labels.
@@ -455,6 +455,7 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
 
 6. PUBLISHED EVIDENCE -> scientific_publication
    A named journal on the page plus a publication identifier (volume/issue, page range, DOI, journal copyright line, "Reprinted from ..."), OR a formal paper or abstract in published conference proceedings: a named conference/symposium/tagungsband with a year, a titled, authored paper or abstract with an affiliation, and (usually) a page number. An authored, titled, formally formatted paper in conference proceedings is a publication, not a report. A scientific-looking page with no journal or proceedings identifier is NOT a publication.
+   Caveat: a page that presents itself as a newspaper, magazine, or encyclopedia piece — multi-column published editorial prose with a masthead, magazine cover, or encyclopedia/reference title — is news_article (check 12), not a publication, even if its text is scientific, cites journals (e.g. "Am J Epidemiol 1984;119:624-41"), or names an author with credentials. scientific_publication is reserved for pages that present as journal/proceedings reprints.
 
 7. FINANCIAL DOCUMENT -> invoice or budget
    Money function overrides form layout: a billing or payment page stays financial even when it is printed on a form with fields and approval blocks.
@@ -464,12 +465,13 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
 
 8. PRODUCT OR MATERIAL DOCUMENTATION -> specification
    Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data), product formulation or preparation/mixing instructions, manufacturing-change authorization, test-analysis tables keyed to product/part codes, tolerances, or "shall/must" requirement language. Product-referenced test data is a specification. But a generic labeled chart or table with no product/part code, no requirement language, and no "shall/must" text is an administrative form (check 10), not a specification.
+   Caveat: a product-change authorization or review page — a titled summary describing CHANGES to a specific product (e.g. a "CAMEL Light 83 BOX" prototype change with bullets naming the new blend/filter/packaging) followed by labeled approval/signature blocks (Recommended by, Business Unit Approval, Product Acceptance Committee Concurrence, Reviewed by) — is a specification, not a form. It defines the product's new composition/properties; the approval block is the sign-off on the change, not the page's function. Forms (check 10) capture data; product-change specifications capture WHAT the product will be.
 
 9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
    Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
 
 10. ADMINISTRATIVE FORM -> form
-    Filled or blank fields, boxes, checkboxes, and ruled entry lines for capturing factual data; an application (research grant, employment, service request); a records-management inventory or log table; a QA/parameter review sheet. A form does NOT have to be blank — a filled form recording data is still a form, including handwriting in its cells. This also covers: a standalone labeled data chart or table (e.g. "CHART 1" with rows A-Z and numeric values); a filled analytical or lab data sheet ("ANALYTICAL DATA SUMMARY" with COMPOUND:, FORMULA:, FORMULA WEIGHT:, HPLC entries and spectrum captions); and internal authorization/approval forms with an approval signature/date block. It does NOT cover money records: billing documents are invoice (check 7), and money-only forms are budget (check 7).
+    Filled or blank fields, boxes, checkboxes, and ruled entry lines for capturing factual data; an application (research grant, employment, service request); a records-management inventory or log table; a QA/parameter review sheet. A form does NOT have to be blank — a filled form recording data is still a form, including handwriting in its cells. This also covers: a standalone labeled data chart or table (e.g. "CHART 1" with rows A-Z and numeric values); a filled analytical or lab data sheet ("ANALYTICAL DATA SUMMARY" with COMPOUND:, FORMULA:, FORMULA WEIGHT:, HPLC entries and spectrum captions); and internal authorization/approval forms with an approval signature/date block. It does NOT cover money records: billing documents are invoice (check 7), and money-only forms are budget (check 7). It does NOT cover product-change authorization pages: a page that specifies WHAT a product will be (composition/property changes with labeled approval blocks) is a specification (check 8), not a form.
 
 11. CORRESPONDENCE -> email, memo, or letter
     email: mail-client header block (From/To/Sent/Subject, cc, attachments) or a forwarded/threaded mail trail. An email page keeps this label even when its body is mostly a data table.
@@ -477,7 +479,7 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
     letter: letterhead with an external recipient address, date, "Dear ..." salutation, prose body, and a closing with signature — OR a dated note addressed to a named person (e.g. "Mr. T. E. Sandefur") with prose and no TO:/FROM: block.
 
 12. PUBLISHED JOURNALISM -> news_article
-    Newspaper or magazine masthead, byline, dateline, multi-column news typography, "- more -" continuation, or wire-service credit.
+    Newspaper or magazine masthead, byline, dateline, multi-column news typography, "- more -" continuation, or wire-service credit. Also a magazine feature or an encyclopedia entry/excerpt (e.g. a "TOBACCO ENCYCLOPEDIA" page with a titled, authored article), or any page that presents as published periodical editorial content rather than a journal reprint — even when the topic is scientific and journal citations appear in the text.
 
 13. ORIGINAL RESEARCH WRITE-UP -> scientific_report
     Running narrative prose with objectives, methods, results, or discussion; a draft manuscript ("DRAFT", "Send Proofs to:"); a lab or technical study title page with authors and an internal affiliation and no journal identifiers. Requires running prose — a page that is only labeled field-value entries (even an "ANALYTICAL DATA SUMMARY" under a contract number with a Principal Investigator line) is a filled form (check 10), not a scientific report.
@@ -493,10 +495,13 @@ If nothing matches, choose the label whose defining evidence is closest to what 
 - Money wins: any page stating charges owed for goods or services is invoice (check 7) even if printed on a form. Money planning, tracking, or disbursement records are budget (check 7).
 - Filled forms are still forms; a form does not have to be blank.
 - Handwriting that fills a printed form or table is not "handwritten"; freeform handwriting is.
+- Meeting-minutes/log sheets with printed ruled columns whose rows are filled by hand are filled forms, not handwritten.
+- Product-change authorization pages (titled change summary + approval blocks) are specifications, not forms.
 - Labeled data charts/tables and filled analytical/lab data sheets are forms, not presentations, specifications, or scientific reports.
 - Expenditure/approval authorization forms are forms, not budgets.
 - scientific_report requires running prose; it is never a catch-all.
-- specification requires product/part codes, requirement language, or "shall/must" text.
+- specification requires product/part codes, requirement language, "shall/must" text, or a product-change composition/property summary.
+- Pages that present as newspaper, magazine, or encyclopedia editorial content are news_articles even when their topic is scientific.
 - invoice means an outside vendor/agency bills the company for goods sold or services performed (line items, amount due). Checks, statements of account, internal payment/contribution records, and provider customer statements (a monthly service bill from a vendor to the company as a customer) are budgets, not invoices.
 - A dated note to a named addressee without a TO:/FROM: block is a letter, not a memo.
 - Publications include named journals AND published conference proceedings (named conference, year, authored/titled paper).
