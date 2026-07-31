@@ -13,8 +13,8 @@ Usage:
     python scripts/braintrust_openrouter_input.py
     python scripts/braintrust_openrouter_input.py --dataset fixed_size_sampled
     python scripts/braintrust_openrouter_input.py --images-dir path/to/images
-    python scripts/braintrust_openrouter_input.py --prompt-version v4 --model qwen/qwen-3.7-flash
-    python scripts/braintrust_openrouter_input.py --project AMFAM_v2 --dataset-project DSHB_amfam_capstone_2026
+    python scripts/braintrust_openrouter_input.py --prompt-version v4 --model qwen/qwen3.7-flash
+    python scripts/braintrust_openrouter_input.py --experiment-name qwen3.7-flash_v4_reasoning
 """
 
 import argparse
@@ -22,12 +22,15 @@ import base64
 import os
 import re
 import sys
+import time
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import braintrust
+import requests
 from openai import OpenAI
 
 from src.env_utils import require_env
@@ -40,12 +43,17 @@ from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
 # Configuration
 # ---------------------------------------------------------------------------
 
-DEFAULT_PROJECT = "AMFAM v2"  # Project name for evaluation
-DEFAULT_DATASET_PROJECT = "DSHB_amfam_capstone_2026"  # Project with dataset (source account)
-DEFAULT_DATASET = "fixed_size_sampled"
-DEFAULT_MODEL = "qwen/qwen-3.7-flash"  # cost-efficient model
-DEFAULT_MAX_TOKENS = 2048  # Increased for reasoning models to accommodate both reasoning and output
 PROJECT_NAME = "AMFAM v2"
+PROJECT_ID = "ba0346b3-cad8-463d-b758-afddafd9f0d0"
+ORG_ID = "cc595192-8420-461d-8111-1d3ca1b42948"
+BRAINTRUST_API_BASE = "https://api.braintrust.dev"
+DEFAULT_DATASET_PROJECT = "AMFAM v2"  # Project holding the dataset
+DEFAULT_DATASET = "fixed_size_sampled"
+DEFAULT_MODEL = "qwen/qwen3.7-flash"  # cost-efficient vision reasoning model
+DEFAULT_MAX_TOKENS = 4096  # Enough for reasoning trace + scratchpad + final label
+DEFAULT_ATTACHMENT_WORKERS = 8
+MAX_TRIES = 3  # Retry transient provider failures (502s, token caps, empty responses)
+MAX_TOKENS_CAP = 16384  # Upper bound when growing max_tokens on "length" finish reasons
 
 
 # ---------------------------------------------------------------------------
@@ -104,12 +112,51 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
     return dataset
 
 
-def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: str = None) -> list[dict]:
+def fetch_attachment_bytes(
+    api_key: str,
+    reference: dict,
+    org_id: str = ORG_ID,
+    api_base: str = BRAINTRUST_API_BASE,
+) -> bytes:
+    """Download an already-uploaded Braintrust attachment's bytes directly.
+
+    The SDK downloads attachments one at a time (metadata request + object-store
+    GET, ~1s per row); fetching in parallel avoids that bottleneck for datasets
+    of hundreds of images.
+    """
+    params = {
+        "filename": reference["filename"],
+        "content_type": reference["content_type"],
+        "org_id": org_id,
+    }
+    if reference["type"] == "braintrust_attachment":
+        params["key"] = reference["key"]
+    elif reference["type"] == "external_attachment":
+        params["url"] = reference["url"]
+    else:
+        raise RuntimeError(f"Unknown attachment type: {reference['type']}")
+
+    resp = requests.get(
+        f"{api_base}/attachment",
+        params=params,
+        headers={"Authorization": f"Bearer {api_key}"},
+        timeout=60,
+    )
+    resp.raise_for_status()
+    download_url = resp.json()["downloadUrl"]
+
+    data = requests.get(download_url, timeout=120)
+    data.raise_for_status()
+    return data.content
+
+
+def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: str = None, org_id: str = ORG_ID) -> list[dict]:
     """
     Load images from a Braintrust dataset whose rows carry the document image as
     an attachment under ``input.image`` and the label under ``expected``.
 
-    Rows without a stored attachment (placeholder rows) are skipped.
+    Rows without a stored attachment (placeholder rows) are skipped. Attachments
+    are downloaded in parallel.
     """
     # Initialize braintrust with proper login using dataset-specific API key
     api_key = dataset_api_key or os.environ.get("BRAINTRUST_API_KEY")
@@ -117,22 +164,22 @@ def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: st
         # Only force login if using a different API key
         force = dataset_api_key is not None
         braintrust.login(api_key=api_key, force_login=force)
-    
+
     dataset = braintrust.init_dataset(project=project, name=dataset_name)
-    records = []
+    pending = []
     for i, row in enumerate(dataset):
         expected = row.get("expected")
         input_data = row.get("input") or {}
         attachment = input_data.get("image")
         metadata = input_data.get("metadata", {})
-        
+
         # Skip placeholder rows
         if metadata.get("placeholder", False):
             continue
-            
+
         if expected not in VALID_CLASSES or not attachment:
             continue
-        
+
         # Try to get filename from reference
         filename = None
         try:
@@ -140,7 +187,7 @@ def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: st
             filename = reference.get("filename")
         except (KeyError, AttributeError):
             pass
-        
+
         # If no filename, use document_id or fallback
         if not filename:
             doc_id = input_data.get("document_id")
@@ -148,20 +195,56 @@ def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: st
                 filename = f"{doc_id}.png"
             else:
                 filename = f"document_{i+1}.png"
-            
-        records.append({
-            "image_b64": base64.b64encode(attachment.data).decode("utf-8"),
-            "filename": filename,
-            "expected": expected,
-        })
+
+        pending.append((expected, attachment, filename))
+
+    records = []
+    failures = []
+
+    def grab(item):
+        _, attachment, _ = item
+        try:
+            return fetch_attachment_bytes(api_key, attachment.reference, org_id), None
+        except Exception as e:  # noqa: BLE001 - one bad row shouldn't abort the eval
+            return None, str(e)
+
+    with ThreadPoolExecutor(max_workers=DEFAULT_ATTACHMENT_WORKERS) as pool:
+        for (expected, _, filename), (image_bytes, error) in zip(pending, pool.map(grab, pending)):
+            if error is not None:
+                failures.append((expected, filename, error))
+                continue
+            records.append({
+                "image_b64": base64.b64encode(image_bytes).decode("utf-8"),
+                "filename": filename,
+                "expected": expected,
+            })
+
+    for expected, filename, error in failures:
+        print(f"SKIP {expected:<24} {filename}: {error}", file=sys.stderr)
+    if failures:
+        print(f"WARNING: skipped {len(failures)} rows with unreadable attachments", file=sys.stderr)
+
     return records
+
+
+def extract_prediction(text: str) -> str:
+    """Prefer the ``<label>...</label>`` output tag (V4 format), then fall back
+    to scanning the raw output for any valid class name."""
+    if not text:
+        return ""
+    match = re.search(r"<label>\s*([^<\s][^<]*?)\s*</label>", text, flags=re.IGNORECASE | re.DOTALL)
+    if match:
+        candidate = match.group(1).strip().lower()
+        if candidate in VALID_CLASSES:
+            return candidate
+    return clean_prediction(text)
 
 
 # ---------------------------------------------------------------------------
 # Braintrust Eval
 # ---------------------------------------------------------------------------
 
-def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: str = DEFAULT_PROMPT_VERSION, max_tokens: int = DEFAULT_MAX_TOKENS, project_id: str = DEFAULT_PROJECT) -> None:
+def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: str = DEFAULT_PROMPT_VERSION, max_tokens: int = DEFAULT_MAX_TOKENS, project_id: str = PROJECT_ID, experiment_name: str = None) -> None:
     """Run the classification prompt against the dataset and log to Braintrust."""
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
     braintrust_key = os.environ.get("BRAINTRUST_API_KEY")
@@ -191,30 +274,59 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
         extra_body = {}
         if "gemini" in model.lower():
             extra_body = {"reasoning": {"effort": "medium"}}
+        elif "qwen" in model.lower():
+            # Qwen3.x are hybrid reasoning models; force thinking on and ask
+            # OpenRouter to include the reasoning trace so we can log it.
+            extra_body = {
+                "reasoning": {"enabled": True, "effort": "high"},
+                "include_reasoning": True,
+            }
         
-        response = client.chat.completions.create(
-            model=model,
-            messages=build_vision_messages(classification_prompt, image_b64),
-            max_tokens=max_tokens,
-            temperature=0.1,
-            extra_body=extra_body,
-        )
+        # Transient provider failures (Alibaba 502 "inappropriate content", token
+        # caps, empty responses) return no usable content. Retry with backoff;
+        # grow max_tokens when the model capped out mid-reasoning.
+        tokens = max_tokens
+        last_error = None
+        for attempt in range(MAX_TRIES):
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=build_vision_messages(classification_prompt, image_b64),
+                    max_tokens=tokens,
+                    temperature=0.1,
+                    extra_body=extra_body,
+                )
+                raw = response.choices[0].message.content or ""
+                finish_reason = response.choices[0].finish_reason
+                if raw.strip() == "" or finish_reason == "error":
+                    raise RuntimeError(
+                        f"model returned no usable content (finish_reason={finish_reason})"
+                    )
+                if finish_reason == "length":
+                    tokens = min(tokens * 2, MAX_TOKENS_CAP)
+                    raise RuntimeError(
+                        f"model hit max_tokens={tokens // 2} (finish_reason=length)"
+                    )
+                break
+            except Exception as e:  # noqa: BLE001 - retry transient provider errors
+                last_error = e
+                if attempt < MAX_TRIES - 1:
+                    time.sleep(2 * (attempt + 1))
+        else:
+            raise last_error
 
-        raw = response.choices[0].message.content or ""
-
-        # Extract reasoning from response if available
-        reasoning_text = ""
         msg = response.choices[0].message
+        reasoning_text = ""
         if hasattr(msg, "reasoning_content") and msg.reasoning_content:
             reasoning_text = msg.reasoning_content
         elif hasattr(msg, "reasoning") and msg.reasoning:
             reasoning_text = msg.reasoning
 
-        # Strip any ``` blocks from visible output to get clean prediction
-        clean_output = re.sub(r"```.*?```", "", raw, flags=re.DOTALL).strip()
-        predicted = clean_prediction(clean_output)
+        # V4 wraps the final label in <label>...</label>; parse it first so the
+        # scratchpad prose never leaks a wrong class into the prediction.
+        predicted = extract_prediction(raw)
 
-        # Log metadata for Braintrust UI — includes reasoning trace
+        # Log metadata for Braintrust UI — includes reasoning trace and prompt
         braintrust.current_span().log(
             metadata={
                 "raw_response": raw,
@@ -232,6 +344,9 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
         """Score 1.0 if prediction matches expected class, else 0.0."""
         return 1.0 if output == expected else 0.0
 
+    if experiment_name is None:
+        experiment_name = f"{model.split('/')[-1]}_p{prompt_version}"
+
     result = braintrust.Eval(
         PROJECT_NAME,
         data=lambda: [
@@ -245,6 +360,17 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
         scores=[exact_match],
         max_concurrency=8,
         reporter=quiet_reporter(),
+        project_id=project_id,
+        experiment_name=experiment_name,
+        metadata={
+            "prompt": classification_prompt,
+            "prompt_version": prompt_version,
+            "model": model,
+            "max_tokens": max_tokens,
+            "reasoning": "enabled",
+            "dataset": f"{DEFAULT_DATASET_PROJECT}/{DEFAULT_DATASET}",
+        },
+        description=f"{model} | prompt {prompt_version} | reasoning enabled | exact_match tracked",
     )
 
     print_classifications(result)
@@ -281,9 +407,14 @@ def print_classifications(result) -> None:
 
 
 def main() -> None:
+    # Loads .env and validates both keys are present before anything else.
+    get_api_keys()
+
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--project", default=DEFAULT_PROJECT,
+    parser.add_argument("--project", default=PROJECT_NAME,
                         help="Braintrust project for evaluation (where results are logged)")
+    parser.add_argument("--project-id", default=PROJECT_ID,
+                        help=f"Braintrust project id for evaluation (default: {PROJECT_ID})")
     parser.add_argument("--dataset-project", default=DEFAULT_DATASET_PROJECT,
                         help="Braintrust project holding the dataset")
     parser.add_argument("--dataset", default=DEFAULT_DATASET,
@@ -298,13 +429,17 @@ def main() -> None:
                         help=f"Prompt version to use (v1, v2, v3, v4) (default: {DEFAULT_PROMPT_VERSION})")
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
                         help=f"Maximum tokens for model response (default: {DEFAULT_MAX_TOKENS})")
+    parser.add_argument("--experiment-name", default=None,
+                        help="Braintrust experiment name (default: {model-slug}_p{prompt-version})")
     args = parser.parse_args()
 
     if args.images_dir:
         dataset = load_dataset_images(args.images_dir)
     else:
-        # Use source API key for loading dataset from DSHB account
-        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, "DATA_BRAINTRUST_KEY")
+        # Load the dataset with the default BRAINTRUST_API_KEY; if a separate
+        # source-account key (DATA_BRAINTRUST_KEY) is configured, use it instead.
+        source_key = os.environ.get("DATA_BRAINTRUST_KEY")
+        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, source_key)
 
     if args.limit:
         dataset = dataset[:args.limit]
@@ -313,8 +448,8 @@ def main() -> None:
         sys.exit("No labeled images found to classify.")
 
     print(f"Running evaluation with {args.model} using prompt {args.prompt_version} on {len(dataset)} images")
-    print(f"Evaluation project: {args.project}, Dataset from: {args.dataset_project}")
-    run_eval(dataset, model=args.model, prompt_version=args.prompt_version, max_tokens=args.max_tokens, project_id=args.project)
+    print(f"Evaluation project: {args.project} ({args.project_id}), Dataset from: {args.dataset_project}/{args.dataset}")
+    run_eval(dataset, model=args.model, prompt_version=args.prompt_version, max_tokens=args.max_tokens, project_id=args.project_id, experiment_name=args.experiment_name)
 
 
 if __name__ == "__main__":

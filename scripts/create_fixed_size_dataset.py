@@ -11,6 +11,7 @@ import json
 import random
 import sys
 from pathlib import Path
+from typing import Optional, Tuple, Union
 
 from PIL import Image
 
@@ -18,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.cli_utils import print_header
 from src.constants import DOCUMENT_CLASSES, IMAGE_EXTENSIONS
-from src.image_utils import find_images
+from src.image_utils import find_images, resize_with_padding
 
 CLASS_NAMES = DOCUMENT_CLASSES
 
@@ -82,47 +83,6 @@ def create_fixed_size_dataset(input_dir: str, output_dir: str, target_size: tupl
     print(f"Summary saved: {summary_path}")
 
 
-def _pad_color_for_mode(mode: str, fill: int | tuple[int, ...]) -> int | tuple[int, ...]:
-    if mode == "L":
-        return fill if isinstance(fill, int) else fill[0]
-    if mode == "1":
-        return 1 if fill else 0
-    if mode == "RGBA":
-        return fill if isinstance(fill, tuple) else (fill, fill, fill, fill)
-    # RGB or any fallback converted to RGB
-    return fill if isinstance(fill, tuple) else (fill, fill, fill)
-
-
-def resize_with_padding(
-    img: Image.Image,
-    target_size: tuple[int, int],
-    fill: int | tuple[int, ...] = 255,
-) -> Image.Image:
-    """Scale image to fit inside target_size, then center-pad to the exact size."""
-    target_w, target_h = target_size
-
-    scale = min(target_w / img.width, target_h / img.height)
-    new_w = max(1, int(img.width * scale))
-    new_h = max(1, int(img.height * scale))
-    resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-
-    # Convert palette/other modes to RGB so a solid fill always works
-    if resized.mode not in ("L", "1", "RGB", "RGBA"):
-        resized = resized.convert("RGB")
-
-    bg_fill = _pad_color_for_mode(resized.mode, fill)
-    background = Image.new(resized.mode, target_size, bg_fill)
-
-    x = (target_w - new_w) // 2
-    y = (target_h - new_h) // 2
-    if resized.mode == "RGBA":
-        background.paste(resized, (x, y), resized)
-    else:
-        background.paste(resized, (x, y))
-
-    return background
-
-
 def _collect_class_images(
     input_dir: Path,
     class_names: tuple[str, ...],
@@ -161,8 +121,8 @@ def create_sampled_fixed_size_dataset(
     output_dir: str,
     target_size: tuple[int, int],
     samples_per_class: int = 10,
-    seed: int | None = 42,
-    fill: int | tuple[int, int, int] = 255,
+    seed: Optional[int] = 42,
+    fill: Union[int, Tuple[int, int, int]] = 255,
 ):
     """Sample images from each class across datasets and resize them to a fixed padded square."""
     output_dir = Path(output_dir)
