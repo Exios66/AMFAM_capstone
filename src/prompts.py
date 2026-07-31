@@ -459,7 +459,7 @@ advertisement, budget, email, file_folder, form, handwritten, invoice, letter, m
 
 7. FINANCIAL DOCUMENT -> invoice or budget
    Money function overrides form layout: a billing or payment page stays financial even when it is printed on a form with fields and approval blocks.
-   invoice: an outside vendor, supplier, or agency states charges owed for goods or services SOLD — an "INVOICE" header with line items and amount due, a payment voucher, a vendor's price or hourly-rate schedule, a receipt, a payment request, or an agency/vendor ESTIMATE document: a production estimate report, estimate change order, estimate recap, or itemized billing statement with unit prices, amounts, and totals. It does not have to be titled "INVOICE" — a voucher, estimate, change order, or recap that lists billable charges and totals is an invoice. Look for goods sold or one-off services performed (items, quantities, unit prices).
+    invoice: an outside vendor, supplier, or agency states charges owed for goods or services SOLD — an "INVOICE" header with line items and amount due, a payment voucher, a vendor's price or hourly-rate schedule, a receipt, a payment request, or an agency/vendor ESTIMATE document: a production estimate report, estimate change order, estimate recap, or itemized billing statement with unit prices, amounts, and totals. It does not have to be titled "INVOICE" — a voucher, estimate, change order, or recap that lists billable charges and totals is an invoice. Look for goods sold or one-off services performed (items, quantities, unit prices). A hotel/motel guest bill or folio — a statement of charges for a specific stay (room, tax, balance due), often printed on a reservation form with checkboxes and a guest signature — is an invoice: it bills for a one-off service performed (lodging), not a periodic account statement. A running "BALANCE DUE" column does not make a bill a budget "statement of account".
    budget: internal money planning, tracking, or disbursement — budget or expense lines, forecast vs. actual, expense reports, a statement of account, a check face or check stub, a check/payment register, or a status report tracking budget and spend. Also covers money-only records: a contribution/expenditure request or approval form whose whole content is an amount, and a handwritten list of budget categories and dollar amounts. ALSO a provider's periodic customer statement: a monthly service bill or statement of account issued by a vendor to the company as a customer (e.g. an AT&T "MONTHLY INVOICE" for phone service, a utility or subscription statement) is budget, not invoice — it is a statement of charges for an ongoing account, not a bill for goods sold.
    Caveat: an internal expenditure-authorization form ("ADVERTISING AND SELLING AUTHORIZATION", purchase/requisition approval, with an approval signature/date block but no billable charges) is a form (check 10), not budget — authorizing a single expenditure is not planning or tracking money. But an agency/vendor document that lists actual charges and totals owed is an invoice (this check), never a form.
 
@@ -514,6 +514,137 @@ If nothing matches, choose the label whose defining evidence is closest to what 
 
 Output only the class name, lowercase, exactly one of the 16 labels above, with no explanation."""
 
+# v8: v7's full rule set + the deliberate v4/v5-style scratchpad, integrated so the
+#     model walks every check with quoted evidence before committing to a label.
+PROMPT_V8 = """You classify scanned business documents (tobacco-industry archive, 300 DPI grayscale) into exactly one of 16 categories.
+
+Judge each page by its FUNCTION, not its subject matter: a page full of technical data can still be a form, and a page about money can still be a form — but a bill is a bill even when it is printed on a form. Do not rush to the label that matches the page's subject matter — deliberate through the checks below, in order, and commit to the FIRST one with strong, concrete evidence you can actually read on the page (a header, a field label, a masthead, an approval block — not a guess from the topic). Once an earlier check matches, later checks do not override it.
+
+Labels (use these exact strings):
+advertisement, budget, email, file_folder, form, handwritten, invoice, letter, memo, news_article, presentation, questionnaire, resume, scientific_publication, scientific_report, specification
+
+Before answering, work through the page in a <scratchpad>.
+
+## Scratchpad procedure
+
+Walk checks 1-14 below IN ORDER. For each check, before moving to the next one, briefly state:
+- What specific evidence for this check IS present on the page (quote or closely paraphrase the actual text/layout you see — header words, field labels, masthead, journal name, "shall" language, approval-block labels, etc.), or "none" if nothing supports it.
+- If evidence is present: STOP HERE. This is your check. Do not keep evaluating later checks, even if the page also superficially resembles a later category.
+- If no evidence: say "not this check" in one short clause and move to the next check.
+
+Keep each check's line short (evidence-focused, not a full paragraph) — the goal is a fast, auditable pass, not an essay. Once you stop at a matching check, add one final line naming the runner-up label you almost picked instead and the single piece of evidence that ruled it out. This forces you to name the trap before falling into it.
+
+Your final label MUST be the check that had positive evidence. Never output a label you explicitly marked "no" in your scratchpad — if you wrote "no" for every check, you missed something (most commonly the labeled-chart/table or product-change or speech/status-sheet cases). Re-scan the page and state the evidence you originally missed.
+
+After the scratchpad, output your final answer.
+
+## The checks
+
+1. IDENTIFIER-ONLY PAGE -> file_folder
+   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only.
+
+2. MAJORITY-HANDWRITTEN PAGE -> handwritten
+   Most of the content is freeform handwriting (notes, letters, memos, drafts) NOT on a printed template. This wins over a typed letter or memo layout. It does NOT win when handwriting merely fills the fields or cells of a printed structured form, table, or questionnaire — that stays form (or the content's own category: a handwritten list of budget categories and dollar amounts is budget, not handwritten). This includes meeting-minutes sheets and log tables printed with ruled columns and headers (e.g. a "MEETING" sheet with typed column heads "THEMA"/"ERGEBNIS" whose rows are filled by hand) — the handwriting fills a printed table, so it is a filled form (check 10), not handwritten. A typed page with only a signature, stamp, or margin note is not handwritten.
+
+3. FAX TRANSMISSION SHEET -> form
+   A "FACSIMILE", "FACSIMILE TRANSMISSION", "FAX COVER SHEET", "TELEFAX", or "TELEFAX MESSAGE NO." header with To/From/company/phone/page-count fields. Fax sheets are forms, never memo or letter, even though they use To:/From:/Date: labels.
+
+4. SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire
+   The page asks the reader to answer, rate, choose, or commit: opinion items, rating scales, multiple choice, open-response lines, an enrolment/commitment application, or a cover letter transmitting a survey. A page does not have to show questions to be a questionnaire: an appendix page, section cover, transmittal note, or page-numbered part of a survey instrument (e.g. "APPENDIX 1" of a questionnaire, a handwritten note about a revised questionnaire) is still questionnaire, not file_folder.
+
+5. PERSON'S CAREER HISTORY -> resume
+   CV, resume, professional profile, or biographical sketch listing education, positions, honors, and publications — including standardized templates such as PHS 398 "BIOGRAPHICAL SKETCH" pages.
+
+6. PUBLISHED EVIDENCE -> scientific_publication
+   A named journal on the page plus a publication identifier (volume/issue, page range, DOI, journal copyright line, "Reprinted from ..."), OR a formal paper or abstract in published conference proceedings: a named conference/symposium/tagungsband with a year, a titled, authored paper or abstract with an affiliation, and (usually) a page number. An authored, titled, formally formatted paper in conference proceedings is a publication, not a report. A scientific-looking page with no journal or proceedings identifier is NOT a publication.
+   Caveat: a page that presents itself as a newspaper, magazine, or encyclopedia piece — multi-column published editorial prose with a masthead, magazine cover, or encyclopedia/reference title — is news_article (check 12), not a publication, even if its text is scientific, cites journals (e.g. "Am J Epidemiol 1984;119:624-41"), or names an author with credentials. scientific_publication is reserved for pages that present as journal/proceedings reprints.
+
+7. FINANCIAL DOCUMENT -> invoice or budget
+   Money function overrides form layout: a billing or payment page stays financial even when it is printed on a form with fields and approval blocks.
+    invoice: an outside vendor, supplier, or agency states charges owed for goods or services SOLD — an "INVOICE" header with line items and amount due, a payment voucher, a vendor's price or hourly-rate schedule, a receipt, a payment request, or an agency/vendor ESTIMATE document: a production estimate report, estimate change order, estimate recap, or itemized billing statement with unit prices, amounts, and totals. It does not have to be titled "INVOICE" — a voucher, estimate, change order, or recap that lists billable charges and totals is an invoice. Look for goods sold or one-off services performed (items, quantities, unit prices). A hotel/motel guest bill or folio — a statement of charges for a specific stay (room, tax, balance due), often printed on a reservation form with checkboxes and a guest signature — is an invoice: it bills for a one-off service performed (lodging), not a periodic account statement. A running "BALANCE DUE" column does not make a bill a budget "statement of account".
+   budget: internal money planning, tracking, or disbursement — budget or expense lines, forecast vs. actual, expense reports, a statement of account, a check face or check stub, a check/payment register, or a status report tracking budget and spend. Also covers money-only records: a contribution/expenditure request or approval form whose whole content is an amount, and a handwritten list of budget categories and dollar amounts. ALSO a provider's periodic customer statement: a monthly service bill or statement of account issued by a vendor to the company as a customer (e.g. an AT&T "MONTHLY INVOICE" for phone service, a utility or subscription statement) is budget, not invoice — it is a statement of charges for an ongoing account, not a bill for goods sold.
+   Caveat: an internal expenditure-authorization form ("ADVERTISING AND SELLING AUTHORIZATION", purchase/requisition approval, with an approval signature/date block but no billable charges) is a form (check 10), not budget — authorizing a single expenditure is not planning or tracking money. But an agency/vendor document that lists actual charges and totals owed is an invoice (this check), never a form.
+
+8. PRODUCT OR MATERIAL DOCUMENTATION -> specification
+   Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data), product formulation or preparation/mixing instructions, manufacturing-change authorization, test-analysis tables keyed to product/part codes, tolerances, or "shall/must" requirement language. Product-referenced test data is a specification. But a generic labeled chart or table with no product/part code, no requirement language, and no "shall/must" text is an administrative form (check 10), not a specification.
+   Caveat: a product-change authorization or review page — a titled summary describing CHANGES to a specific product (e.g. a "CAMEL Light 83 BOX" prototype change with bullets naming the new blend/filter/packaging) followed by labeled approval/signature blocks (Recommended by, Business Unit Approval, Product Acceptance Committee Concurrence, Reviewed by) — is a specification, not a form. It defines the product's new composition/properties; the approval block is the sign-off on the change, not the page's function. Forms (check 10) capture data; product-change specifications capture WHAT the product will be.
+
+9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
+   Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
+   Caveat: a one-page status/location display sheet — a titled sheet stating where a record range or item is located, printed in slide-style layout with a title, a line of reference numbers, and checkbox-style options (e.g. an "ARCHIVE LOCATION VARIANCE SHEET" listing "THE NUMBER (RANGE) 2060574004-2060574012 IS LOCATED: ( ) IN THE AUDIO CABINET ( ) IN THE VIDEO CABINET ( X ) ON THE OVERSIZE SHELF ...") — is a presentation (this check), not a form. It presents where something is, rather than capturing data for records.
+   Caveat: speech text — the typed text of a speech, address, or remarks delivered at a company event (e.g. a "CABARRUS RECOGNITION DINNER" page titled with the event, dated, and opening "Thank you ... and good evening everyone ..." with an RJR-style logo/Bates number) is a presentation (this check), not a letter, memo, or report — a spoken address is presentation content even when it is a prose page.
+
+10. ADMINISTRATIVE FORM -> form
+    Filled or blank fields, boxes, checkboxes, and ruled entry lines for capturing factual data; an application (research grant, employment, service request); a records-management inventory or log table; a QA/parameter review sheet. A form does NOT have to be blank — a filled form recording data is still a form, including handwriting in its cells. This also covers: a standalone labeled data chart or table (e.g. "CHART 1" with rows A-Z and numeric values); a filled analytical or lab data sheet ("ANALYTICAL DATA SUMMARY" with COMPOUND:, FORMULA:, FORMULA WEIGHT:, HPLC entries and spectrum captions); and internal authorization/approval forms with an approval signature/date block. It does NOT cover money records: billing documents are invoice (check 7), and money-only forms are budget (check 7). It does NOT cover product-change authorization pages: a page that specifies WHAT a product will be (composition/property changes with labeled approval blocks) is a specification (check 8), not a form.
+
+11. CORRESPONDENCE -> email, memo, or letter
+    email: mail-client header block (From/To/Sent/Subject, cc, attachments) or a forwarded/threaded mail trail. An email page keeps this label even when its body is mostly a data table.
+    memo: internal "TO:/FROM:/RE:/SUBJECT:/DATE:" header block followed by prose. Without that block it is not a memo.
+    letter: letterhead with an external recipient address, date, "Dear ..." salutation, prose body, and a closing with signature — OR a dated note addressed to a named person (e.g. "Mr. T. E. Sandefur") with prose and no TO:/FROM: block.
+
+12. PUBLISHED JOURNALISM -> news_article
+    Newspaper or magazine masthead, byline, dateline, multi-column news typography, "- more -" continuation, or wire-service credit. Also a magazine feature or an encyclopedia entry/excerpt (e.g. a "TOBACCO ENCYCLOPEDIA" page with a titled, authored article), or any page that presents as published periodical editorial content rather than a journal reprint — even when the topic is scientific and journal citations appear in the text.
+
+13. ORIGINAL RESEARCH WRITE-UP -> scientific_report
+    Running narrative prose with objectives, methods, results, or discussion; a draft manuscript ("DRAFT", "Send Proofs to:"); a lab or technical study title page with authors and an internal affiliation and no journal identifiers. Requires running prose — a page that is only labeled field-value entries (even an "ANALYTICAL DATA SUMMARY" under a contract number with a Principal Investigator line) is a filled form (check 10), not a scientific report.
+
+14. PROMOTIONAL MATERIAL -> advertisement
+    Marketing layout: product imagery, slogans, brand styling, coupons, flyers, brochures.
+
+If nothing matches, choose the label whose defining evidence is closest to what you can actually read — never default to scientific_report. State in the scratchpad why none of checks 1-14 had positive evidence before doing this.
+
+## Calibration
+
+The evaluation set is balanced — every label is about 1/16 of the pages. No label should dominate your predictions.
+- form, scientific_report, and handwritten are historically the most over-predicted labels; news_article and presentation are historically under-predicted. Only choose a label when its own positive evidence is present, not because the page looks structured, technical, or handwriting-heavy.
+- Filled forms are still forms; a form does not have to be blank. Handwriting that fills a printed form or table is not "handwritten"; freeform handwriting is.
+- Meeting-minutes/log sheets with printed ruled columns whose rows are filled by hand are filled forms, not handwritten.
+- Product-change authorization pages (titled change summary + approval blocks) are specifications, not forms.
+- Labeled data charts/tables and filled analytical/lab data sheets are forms, not presentations, specifications, or scientific reports.
+- Expenditure/approval authorization forms are forms, not budgets.
+- scientific_report requires running prose; it is never a catch-all.
+- specification requires product/part codes, requirement language, "shall/must" text, or a product-change composition/property summary.
+- Pages that present as newspaper, magazine, or encyclopedia editorial content are news_articles even when their topic is scientific.
+- Money wins: any page stating charges owed for goods or services is invoice (check 7) even if printed on a form. Money planning, tracking, or disbursement records are budget (check 7). Provider customer statements (monthly service bills) are budgets, not invoices.
+- Speech text delivered at a company event, and one-page status/location display sheets, are presentations, not letters, memos, or forms.
+- Fax sheets are forms; press releases and photographic slides are presentations; publications require a named journal or proceedings.
+- A dated note to a named addressee without a TO:/FROM: block is a letter, not a memo.
+- Technical subject matter alone decides nothing: the page's function decides the label.
+- If two labels remain, prefer the one supported by an explicit header, form field, or masthead you can read over one inferred from topic.
+- If your scratchpad's stopping check and your "gut" label disagree, trust the scratchpad — that disagreement is exactly the signal this process exists to catch.
+
+## Output format
+
+After the scratchpad, output the final label on its own line, wrapped like this and nothing else on that line:
+
+<label>invoice</label>
+
+The label must be lowercase, exactly one of the 16 strings above, no punctuation inside the tags, no explanation after them.
+
+### Worked example
+
+<scratchpad>
+file_folder: no — page has multi-line prose body, not just an identifier/stamp.
+handwritten: no — text is typed throughout.
+fax sheet: no — no FACSIMILE/TELEFAX header.
+questionnaire: no — nothing asks the reader to rate/answer/choose.
+resume: no — no career/education listing.
+scientific_publication: no — no journal name or volume/issue/DOI present.
+financial: yes — page has "INVOICE" header, itemized goods with unit prices, and an "Amount Due" total from a vendor to the recipient. This is invoice, not budget — there's no internal forecast/actual tracking or check stub, and the vendor is billing for goods sold.
+Runner-up: budget, ruled out because the page states what is owed to a vendor for goods, rather than tracking internal spend.
+</scratchpad>
+<label>invoice</label>
+
+A second example — a hotel bill printed on a reservation form:
+
+<scratchpad>
+handwritten: no — the page is typed/printed; only the guest signature and one X are handwritten, and handwriting filling a printed form is not the handwritten class.
+form: no — although it has checkboxes and blank fields at the top (ROOM NO, ARR, RATE, METHOD OF PAYMENT, GUEST SIGNATURE), the page's function is a bill for a completed stay: a charges/credits/balance-due table (ROOM 2035, TAX), a running BALANCE DUE, and "I AGREE THAT MY LIABILITY FOR THIS BILL IS NOT WAIVED".
+financial: yes — a vendor (Hyatt Richmond) states charges owed for a one-off service performed (lodging). No "INVOICE" title, but the header "ACCOMMODATIONS" and the itemized room/tax charges with a balance make it a guest bill/folio, which is invoice. The running BALANCE DUE column does not make it a budget "statement of account" — there is no ongoing account, and no internal money planning or tracking.
+Runner-up: budget, ruled out because this is a bill for a service performed, not a provider's periodic customer statement or internal spend record.
+</scratchpad>
+<label>invoice</label>"""
+
 PROMPTS = {
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
@@ -522,6 +653,7 @@ PROMPTS = {
     "v5": PROMPT_V5,
     "v6": PROMPT_V6,
     "v7": PROMPT_V7,
+    "v8": PROMPT_V8,
 }
 
 DEFAULT_PROMPT_VERSION = "v4"
