@@ -65,6 +65,8 @@ def build_results(rows: list[dict]) -> tuple[list[dict], list[dict]]:
         output = row.get("output")
         error = row.get("error")
         input_data = row.get("input") or {}
+        if not isinstance(input_data, dict):
+            input_data = {}
         row_filename = str(
             (row.get("metadata") or {}).get("filename")
             or input_data.get("filename")
