@@ -8,9 +8,11 @@ from pathlib import Path
 import statistics
 from PIL import Image
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.image_utils import find_images
+
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "reports"
 
 DATASETS = {
     "rvlcdip_test": r"c:\Users\grant\AMFAM\rvlcdip_dataset\test",
@@ -96,7 +98,7 @@ def main():
         print(f"\nOverall average dimensions across all images: "
               f"{results['overall']['width_mean']:.0f} x {results['overall']['height_mean']:.0f}")
 
-    output_path = Path(r"c:\Users\grant\AMFAM\dimensions_summary.json")
+    output_path = OUTPUT_DIR / "dimensions_summary.json"
     with open(output_path, "w") as f:
         json.dump(results, f, indent=2)
 

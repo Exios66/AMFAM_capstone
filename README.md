@@ -4,14 +4,28 @@ A Python toolkit for downloading the RVL-CDIP document image dataset, preprocess
 
 ## What's Included
 
-- `download_dataset.py` — Download the RVL-CDIP dataset from Kaggle.
-- `create_balanced_dataset.py` — Sample a balanced subset (50 images per class) from RVL-CDIP.
-- `eda_analysis.py` — Exploratory data analysis: class distribution, dimensions, file sizes, visualizations.
+**Core library (`src/`)**
 - `document_processor.py` — Convert TIFF/PDF pages to 300 DPI grayscale PNGs and run OCR with bounding boxes.
-- `run_tiff_processing.py` — Batch process the balanced TIFF dataset with `document_processor.py`.
 - `openrouter_classifier.py` — Send a document image to an OpenRouter vision model for one of 16 class predictions.
-- `estimate_openrouter_cost.py` — Run one image through an OpenRouter vision model and extrapolate token usage/cost for 800, 25,000, and 320,000 images.
-- `openrouter_token_calculation.md` — Cost projections based on actual API responses.
+- `prompts.py` — Versioned classification prompts (v1 → v10) with disambiguation rules.
+- `constants.py`, `image_utils.py`, `openrouter_utils.py`, `env_utils.py`, `cli_utils.py` — Shared helpers.
+
+**Scripts (`scripts/`)**
+- `datasets/` — `download_dataset.py`, `create_balanced_dataset.py`, `create_fixed_size_dataset.py`, `run_tiff_processing.py` — data acquisition and preprocessing.
+- `eda/` — `eda_analysis.py`, `eda_dimensions_summary.py` — exploratory data analysis.
+- `braintrust/` — `create_braintrust_800_dataset.py`, `braintrust_openrouter_input.py`, `braintrust_report.py`, `braintrust_metrics_visual.py`, `summarize_braintrust_experiment.py`, `copy_braintrust_dataset.py` — Braintrust evaluation and reporting.
+- `openrouter/` — `estimate_openrouter_cost.py` — extrapolate token usage/cost for 800, 25,000, and 320,000 images.
+
+**Documentation (`docs/`)**
+- `experiments/` — Experiment log and all experiment results (confusion matrices, misclassification reasoning, cost projections).
+- `prompt_rules_provenance.md` — Sources and validation status of prompt rules across versions.
+- `document_processor.md` — `document_processor.py` module reference.
+- `README.md` — Index of the documentation tree.
+
+**Generated output (`reports/`)**
+- `dimensions_summary.json` — EDA dimension summary. Confusion-matrix PNGs/heatmaps and `report_*.md` also land here.
+
+**Other**
 - `requirements.txt` — Python dependencies.
 - `.env.example` — Template for API key environment variable.
 
@@ -44,41 +58,41 @@ A Python toolkit for downloading the RVL-CDIP document image dataset, preprocess
 1. **Download the dataset**
 
    ```bash
-   python download_dataset.py
+   python scripts/datasets/download_dataset.py
    ```
 
 2. **Create a balanced subset**
 
    ```bash
-   python create_balanced_dataset.py
+   python scripts/datasets/create_balanced_dataset.py
    ```
 
 3. **Run EDA**
 
    ```bash
-   python eda_analysis.py
+   python scripts/eda/eda_analysis.py
    ```
 
 4. **Process TIFF pages to PNGs**
 
    ```bash
-   python run_tiff_processing.py
+   python scripts/datasets/run_tiff_processing.py
    ```
 
 5. **Estimate OpenRouter cost for a model**
 
-   Edit `MODEL` in `estimate_openrouter_cost.py`, then run:
+   Edit `MODEL` in `scripts/openrouter/estimate_openrouter_cost.py`, then run:
 
    ```bash
-   python estimate_openrouter_cost.py
+   python scripts/openrouter/estimate_openrouter_cost.py
    ```
 
-   This updates `openrouter_token_calculation.md` automatically.
+   This updates `docs/experiments/1pic_cost_estimation.md` automatically.
 
 6. **Classify a single image**
 
    ```bash
-   python openrouter_classifier.py
+   python src/openrouter_classifier.py
    ```
 
 ## Security Notes

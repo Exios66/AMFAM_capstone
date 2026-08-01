@@ -10,9 +10,11 @@ from pathlib import Path
 from collections import defaultdict
 import random
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.cli_utils import print_header
+
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "reports"
 
 import pandas as pd
 import numpy as np
@@ -109,7 +111,7 @@ class DocumentDatasetEDA:
         ax2.set_ylabel('')
         
         plt.tight_layout()
-        plt.savefig('c:/Users/grant/AMFAM/class_distribution.png', dpi=300, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / "class_distribution.png", dpi=300, bbox_inches='tight')
         print(f"\nSaved: class_distribution.png")
         plt.close()
         
@@ -171,7 +173,7 @@ class DocumentDatasetEDA:
         axes[1, 1].set_ylabel('Frequency')
         
         plt.tight_layout()
-        plt.savefig('c:/Users/grant/AMFAM/image_dimensions.png', dpi=300, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / "image_dimensions.png", dpi=300, bbox_inches='tight')
         print(f"\nSaved: image_dimensions.png")
         plt.close()
         
@@ -196,7 +198,7 @@ class DocumentDatasetEDA:
         plt.suptitle('')  # Remove automatic title
         
         plt.tight_layout()
-        plt.savefig('c:/Users/grant/AMFAM/dimensions_by_class.png', dpi=300, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / "dimensions_by_class.png", dpi=300, bbox_inches='tight')
         print(f"Saved: dimensions_by_class.png")
         plt.close()
     
@@ -224,7 +226,7 @@ class DocumentDatasetEDA:
         ax.set_ylabel('Frequency')
         
         plt.tight_layout()
-        plt.savefig('c:/Users/grant/AMFAM/file_sizes.png', dpi=300, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / "file_sizes.png", dpi=300, bbox_inches='tight')
         print(f"\nSaved: file_sizes.png")
         plt.close()
     
@@ -250,7 +252,7 @@ class DocumentDatasetEDA:
         ax.tick_params(axis='x', rotation=0)
         
         plt.tight_layout()
-        plt.savefig('c:/Users/grant/AMFAM/image_modes.png', dpi=300, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / "image_modes.png", dpi=300, bbox_inches='tight')
         print(f"\nSaved: image_modes.png")
         plt.close()
     
@@ -282,7 +284,7 @@ class DocumentDatasetEDA:
                     print(f"Error loading {img_path}: {e}")
         
         plt.tight_layout()
-        plt.savefig('c:/Users/grant/AMFAM/sample_images.png', dpi=300, bbox_inches='tight')
+        plt.savefig(OUTPUT_DIR / "sample_images.png", dpi=300, bbox_inches='tight')
         print(f"\nSaved: sample_images.png")
         plt.close()
     
@@ -328,7 +330,7 @@ class DocumentDatasetEDA:
         }
         
         # Save report
-        with open('c:/Users/grant/AMFAM/eda_report.json', 'w') as f:
+        with open(OUTPUT_DIR / "eda_report.json", "w") as f:
             json.dump(report, f, indent=2)
         
         print(f"\nSaved: eda_report.json")

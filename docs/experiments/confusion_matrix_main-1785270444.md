@@ -4,7 +4,7 @@
 **Dataset:** 2550×3300 padded PNGs, 50 per class  
 **Model:** `google/gemini-2.5-flash`
 
-![Confusion Matrix](confusion_matrix_main-1785270444.png)
+![Confusion Matrix](../../reports/confusion_matrix_main-1785270444.png)
 
 ## Raw Counts
 

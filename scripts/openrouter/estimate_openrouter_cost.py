@@ -11,7 +11,7 @@ import re
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.env_utils import require_env
 from src.openrouter_classifier import classify_image
@@ -197,7 +197,7 @@ if __name__ == "__main__":
         INPUT_PRICE,
         OUTPUT_PRICE
     )
-    md_path = Path(__file__).parent / "openrouter_token_calculation.md"
+    md_path = Path(__file__).resolve().parents[2] / "docs" / "experiments" / "1pic_cost_estimation.md"
     update_markdown(md_path, section, MODEL)
 
     print(json.dumps(estimate, indent=2))

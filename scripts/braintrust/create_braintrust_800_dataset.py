@@ -32,7 +32,7 @@ import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import braintrust
 import pyarrow.parquet as pq

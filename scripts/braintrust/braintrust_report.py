@@ -16,7 +16,7 @@ import time
 from collections import Counter, defaultdict
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import matplotlib
 matplotlib.use("Agg")
@@ -387,7 +387,7 @@ def main():
     parser.add_argument("--reasoning", default="enabled (effort=high), trace logged")
     parser.add_argument("--project-id", default=PROJECT_ID)
     parser.add_argument("--project", default="AMFAM v2")
-    parser.add_argument("--output-dir", default="docs")
+    parser.add_argument("--output-dir", default="reports")
     args = parser.parse_args()
 
     (api_key,) = require_env("BRAINTRUST_API_KEY")

@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 from typing import Union
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +32,7 @@ from src.openrouter_classifier import VALID_CLASSES
 # ---------------------------------------------------------------------------
 
 PROJECT_NAME = "AMFAM-Doc-Classification"
-OUTPUT_DIR = Path(__file__).parent.parent / "docs"
+OUTPUT_DIR = Path(__file__).resolve().parents[2] / "reports"
 
 
 # ---------------------------------------------------------------------------
@@ -568,8 +568,10 @@ def main():
     # Print doc section
     section = print_doc_section(results, experiment_name, meta)
 
-    # Append to doc file (skip if experiment already recorded)
-    doc_path = OUTPUT_DIR / "experiment_log.md"
+    # Append to experiment log (skip if experiment already recorded)
+    docs_dir = Path(__file__).resolve().parents[2] / "docs" / "experiments"
+    docs_dir.mkdir(parents=True, exist_ok=True)
+    doc_path = docs_dir / "experiment_log.md"
     existing_content = ""
     if doc_path.exists():
         existing_content = doc_path.read_text(encoding="utf-8")
