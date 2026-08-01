@@ -18,10 +18,10 @@ every row carries a deterministic id, so repeated runs never duplicate rows.
 Run with --dry-run to preview without writing anything.
 
 Usage:
-    python scripts/create_misclassification_smoke_dataset.py
-    python scripts/create_misclassification_smoke_dataset.py --dry-run
-    python scripts/create_misclassification_smoke_dataset.py --dataset my_smoke_set
-    python scripts/create_misclassification_smoke_dataset.py --experiments "qwen3.7-flash_v9_reasoning qwen3.7-flash_v10_reasoning"
+    python scripts/braintrust/create_misclassification_smoke_dataset.py
+    python scripts/braintrust/create_misclassification_smoke_dataset.py --dry-run
+    python scripts/braintrust/create_misclassification_smoke_dataset.py --dataset my_smoke_set
+    python scripts/braintrust/create_misclassification_smoke_dataset.py --experiments "qwen3.7-flash_v9_reasoning qwen3.7-flash_v10_reasoning"
 """
 
 import argparse
@@ -33,7 +33,7 @@ from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import braintrust
 

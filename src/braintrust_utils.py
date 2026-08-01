@@ -2,7 +2,7 @@
 
 Used by the eval runner (``scripts/braintrust_openrouter_input.py``), the
 report generator (``scripts/braintrust_report.py``), and the smoke-test
-dataset builder (``scripts/create_misclassification_smoke_dataset.py``) so the
+dataset builder (``scripts/braintrust/create_misclassification_smoke_dataset.py``) so the
 Braintrust wire protocol (experiment fetch, attachment downloads, dataset
 loading) lives in one place.
 """

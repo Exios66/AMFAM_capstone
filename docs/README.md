@@ -1,5 +1,9 @@
 # Documentation Index
 
+## Quick Start
+
+- [`CLI_COMMANDS.md`](CLI_COMMANDS.md) — The most common / most useful CLI commands for this project (setup, data pipeline, EDA, cost estimation, Braintrust evaluation workflow).
+
 ## Experiment Log & Results (`experiments/`)
 
 The canonical home for experiment tracking and results.
@@ -13,7 +17,7 @@ The canonical home for experiment tracking and results.
 
 ## Design & Reference
 
-- [`prompt_rules_provenance.md`](prompt_rules_provenance.md) — Sources and validation status of classification rules across prompt versions (v1 → v10).
+- [`prompt_rules_provenance.md`](prompt_rules_provenance.md) — Sources and validation status of classification rules across prompt versions (v1 → v11).
 - [`document_processor.md`](document_processor.md) — Reference for the `document_processor` module (PDF→PNG + spatial OCR).
 
 ## Generated Output
