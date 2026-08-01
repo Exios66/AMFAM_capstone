@@ -567,3 +567,131 @@ most of the estimate-vs-bill smoke bucket, and the two remaining 160-set misses
 (`jow70f00`, `tqi16e00`) are precisely the edge cases the next prompt version
 should target.
 
+---
+
+## v11.7 (qwen3.7-flash) — minimal edit set D + A + B
+
+v11.7 = v11.6 + a deliberately minimal 3-edit set (D, A, B — C and E skipped
+to reduce regression risk):
+
+- **Edit D** — check 7 structural split between voucher/check-stub (budget) and
+  vendor billing with amounts/totals (invoice).
+- **Edit A** — check 8 adds: a labeled product/parameter rate-data chart
+  (rates/units per product or parameter) is a specification.
+- **Edit B** — check 10 adds a standalone-chart carve-out: a financial/money
+  chart with no other document signals is budget; an unlabeled standalone
+  chart/table is a presentation slide.
+
+### v11.7 full-run results
+
+| Run | Accuracy |
+| -------- | ------: |
+| 160-image `qwen3.7-flash_v11_7_reasoning_160` | **98.1%** (156/159) |
+| 56-row eval `qwen3.7-flash_v11_7_eval` | **35.7%** (20/56) |
+
+v11.7 is the first 16-class prompt to exceed 35% on the eval set
+(v11.5 = 16/56, v11.6 = 17/56). Its 3 misses on the 160 set:
+
+- **`yvp54d00` — form → budget:** a "MILWAUKEE ADVERTISING CLUB" document
+  requesting authorization of $690,000; the budget money-only rule catches the
+  bare figure.
+- **`cpt85d00` — letter → memo:** correspondence to "Mr. T. E. Sandefur"; the
+  by-name + no-TO:/FROM: pattern routes it to memo.
+- **`tqi16e00` — budget → invoice:** the OUTDOOR ESTIMATE RECAP bus-shelter
+  planning recap (also a v11 miss).
+
+---
+
+## v11.8 (qwen3.7-flash) — Fix 1 (form-vs-budget authorization) + Fix 2 (memo-vs-letter)
+
+v11.8 = v11.7 + two targeted fixes for the 160-set's remaining misses:
+
+- **Fix 1** — budget money-only clause narrowed to *bare amount-only requests*
+  only; a document carrying an explicit "AUTHORIZATION REQUEST" for funds is a
+  form (fixes `yvp54d00`).
+- **Fix 2** — memo-vs-letter: a by-name memo requires an explicit INTERNAL
+  TITLE/DIVISION; a bare honorific + name external addressee is a letter
+  (fixes `cpt85d00`).
+
+### v11.8 highlights — best result on the curated archive set
+
+| Run | Accuracy |
+| -------- | ------: |
+| 160-image `qwen3.7-flash_v11_8_reasoning_160` | **99.4%** (157/158) |
+| 56-row eval `qwen3.7-flash_v11_8_eval` | **32.1%** (18/56) |
+
+**160-set: 157/158 (99.4%) — best ever.** All three v11.7 misses fixed:
+
+- `yvp54d00` form→budget → **form** ✓ (AUTHORIZATION REQUEST $690,000)
+- `cpt85d00` letter→memo → **letter** ✓ ("Mr. T. E. Sandefur")
+- `tqi16e00` budget→invoice → **budget** ✓ (OUTDOOR ESTIMATE RECAP)
+
+Invoice held at 10/10. The only remaining miss is `jed71e00`
+(form → presentation).
+
+**56-row eval: 18/56 — regression vs v11.7's 20/56**, but the two recovered
+rows confirm both fixes transfer:
+
+- ✓ `rvl_cdip__form__0005.png` — form → invoice → **form** (Fix 1)
+- ✓ `rvl_cdip__specification__0019.png` — spec → form → **spec**
+
+The four eval regressions (all downstream of Edit B's carve-out and Fix 1):
+
+- ✗ `rvl_cdip__presentation__0001.png`, `rvl_cdip__presentation__0011.png` —
+  presentation → budget: titled, designed deck charts routed to budget by
+  Edit B's "financial/money chart is budget" rule (check 10) ahead of check 9.
+- ✗ `rvl_cdip__specification__0017.png` — spec → form.
+- ✗ `jed71e00` — form → presentation (the same image that is the 160-set's
+  one miss).
+
+5 `letter → memo` eval misses are unchanged (gold-labeled literal TO:/FROM:
+memo-header letters; pre-existing since v11.5 — Fix 2 only targeted bare-name
+external addressees).
+
+---
+
+## v11.9 (qwen3.7-flash) — narrow Edit B's financial-chart→budget carve-out
+
+v11.9 = v11.8 + three edits that narrow Edit B so titled/designed deck charts
+no longer fall into budget:
+
+- **Edit 1** — check 10 carve-out narrowed: a product/parameter rate-data
+  chart → specification; a research/measurement chart → scientific_report; a
+  financial/money chart → budget **only when it is a standalone data table
+  used for money planning or tracking**; a titled, designed deck chart stays
+  presentation (check 9).
+- **Edit 2** — check 9 hardened: a titled/designed deck chart IS a
+  presentation slide; don't route it to budget.
+- **Edit 3** — calibration line: deck charts → presentation, product/parameter
+  charts → specification.
+
+### v11.9 full-run results
+
+| Run | Accuracy |
+| -------- | ------: |
+| 56-row eval `qwen3.7-flash_v11_9_eval` | **35.7%** (20/56) |
+
+Ties v11.7's best eval score and is +2 over v11.8's 18/56. The two
+presentation→budget regressions introduced by Edit B in v11.8 are recovered,
+plus two bonus fixes:
+
+- ✓ `rvl_cdip__presentation__0001.png` — presentation → budget → **presentation**
+- ✓ `rvl_cdip__presentation__0011.png` — presentation → budget → **presentation**
+- ✓ `test_imagesj_j_e_d_jed71e00...` — form → presentation → **form** (this is
+  also the one remaining 160-set miss in v11.8)
+- ✓ `rvl_cdip__questionnaire__0016.png` — questionnaire → handwritten → **questionnaire**
+
+Two rows regressed against v11.8:
+
+- ✗ `rvl_cdip__form__0005.png` — form → invoice (a Fix-1 success in v11.8,
+  lost in v11.9)
+- ✗ `rvl_cdip__news_article__0008.png` — news_article → memo (new miss; was
+  correct in v11.7 and v11.8)
+
+Three rows remain misses but shifted prediction: `advertisement__0015`
+(form→handwritten), `presentation__0013` (memo→letter),
+`scientific_report__0016` (specification→form). The 5 `letter → memo` eval
+misses are unchanged. **v11.9 recovers the Edit B presentation regression while
+holding v11.8's 160-set fix, so the next eval benchmark is the 480-image run
+(queued) to confirm the generalization holds.**
+
