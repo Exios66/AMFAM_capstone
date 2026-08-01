@@ -24,7 +24,9 @@ class Job:
 
 DEFAULT_JOBS = (
     Job("qwen3.7-flash_v14_reasoning_160_v2", "fixed_size_sampled_v2", "eval_160_v14_v2.jsonl", 160),
-    Job("qwen3.7-flash_v14_reasoning_160", "fixed_size_sampled", "eval_160_v14.jsonl", 160),
+    # The repository's canonical dataset name is fixed_size_sampled (the
+    # requested fixed_siz_sample name does not exist).
+    Job("qwen3.7-flash_v14_fixed_size_sample", "fixed_size_sampled", "eval_fixed_size_sample_v14.jsonl", 160),
     Job("qwen3.7-flash_v14_hard_eval", "qwen_v115_v12_eval", "eval_hard_v14.jsonl", 52),
 )
 

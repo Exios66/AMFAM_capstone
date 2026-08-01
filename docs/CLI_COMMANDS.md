@@ -37,6 +37,10 @@ settings; `.env` fills the gaps (notably `OPENROUTER_API_KEY`).
 | Validate a queued eval | `python scripts/braintrust/preflight_eval.py --dataset <ds> --prompt-version v14` |
 | Run production eval queue | `python scripts/braintrust/run_eval_queue.py --dry-run` |
 
+The production queue includes `qwen3.7-flash_v14_fixed_size_sample`, which runs
+prompt `v14` with `qwen/qwen3.7-flash` on the canonical `fixed_size_sampled`
+dataset. `fixed_siz_sample` is not a repository dataset name.
+
 ## Data pipeline
 
 ```bash

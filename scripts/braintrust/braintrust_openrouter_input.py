@@ -309,7 +309,11 @@ def run_eval(
         PROJECT_NAME,
         data=lambda: [
             {
-                "input": {"index": i, "filename": d["filename"]},
+                "input": {
+                    "index": i,
+                    "filename": d["filename"],
+                    "expected": d["expected"],
+                },
                 "expected": d["expected"],
                 "filename": d["filename"],
             }
