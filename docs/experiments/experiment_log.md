@@ -695,6 +695,66 @@ misses are unchanged. **v11.9 recovers the Edit B presentation regression while
 holding v11.8's 160-set fix, so the next eval benchmark is the 480-image run
 (queued) to confirm the generalization holds.**
 
+### v11.8 on the 320-image set — `qwen3.7-flash_v11_8_reasoning_320`
+
+| Metric | Value |
+| -------- | ------: |
+| **Accuracy (exact_match)** | **87.2%** (279/320) |
+
+Per-class (20/class):
+
+| Class | Correct/Total | | Class | Correct/Total |
+| ------ | --: | -- | ------ | --: |
+| advertisement | 18/20 | | news_article | 18/20 |
+| budget | 16/20 | | presentation | 16/20 |
+| email | 20/20 | | questionnaire | 17/20 |
+| file_folder | 17/20 | | resume | 20/20 |
+| form | 17/20 | | scientific_publication | 17/20 |
+| handwritten | 18/20 | | scientific_report | 16/20 |
+| invoice | 16/20 | | specification | 18/20 |
+| letter | 15/20 | | memo | 20/20 |
+
+v11.8 on the noisy 320 set is 87.2% vs v11's 83.9% (+3.3pp) — strong
+generalization of the 160-set improvement. Biggest per-class gains:
+
+- **budget** 13/20 → 16/20 (+3)
+- **form** 14/20 → 17/20 (+3)
+- **specification** 15/20 → 18/20 (+3)
+- **presentation** 14/20 → 16/20 (+2)
+- **invoice** 15/20 → 16/20 (+1), **memo** 19/20 → 20/20 (+1)
+
+Small losses: **file_folder** 18/20 → 17/20 (−1), **handwritten** 19/20 → 18/20
+(−1), **scientific_publication** 18/20 → 17/20 (−1).
+
+### v11.8 on the 480-image set — `qwen3.7-flash_v11_8_reasoning_480`
+
+| Metric | Value |
+| -------- | ------: |
+| **Accuracy (exact_match)** | **89.1%** (424/476) |
+
+Per-class (30/class; 4 rows unscored):
+
+| Class | Correct/Total | | Class | Correct/Total |
+| ------ | --: | -- | ------ | --: |
+| advertisement | 26/29 | | news_article | 27/29 |
+| budget | 27/30 | | presentation | 25/30 |
+| email | 28/29 | | questionnaire | 28/30 |
+| file_folder | 26/30 | | resume | 29/32 |
+| form | 27/30 | | scientific_publication | 27/30 |
+| handwritten | 27/30 | | scientific_report | 24/30 |
+| invoice | 24/30 | | specification | 27/30 |
+| letter | 23/30 | | memo | 29/30 |
+
+This is the first run on the 480 set (no v11 baseline). The 89.1% score holds
+up well given the larger, noisier sample. Biggest miss buckets:
+
+- **letter → memo (7):** the persistent v11.5+ TO:/FROM: memo-header issue
+- **invoice → form (4), scientific_report → form (3):** form-layout pull
+- **budget → invoice (3), invoice → budget (2):** residual estimate/billing
+- **advertisement → presentation (3):** labeled chart routing
+- **presentation → scientific_report (2), presentation → file_folder (2):**
+  deck-chart misrouting
+
 ---
 
 ## New Evaluation Assets and v13
