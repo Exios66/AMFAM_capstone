@@ -46,6 +46,8 @@ processed_balanced_dataset
 2550x3300_50perclass_800/
 1024x1024_50perclass_800/
 fixed_size_sampled/
+fixed_size_sampled_320/
+fixed_size_sampled_480/
 
 
 # Logs

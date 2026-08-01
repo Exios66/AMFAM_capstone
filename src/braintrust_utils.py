@@ -27,10 +27,20 @@ EXPERIMENT_FETCH_RETRIES = 6
 # Experiment + dataset HTTP helpers
 # ---------------------------------------------------------------------------
 
+def _v1_api_base(api_base: str) -> str:
+    """Ensure an api_base points at the REST endpoints under ``/v1``.
+
+    Configs use ``https://api.braintrust.dev`` (no suffix), while the
+    experiment/dataset REST endpoints live under ``https://api.braintrust.dev/v1``.
+    """
+    api_base = api_base.rstrip("/")
+    return f"{api_base}/v1" if not api_base.endswith("/v1") else api_base
+
+
 def list_experiments(api_key: str, project_id: str, api_base: str = "https://api.braintrust.dev/v1") -> list[dict]:
     """Return metadata for every experiment in a project."""
     resp = requests.get(
-        f"{api_base}/experiment",
+        f"{_v1_api_base(api_base)}/experiment",
         headers={"Authorization": f"Bearer {api_key}"},
         params={"project_id": project_id, "limit": 200},
         timeout=60,
@@ -42,7 +52,7 @@ def list_experiments(api_key: str, project_id: str, api_base: str = "https://api
 def list_datasets(api_key: str, project_id: str, api_base: str = "https://api.braintrust.dev/v1") -> list[dict]:
     """Return metadata for every dataset in a project."""
     resp = requests.get(
-        f"{api_base}/dataset",
+        f"{_v1_api_base(api_base)}/dataset",
         headers={"Authorization": f"Bearer {api_key}"},
         params={"project_id": project_id, "limit": 200},
         timeout=60,
@@ -62,7 +72,7 @@ def delete_dataset_by_name(
     for dataset in list_datasets(api_key, project_id, api_base):
         if dataset.get("name") == name:
             dataset_id = dataset["id"]
-            resp = requests.delete(f"{api_base}/dataset/{dataset_id}", headers=headers, timeout=60)
+            resp = requests.delete(f"{_v1_api_base(api_base)}/dataset/{dataset_id}", headers=headers, timeout=60)
             resp.raise_for_status()
             return dataset_id
     return None
@@ -85,7 +95,7 @@ def fetch_experiment_rows(
         for attempt in range(max_retries):
             try:
                 resp = requests.post(
-                    f"{api_base}/experiment/{experiment_id}/fetch",
+                    f"{_v1_api_base(api_base)}/experiment/{experiment_id}/fetch",
                     headers=headers,
                     json=body,
                     timeout=120,

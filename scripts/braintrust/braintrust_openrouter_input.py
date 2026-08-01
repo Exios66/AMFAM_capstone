@@ -18,21 +18,20 @@ Usage:
 """
 
 import argparse
-import base64
 import os
 import re
 import sys
 import time
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import braintrust
-import requests
 from openai import OpenAI
 
+from src.braintrust_config import load_braintrust_config
+from src.braintrust_utils import load_braintrust_dataset
 from src.env_utils import require_env
 from src.image_utils import encode_image_base64
 from src.openrouter_classifier import VALID_CLASSES, clean_prediction
@@ -43,17 +42,18 @@ from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
 # Configuration
 # ---------------------------------------------------------------------------
 
-PROJECT_NAME = "AMFAM v2"
-PROJECT_ID = "ba0346b3-cad8-463d-b758-afddafd9f0d0"
-ORG_ID = "cc595192-8420-461d-8111-1d3ca1b42948"
-BRAINTRUST_API_BASE = "https://api.braintrust.dev"
-DEFAULT_DATASET_PROJECT = "AMFAM v2"  # Project holding the dataset
-DEFAULT_DATASET = "fixed_size_sampled"
-DEFAULT_MODEL = "qwen/qwen3.7-flash"  # cost-efficient vision reasoning model
 DEFAULT_MAX_TOKENS = 4096  # Enough for reasoning trace + scratchpad + final label
-DEFAULT_ATTACHMENT_WORKERS = 8
 MAX_TRIES = 3  # Retry transient provider failures (502s, token caps, empty responses)
 MAX_TOKENS_CAP = 16384  # Upper bound when growing max_tokens on "length" finish reasons
+
+_CONFIG = load_braintrust_config()
+PROJECT_NAME = _CONFIG.project_name
+PROJECT_ID = _CONFIG.project_id
+ORG_ID = _CONFIG.org_id
+BRAINTRUST_API_BASE = _CONFIG.api_base.rstrip("/")
+DEFAULT_DATASET_PROJECT = _CONFIG.dataset_project
+DEFAULT_DATASET = _CONFIG.dataset
+DEFAULT_MODEL = _CONFIG.model
 
 
 # ---------------------------------------------------------------------------
@@ -110,121 +110,6 @@ def load_dataset_images(dataset_dir: Path) -> list[dict]:
                 "expected": expected_class,
             })
     return dataset
-
-
-def fetch_attachment_bytes(
-    api_key: str,
-    reference: dict,
-    org_id: str = ORG_ID,
-    api_base: str = BRAINTRUST_API_BASE,
-) -> bytes:
-    """Download an already-uploaded Braintrust attachment's bytes directly.
-
-    The SDK downloads attachments one at a time (metadata request + object-store
-    GET, ~1s per row); fetching in parallel avoids that bottleneck for datasets
-    of hundreds of images.
-    """
-    params = {
-        "filename": reference["filename"],
-        "content_type": reference["content_type"],
-        "org_id": org_id,
-    }
-    if reference["type"] == "braintrust_attachment":
-        params["key"] = reference["key"]
-    elif reference["type"] == "external_attachment":
-        params["url"] = reference["url"]
-    else:
-        raise RuntimeError(f"Unknown attachment type: {reference['type']}")
-
-    resp = requests.get(
-        f"{api_base}/attachment",
-        params=params,
-        headers={"Authorization": f"Bearer {api_key}"},
-        timeout=60,
-    )
-    resp.raise_for_status()
-    download_url = resp.json()["downloadUrl"]
-
-    data = requests.get(download_url, timeout=120)
-    data.raise_for_status()
-    return data.content
-
-
-def load_braintrust_dataset(project: str, dataset_name: str, dataset_api_key: str = None, org_id: str = ORG_ID) -> list[dict]:
-    """
-    Load images from a Braintrust dataset whose rows carry the document image as
-    an attachment under ``input.image`` and the label under ``expected``.
-
-    Rows without a stored attachment (placeholder rows) are skipped. Attachments
-    are downloaded in parallel.
-    """
-    # Initialize braintrust with proper login using dataset-specific API key
-    api_key = dataset_api_key or os.environ.get("BRAINTRUST_API_KEY")
-    if api_key:
-        # Only force login if using a different API key
-        force = dataset_api_key is not None
-        braintrust.login(api_key=api_key, force_login=force)
-
-    dataset = braintrust.init_dataset(project=project, name=dataset_name)
-    pending = []
-    for i, row in enumerate(dataset):
-        expected = row.get("expected")
-        input_data = row.get("input") or {}
-        attachment = input_data.get("image")
-        metadata = input_data.get("metadata", {})
-
-        # Skip placeholder rows
-        if metadata.get("placeholder", False):
-            continue
-
-        if expected not in VALID_CLASSES or not attachment:
-            continue
-
-        # Try to get filename from reference
-        filename = None
-        try:
-            reference = getattr(attachment, "reference", None) or {}
-            filename = reference.get("filename")
-        except (KeyError, AttributeError):
-            pass
-
-        # If no filename, use document_id or fallback
-        if not filename:
-            doc_id = input_data.get("document_id")
-            if doc_id and doc_id != "generated":
-                filename = f"{doc_id}.png"
-            else:
-                filename = f"document_{i+1}.png"
-
-        pending.append((expected, attachment, filename))
-
-    records = []
-    failures = []
-
-    def grab(item):
-        _, attachment, _ = item
-        try:
-            return fetch_attachment_bytes(api_key, attachment.reference, org_id), None
-        except Exception as e:  # noqa: BLE001 - one bad row shouldn't abort the eval
-            return None, str(e)
-
-    with ThreadPoolExecutor(max_workers=DEFAULT_ATTACHMENT_WORKERS) as pool:
-        for (expected, _, filename), (image_bytes, error) in zip(pending, pool.map(grab, pending)):
-            if error is not None:
-                failures.append((expected, filename, error))
-                continue
-            records.append({
-                "image_b64": base64.b64encode(image_bytes).decode("utf-8"),
-                "filename": filename,
-                "expected": expected,
-            })
-
-    for expected, filename, error in failures:
-        print(f"SKIP {expected:<24} {filename}: {error}", file=sys.stderr)
-    if failures:
-        print(f"WARNING: skipped {len(failures)} rows with unreadable attachments", file=sys.stderr)
-
-    return records
 
 
 def extract_prediction(text: str) -> str:
@@ -439,7 +324,9 @@ def main() -> None:
         # Load the dataset with the default BRAINTRUST_API_KEY; if a separate
         # source-account key (DATA_BRAINTRUST_KEY) is configured, use it instead.
         source_key = os.environ.get("DATA_BRAINTRUST_KEY")
-        dataset = load_braintrust_dataset(args.dataset_project, args.dataset, source_key)
+        dataset = load_braintrust_dataset(
+            args.dataset_project, args.dataset, source_key, org_id=ORG_ID, api_base=BRAINTRUST_API_BASE
+        )
 
     if args.limit:
         dataset = dataset[:args.limit]

@@ -9,6 +9,7 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -17,10 +18,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import braintrust
 
+from src.braintrust_config import load_braintrust_config
 from src.env_utils import require_env
 from src.openrouter_classifier import VALID_CLASSES
 
-PROJECT_ID = "ba0346b3-cad8-463d-b758-afddafd9f0d0"
+_CONFIG = load_braintrust_config()
+PROJECT_ID = _CONFIG.project_id
 
 
 def main() -> None:
@@ -30,7 +33,7 @@ def main() -> None:
     args = parser.parse_args()
 
     require_env("BRAINTRUST_API_KEY")
-    braintrust.login(api_key=__import__("os").environ["BRAINTRUST_API_KEY"])
+    braintrust.login(api_key=os.environ["BRAINTRUST_API_KEY"])
 
     from braintrust.logger import init
 

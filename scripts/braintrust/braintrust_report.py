@@ -12,7 +12,6 @@ Usage:
 import argparse
 import json
 import sys
-import time
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -22,66 +21,27 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-import requests
 
+from src.braintrust_config import load_braintrust_config
+from src.braintrust_utils import fetch_experiment_rows, list_experiments
 from src.constants import DOCUMENT_CLASSES
 from src.env_utils import require_env
 
 VALID_CLASSES = DOCUMENT_CLASSES
-API_BASE = "https://api.braintrust.dev/v1"
-PROJECT_ID = "ba0346b3-cad8-463d-b758-afddafd9f0d0"
+_CONFIG = load_braintrust_config()
+API_BASE = _CONFIG.api_base.rstrip("/") + "/v1"
+PROJECT_ID = _CONFIG.project_id
 
 
 def fetch_experiment(api_key: str, experiment_name: str, project_id: str) -> tuple[list[dict], dict]:
-    headers = {"Authorization": f"Bearer {api_key}"}
-    resp = requests.get(f"{API_BASE}/experiment", headers=headers,
-                        params={"project_id": project_id, "limit": 200}, timeout=60)
-    resp.raise_for_status()
-    experiments = resp.json().get("objects", [])
+    experiments = list_experiments(api_key, project_id, API_BASE)
     meta = next((e for e in experiments if e["name"] == experiment_name), None)
     if not meta:
         print(f"Error: experiment '{experiment_name}' not found in project {project_id}.")
         sys.exit(1)
-    experiment_id = meta["id"]
 
-    rows = []
-    cursor = None
-    max_retries = 6
-    while True:
-        body = {"limit": 100}
-        if cursor:
-            body["cursor"] = cursor
-        for attempt in range(max_retries):
-            try:
-                resp = requests.post(f"{API_BASE}/experiment/{experiment_id}/fetch",
-                                     headers=headers, json=body, timeout=120)
-                resp.raise_for_status()
-                break
-            except requests.exceptions.HTTPError as e:
-                if resp.status_code == 429 and attempt < max_retries - 1:
-                    wait = 10 * (2 ** attempt)
-                    print(f"  Rate limited, waiting {wait}s (retry {attempt + 1}/{max_retries})")
-                    time.sleep(wait)
-                elif attempt < max_retries - 1:
-                    wait = 5 * (attempt + 1)
-                    print(f"  Retry {attempt + 1}/{max_retries} after {wait}s ({e})")
-                    time.sleep(wait)
-                else:
-                    raise
-            except requests.exceptions.Timeout as e:
-                if attempt < max_retries - 1:
-                    wait = 10 * (attempt + 1)
-                    print(f"  Timeout, retry {attempt + 1}/{max_retries} after {wait}s")
-                    time.sleep(wait)
-                else:
-                    raise
-        data = resp.json()
-        batch = data.get("events", [])
-        rows.extend(batch)
-        cursor = data.get("cursor")
-        print(f"  Fetched {len(batch)} rows (total: {len(rows)})")
-        if not cursor or not batch:
-            break
+    rows = fetch_experiment_rows(api_key, meta["id"], API_BASE)
+    print(f"  Fetched {len(rows)} rows")
     return rows, meta
 
 
@@ -377,7 +337,7 @@ def build_full_report(experiment: str, model: str, prompt_version: str, dataset:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment", required=True)
-    parser.add_argument("--model", default="qwen/qwen3.7-flash")
+    parser.add_argument("--model", default=_CONFIG.model)
     parser.add_argument("--prompt-version", required=True)
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--images-per-class", type=int, required=True)
@@ -386,7 +346,7 @@ def main():
     parser.add_argument("--output-price", type=float, default=0.13)
     parser.add_argument("--reasoning", default="enabled (effort=high), trace logged")
     parser.add_argument("--project-id", default=PROJECT_ID)
-    parser.add_argument("--project", default="AMFAM v2")
+    parser.add_argument("--project", default=_CONFIG.project_name)
     parser.add_argument("--output-dir", default="reports")
     args = parser.parse_args()
 

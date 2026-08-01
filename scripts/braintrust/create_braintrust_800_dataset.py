@@ -39,6 +39,7 @@ import pyarrow.parquet as pq
 import requests
 from PIL import Image
 
+from src.braintrust_config import load_braintrust_config
 from src.constants import DOCUMENT_CLASSES
 from src.env_utils import require_env
 from src.image_utils import resize_with_padding
@@ -47,9 +48,10 @@ from src.image_utils import resize_with_padding
 # Configuration
 # ---------------------------------------------------------------------------
 
-DEFAULT_ORG = "cc595192-8420-461d-8111-1d3ca1b42948"
-DEFAULT_PROJECT = "AMFAM v2"
-DEFAULT_PROJECT_ID = "ba0346b3-cad8-463d-b758-afddafd9f0d0"
+_CONFIG = load_braintrust_config()
+DEFAULT_ORG = _CONFIG.org_id
+DEFAULT_PROJECT = _CONFIG.project_name
+DEFAULT_PROJECT_ID = _CONFIG.project_id
 DEFAULT_DATASET = "rvl_cdip_800"
 DEFAULT_TARGET_SIZE = (1024, 1024)
 DEFAULT_IMAGES_PER_CLASS = 50
@@ -151,13 +153,13 @@ def sample_rows(rows: list[dict], images_per_class: int, seed: int) -> list[dict
 
 
 def to_png_bytes(tiff_bytes: bytes, target_size: tuple[int, int]) -> bytes:
-    """Convert a TIFF blob to a fixed-size padded grayscale PNG."""
+    """Convert a TIFF blob to a fixed-size padded grayscale PNG (300 DPI metadata)."""
     with Image.open(io.BytesIO(tiff_bytes)) as img:
         if img.mode != "L":
             img = img.convert("L")
         padded = resize_with_padding(img, target_size, fill=255)
         buffer = io.BytesIO()
-        padded.save(buffer, format="PNG")
+        padded.save(buffer, format="PNG", dpi=(300, 300))
         return buffer.getvalue()
 
 
@@ -244,10 +246,11 @@ def upload_dataset(
     dataset.flush()
     dataset.close()
 
+    n = max(1, len(records))
     experiment.log(
         input={"dataset": dataset_name, "records": len(records)},
         output={"inserted": inserted, "failed": failed, "dataset_name": dataset_name},
-        scores={"rows_inserted": inserted, "rows_failed": failed},
+        scores={"insertion_rate": inserted / n, "failure_rate": failed / n},
         metrics={"images": inserted, "classes": len(per_class), "total_bytes": total_bytes},
         metadata={
             "per_class": dict(per_class),
