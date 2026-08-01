@@ -228,6 +228,146 @@ dataset mislabel — an American Journal of Epidemiology reprint (Vol. 119, No. 
 1984) — ground truth flipped to `scientific_publication`; v10 predicts it
 correctly.
 
+### v10 full run (160-image `fixed_size_sampled`)
+
+| Metric | Value |
+| -------- | ------: |
+| **Accuracy (exact_match)** | **97.5%** (154/158 correct) |
+
+Per-class (of ~10 per class; 2 rows without a stored attachment are skipped):
+
+| Class | Correct/Total | | Class | Correct/Total |
+| ------ | --: | -- | ------ | --: |
+| advertisement | 9/9 | | news_article | 9/9 |
+| budget | 9/10 | | presentation | 10/10 |
+| email | 9/9 | | questionnaire | 10/10 |
+| file_folder | 10/10 | | resume | 10/10 |
+| form | 10/10 | | scientific_publication | 11/11 |
+| handwritten | 10/10 | | scientific_report | 10/10 |
+| invoice | 7/10 | | specification | 10/10 |
+| letter | 10/10 | | memo | 10/10 |
+
+Remaining 4 misses (all `invoice ↔ budget`):
+- `qia17d00` — Tobacco Institute check + detachable "INVOICE" stub (state campaign
+  contribution): predicted invoice, expected budget.
+- `dav40c00`, `wce83f00`, `ynj47c00` — "ESTIMATE CHANGE ORDER" / "PRODUCTION
+  ESTIMATE REPORT" / "NEWSPAPER ESTIMATE RECAP": predicted budget, expected
+  invoice.
+
+No memo↔invoice confusion in the final run (memo 10/10, letter 10/10). The
+residual error class is agency/vendor estimate-vs-bill (budget vs invoice).
+
 ### Notes
 
-- Experiment `qwen3.7-flash_v10_smoke` on Braintrust.
+- Experiments `qwen3.7-flash_v10_smoke` and `qwen3.7-flash_v10_reasoning` on Braintrust.
+
+---
+
+## AMFAM v2 — qwen3.7-flash & gemini-2.5-flash reasoning experiments (complete)
+
+All runs: `fixed_size_sampled` (160-image balanced sample, ~10 per class × 16),
+reasoning enabled, `exact_match` tracked. 2 of 160 rows lack a stored attachment
+and are skipped, so the scored total is 158.
+
+### Summary
+
+| Experiment | Model | Prompt | Accuracy |
+| -------- | ----- | ------ | ------: |
+| `qwen3.7-flash_v1_reasoning` | qwen/qwen3.7-flash | v1 | 50.0% (11/22)¹ |
+| `qwen3.7-flash_v1_reasoning-5718f5da` | qwen/qwen3.7-flash | v1 | 80.1% (125/156) |
+| `qwen3.7-flash_v2_reasoning` | qwen/qwen3.7-flash | v2 | 78.5% (124/158) |
+| `qwen3.7-flash_v3_reasoning-14553e3a` | qwen/qwen3.7-flash | v3 | 78.5% (124/158) |
+| `qwen3.7-flash_v4_reasoning` | qwen/qwen3.7-flash | v4 | 83.5% (132/158) |
+| `qwen3.7-flash_v5_reasoning` | qwen/qwen3.7-flash | v5 | 84.8% (134/158) |
+| `qwen3.7-flash_v6_reasoning` | qwen/qwen3.7-flash | v6 | 83.9% (130/155) |
+| `qwen3.7-flash_v7_reasoning` | qwen/qwen3.7-flash | v7 | 91.1% (144/158) |
+| `qwen3.7-flash_v8_reasoning` | qwen/qwen3.7-flash | v8 | 91.8% (145/158) |
+| `qwen3.7-flash_v8.5_reasoning` | qwen/qwen3.7-flash | v8.5 | 88.6% (140/158) |
+| `qwen3.7-flash_v9_reasoning` | qwen/qwen3.7-flash | v9 | 91.1% (144/158) |
+| `qwen3.7-flash_v10_smoke` | qwen/qwen3.7-flash | v10 | 100% (14/14)² |
+| `qwen3.7-flash_v10_reasoning` | qwen/qwen3.7-flash | v10 | **97.5% (154/158)** |
+| `gemini-2.5-flash_v3_reasoning` | google/gemini-2.5-flash | v3 | 77.4% (123/159) |
+| `gemini-2.5-flash_v4_reasoning` | google/gemini-2.5-flash | v4 | 77.7% (122/157) |
+
+¹ First v1 run aborted early (22 scored rows). ² Smoke test on the 14 v9-miss images.
+
+### qwen3.7-flash v1 (run 1, partial)
+
+11/22 (50.0%). Aborted early — only 22 rows scored (budget 5/9, invoice 3/9,
+letter 1/1, presentation 2/3).
+
+### qwen3.7-flash v1 (run 2)
+
+125/156 (80.1%). Weakest classes: presentation 3/9, invoice 4/10, questionnaire
+6/10, budget 6/10, form 6/10. Strong: email, file_folder, handwritten, letter,
+memo all 10/10.
+
+### qwen3.7-flash v2
+
+124/158 (78.5%). Weakest: invoice 3/10, presentation 4/10, budget/form/
+questionnaire 6/10. file_folder, email, handwritten 10/10.
+
+### qwen3.7-flash v3
+
+124/158 (78.5%). Weakest: questionnaire 4/10, presentation 4/10, invoice 4/10,
+budget 6/10. Handwritten drops to 9/10.
+
+### qwen3.7-flash v4
+
+132/158 (83.5%). +5.0 over v3. resume jumps to 10/10; questionnaire 8/10,
+presentation 7/9, invoice 7/10. form still 6/10, budget 6/10.
+
+### qwen3.7-flash v5
+
+134/158 (84.8%). form 9/10, budget collapses to 3/10. invoice 6/10.
+
+### qwen3.7-flash v6
+
+130/155 (83.9%). budget 4/10, invoice 4/10, scientific_report 7/10. form 9/10.
+
+### qwen3.7-flash v7
+
+144/158 (91.1%). form 10/10, presentation 10/10, questionnaire 10/10, resume
+10/10. handwritten drops to 6/10, scientific_report 7/10. (v7 added presentation
+cover/slide rules.)
+
+### qwen3.7-flash v8
+
+145/158 (91.8%). Best qwen result before v10. memo 8/10, handwritten 8/10,
+scientific_report 7/10. (v8 added agency estimate change order + scratchpad
+deliberation.)
+
+### qwen3.7-flash v8.5
+
+140/158 (88.6%). Regression on file_folder (3/10) — the v8.5 folder-tab rewrite
+over-corrected cover pages. memo 10/10, form 10/10.
+
+### qwen3.7-flash v9
+
+144/158 (91.1%). Recovered file_folder (10/10) and invoice (10/10); regressed
+questionnaire (7/10) and scientific_report (6/10). (v9 added folder-tab and
+budget-vs-form rules.)
+
+### qwen3.7-flash v10 (full run)
+
+154/158 (97.5%). See section above. Only 4 misses remain, all `invoice ↔ budget`
+agency estimate/billing ambiguities.
+
+### gemini-2.5-flash v3
+
+123/159 (77.4%). Weakest: invoice 3/10, questionnaire 4/10, form 5/10,
+presentation 6/10, budget 6/10, resume 6/10. email/file_folder/handwritten/
+memo/scientific_publication 10/10.
+
+### gemini-2.5-flash v4
+
+122/157 (77.7%). Weakest: form 4/10, scientific_report 5/10, news_article 6/10,
+advertisement 6/10, budget 6/10. file_folder/email/handwritten 10/10.
+
+### Cross-model note
+
+qwen3.7-flash with the same prompt family outperforms gemini-2.5-flash by a wide
+margin once the prompt reaches v7+ (91-97% vs 77%). qwen3.7-flash's explicit
+forced reasoning (`reasoning.enabled + effort high`) produces a structured
+scratchpad that reliably follows the v7+ step cascade; gemini's medium-effort
+reasoning is less controllable and does not hit the same disambiguation rules.
