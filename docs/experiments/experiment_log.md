@@ -286,10 +286,12 @@ and are skipped, so the scored total is 158.
 | `qwen3.7-flash_v9_reasoning` | qwen/qwen3.7-flash | v9 | 91.1% (144/158) |
 | `qwen3.7-flash_v10_smoke` | qwen/qwen3.7-flash | v10 | 100% (14/14)² |
 | `qwen3.7-flash_v10_reasoning` | qwen/qwen3.7-flash | v10 | **97.5% (154/158)** |
+| `qwen3.7-flash_v10_reasoning_320` | qwen/qwen3.7-flash | v10 | 85.3% (272/319)³ |
+| `qwen3.7-flash_v10_smoke_full` | qwen/qwen3.7-flash | v10 | 82.9% (180/217)⁴ |
 | `gemini-2.5-flash_v3_reasoning` | google/gemini-2.5-flash | v3 | 77.4% (123/159) |
 | `gemini-2.5-flash_v4_reasoning` | google/gemini-2.5-flash | v4 | 77.7% (122/157) |
 
-¹ First v1 run aborted early (22 scored rows). ² Smoke test on the 14 v9-miss images.
+¹ First v1 run aborted early (22 scored rows). ² Smoke test on the 14 v9-miss images. ³ 320-image fixed-size set (20/class), one row unscored. ⁴ Full v10 smoke run on the 239-row misclassification set; run aborted at 217 scored rows (82.9%).
 
 ### qwen3.7-flash v1 (run 1, partial)
 
@@ -352,6 +354,48 @@ budget-vs-form rules.)
 
 154/158 (97.5%). See section above. Only 4 misses remain, all `invoice ↔ budget`
 agency estimate/billing ambiguities.
+
+### qwen3.7-flash v10 (320-image run)
+
+272/319 (85.3%) on the `fixed_size_sampled_320` set (20 images/class; one row
+unscored). The 320-image set is far noisier than the curated 158 — the same
+v10 prompt that reaches 97.5% on the archive set lands at 85.3% here. Errors
+spread across 24 distinct confusion pairs; no single class dominates. The
+biggest buckets are `letter → memo` (5) and `scientific_report → form` (5) —
+mostly TO:/FROM:/SUBJECT internal memos and filled analytical/QA data sheets
+that the v7+ cascade deliberately routes away from letter/scientific_report —
+plus `budget → form` (4), `specification → form` (4), and `invoice → budget`
+(3). All 11 `budget ↔ invoice` failures are covered by the same agency
+estimate / money-record / form-footer patterns that v11 (and v11.5) target.
+
+### qwen3.7-flash v10 (smoke run, full set)
+
+180/217 (82.9%) on the 239-row misclassification smoke set
+(`qwen_misclassification_smoke_v1_v11` — one image per v1-v11 miss, annotated
+with the source prompt version). The run was aborted before the final ~22 rows
+scored. 37 errors across just 5 confusion pairs:
+
+- **`invoice → budget` (20):** dominated by the three agency-estimate
+  documents v11 already fixes (`dav40c00` ESTIMATE CHANGE ORDER, `wce83f00`
+  PRODUCTION ESTIMATE REPORT, `ynj47c00` NEWSPAPER ESTIMATE RECAP — repeated
+  across source versions) plus `jow70f00` (B&W payment VOUCHER for a grant).
+  All are agency/vendor billing documents routed to the budget "planning"
+  branch because v10's wording lacks the estimate-vs-bill signals.
+- **`news_article → scientific_publication` (9):** all the same image
+  (`rcs96d00`, an Am J Epidemiol reprint with its own running head + volume +
+  page + copyright), which is genuinely a published reprint under check 6; the
+  smoke annotation flags it as a miss but the reasoning is defensible.
+- **`budget → form` (6):** a `POLITICAL CAMPAIGN CONTRIBUTION REQUEST`
+  (`usa07d00`, repeated across versions) and a `PRICE VALUE ESTIMATES` table
+  (`acy93e00`) — money-only records whose form-layout footer ("FORM M01A",
+  field/approval blocks) pulled check 10 ahead of check 7.
+- **`budget → invoice` (1):** `qia17d00`, a check stub whose stub columns are
+  headed "INVOICE DATE/NO/AMOUNT" — already fixed by v11's explicit stub rule.
+- **`form → presentation` (1):** one-off.
+
+The smoke set confirms the v10→v11 estimate-vs-bill gap is the dominant budget/
+invoice failure mode and shows the same budget→form money-record trap the 320
+run exposes.
 
 ### gemini-2.5-flash v3
 
