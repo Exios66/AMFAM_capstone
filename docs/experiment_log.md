@@ -371,3 +371,27 @@ margin once the prompt reaches v7+ (91-97% vs 77%). qwen3.7-flash's explicit
 forced reasoning (`reasoning.enabled + effort high`) produces a structured
 scratchpad that reliably follows the v7+ step cascade; gemini's medium-effort
 reasoning is less controllable and does not hit the same disambiguation rules.
+
+## v11 (qwen3.7-flash) — estimate vs bill rule
+
+v11 = v10 + an estimate-vs-bill disambiguation for check 7 (FINANCIAL DOCUMENT),
+restoring the agency-estimate invoice coverage that v10 narrowed away:
+
+- **Root cause:** v10 rewrote the invoice bullet to "billing document for
+  COMPLETED work ... listing ACTUAL billable charges" and dropped the
+  agency-estimate-change-order worked example that v8/v8.5/v9 taught. That made
+  the model route three agency estimate documents to budget: `dav40c00`
+  ("ESTIMATE CHANGE ORDER", Walt Klein), `wce83f00` ("PRODUCTION ESTIMATE
+  REPORT AC14", Ted Bates), `ynj47c00` ("NEWSPAPER ESTIMATE RECAP - PNO5", Leo
+  Burnett). All three were correct in v9 (invoice 10/10, budget 9/10).
+- **Fix:** invoice bullet restores the v9 wording (agency/vendor ESTIMATE
+  documents with unit prices/amounts/totals are invoices) and adds concrete
+  bill signals ("EST NO", "REVISES EST", "PRIOR ADJUSTMENTS", "EST AMT LESS
+  C/D", original-vs-present estimate columns, "BILLING TYPE PROGRESSIVE"). The
+  budget future-planning carve-out is narrowed to a pure planning recap with no
+  billing apparatus (the `tqi16e00` "OUTDOOR ESTIMATE RECAP" bus-shelter case
+  stays budget) and now explicitly keeps check stubs budget even when the stub
+  columns are headed "INVOICE DATE/NO/AMOUNT" (the `qia17d00` case). A 4th
+  worked example teaches the estimate-change-order→invoice case.
+- **Expected effect:** v10's 154/158 → 157/158 (fixes the 3 invoice→budget
+  misses) while holding the `tqi16e00` and `qia17d00` budget cases.
