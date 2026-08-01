@@ -288,10 +288,13 @@ and are skipped, so the scored total is 158.
 | `qwen3.7-flash_v10_reasoning` | qwen/qwen3.7-flash | v10 | **97.5% (154/158)** |
 | `qwen3.7-flash_v10_reasoning_320` | qwen/qwen3.7-flash | v10 | 85.3% (272/319)³ |
 | `qwen3.7-flash_v10_smoke_full` | qwen/qwen3.7-flash | v10 | 82.9% (180/217)⁴ |
+| `qwen3.7-flash_v11_reasoning_160` | qwen/qwen3.7-flash | v11 | **98.7% (156/158)**⁵ |
+| `qwen3.7-flash_v11_reasoning_320` | qwen/qwen3.7-flash | v11 | 83.9% (266/317)⁶ |
+| `qwen3.7-flash_v11_smoke_full` | qwen/qwen3.7-flash | v11 | 87.8% (209/238)⁷ |
 | `gemini-2.5-flash_v3_reasoning` | google/gemini-2.5-flash | v3 | 77.4% (123/159) |
 | `gemini-2.5-flash_v4_reasoning` | google/gemini-2.5-flash | v4 | 77.7% (122/157) |
 
-¹ First v1 run aborted early (22 scored rows). ² Smoke test on the 14 v9-miss images. ³ 320-image fixed-size set (20/class), one row unscored. ⁴ Full v10 smoke run on the 239-row misclassification set; run aborted at 217 scored rows (82.9%).
+¹ First v1 run aborted early (22 scored rows). ² Smoke test on the 14 v9-miss images. ³ 320-image fixed-size set (20/class), one row unscored. ⁴ Full v10 smoke run on the 239-row misclassification set; run aborted at 217 scored rows (82.9%). ⁵ Full v11 run on the 160-image set (2 rows lack a stored attachment). ⁶ 320-image fixed-size set (20/class), 3 rows unscored. ⁷ Full v11 smoke run on the 239-row misclassification set; 1 row unscored.
 
 ### qwen3.7-flash v1 (run 1, partial)
 
@@ -439,3 +442,128 @@ restoring the agency-estimate invoice coverage that v10 narrowed away:
   worked example teaches the estimate-change-order→invoice case.
 - **Expected effect:** v10's 154/158 → 157/158 (fixes the 3 invoice→budget
   misses) while holding the `tqi16e00` and `qia17d00` budget cases.
+
+### v11 full-run results
+
+Three full v11 runs (reasoning enabled, effort=high) on Braintrust:
+`qwen3.7-flash_v11_reasoning_160`, `qwen3.7-flash_v11_reasoning_320`, and
+`qwen3.7-flash_v11_smoke_full`. Full reports (report markdown, per-class chart,
+confusion matrix PNG/markdown, misclassification reasoning traces) live in
+`reports/`.
+
+#### v11 on the 160-image `fixed_size_sampled` — `qwen3.7-flash_v11_reasoning_160`
+
+| Metric | Value |
+| -------- | ------: |
+| **Accuracy (exact_match)** | **98.7%** (156/158) |
+
+| Class | Correct/Total | | Class | Correct/Total |
+| ------ | --: | -- | ------ | --: |
+| advertisement | 9/9 | | news_article | 9/9 |
+| budget | 9/10 | | presentation | 10/10 |
+| email | 9/9 | | questionnaire | 10/10 |
+| file_folder | 10/10 | | resume | 10/10 |
+| form | 10/10 | | scientific_publication | 11/11 |
+| handwritten | 10/10 | | scientific_report | 10/10 |
+| invoice | 9/10 | | specification | 10/10 |
+| letter | 10/10 | | memo | 10/10 |
+
+v11 improves v10's 154/158 → 156/158 (+1.3pp) and cuts the residual
+`invoice ↔ budget` errors from 4 to 2. Only 2 misses remain, both in the
+agency-estimate/billing space v11 targets:
+
+- **`jow70f00` — invoice → budget:** a "BROWN & WILL FARSON TOBACCO CORPORATION
+  VOUCHER" for a $278,000 "Final contribution for grant" to The Franklin
+  Institute. The model routes it to budget as an internal
+  contribution/disbursement record ("money-only records ... whose whole content
+  is an amount" → budget). This is the one voucher case v11 does NOT fix — the
+  grant payment is genuinely ambiguous between a vendor bill and an internal
+  disbursement.
+- **`tqi16e00` — budget → invoice:** the "OUTDOOR ESTIMATE RECAP - ODO1(S)"
+  bus-shelter planning recap that v11's carve-out explicitly keeps budget. The
+  model still triggers the invoice rule on the "EST NO: 4155" line and the
+  GROSS AMOUNT / GROSS CHANGE columns, even though it only plans future
+  placements. The carve-out text needs to be stronger against an estimate
+  number + comparison columns on an otherwise planning-only recap.
+
+No other classes regressed — letter, memo, file_folder, presentation,
+questionnaire all hold at 10/10.
+
+#### v11 on the 320-image `fixed_size_sampled_320` — `qwen3.7-flash_v11_reasoning_320`
+
+| Metric | Value |
+| -------- | ------: |
+| **Accuracy (exact_match)** | **83.9%** (266/317) |
+
+Per-class (20/class; 3 news_article rows unscored):
+
+| Class | Correct/Total | | Class | Correct/Total |
+| ------ | --: | -- | ------ | --: |
+| advertisement | 18/20 | | news_article | 15/17 |
+| budget | 13/20 | | presentation | 14/20 |
+| email | 20/20 | | questionnaire | 17/20 |
+| file_folder | 18/20 | | resume | 20/20 |
+| form | 14/20 | | scientific_publication | 18/20 |
+| handwritten | 19/20 | | scientific_report | 16/20 |
+| invoice | 15/20 | | specification | 15/20 |
+| letter | 15/20 | | memo | 19/20 |
+
+v11 on the noisy 320 set is 83.9% vs v10's 85.3% (−1.4pp) — a small regression
+on the same set, so the estimate-vs-bill tightening helps the curated archive
+set but does not transfer to the noisier 320 sample. Errors spread across many
+confusion pairs; the largest buckets (report filters 3 errored + 2 empty-output
+rows, 315 analyzed):
+
+- **`letter → memo` (5):** TO:/FROM:/SUBJECT internal memos and correspondence
+  the v7+ cascade routes away from letter.
+- **`specification → form` (5), `scientific_report → form` (3),
+  `budget → form` (4), `invoice → form` (3), `presentation → form` (3):**
+  filled analytical/QA data sheets, labeled charts/tables, and money records
+  whose form-layout footer (fields, approval blocks) pulls check 10 ahead of
+  checks 7/8/9/13. `form` remains the biggest over-prediction sink on this set.
+- **`invoice ↔ budget` (4 combined), `budget → invoice` (2), plus singles** —
+  the residual agency-estimate/billing ambiguities.
+
+#### v11 on the misclassification smoke set — `qwen3.7-flash_v11_smoke_full`
+
+| Metric | Value |
+| -------- | ------: |
+| **Accuracy (exact_match)** | **87.8%** (209/238) |
+
+Per-class (one image per v1–v11 miss; 1 row unscored, email absent):
+
+| Class | Correct/Total | | Class | Correct/Total |
+| ------ | --: | -- | ------ | --: |
+| advertisement | 10/10 | | news_article | 6/16 |
+| budget | 29/39 | | presentation | 25/25 |
+| file_folder | 7/7 | | questionnaire | 24/24 |
+| form | 16/17 | | resume | 7/7 |
+| handwritten | 13/13 | | scientific_publication | 6/6 |
+| invoice | 34/40 | | scientific_report | 22/22 |
+| letter | 2/4 | | specification | 1/1 |
+| memo | 7/7 | | email | — |
+
+v11 smoke = 87.8% (209/238) vs v10 smoke 82.9% (180/217, aborted) — the
+estimate-vs-bill fix clears most of the invoice→budget bucket (20 → 6), the
+dominant v10 failure. Remaining 29 errors across 6 pairs:
+
+- **`news_article → scientific_publication` (10):** all the `rcs96d00` Am J
+  Epidemiol reprint (repeated across source versions). A genuine published
+  reprint under check 6 — flagged as a miss by the smoke annotations, but the
+  prediction is defensible.
+- **`budget → form` (6):** money-only records (`usa07d00` POLITICAL CAMPAIGN
+  CONTRIBUTION REQUEST, `acy93e00` PRICE VALUE ESTIMATES) whose form-layout
+  footer pulls check 10 ahead of check 7 — the same money-record trap the 320
+  run exposes.
+- **`invoice → budget` (6):** residual agency/vendor billing documents
+  (`dav40c00`, `wce83f00`, `ynj47c00` still flip for some source versions) plus
+  `jow70f00` (the B&W grant VOUCHER, also v11's one 160-set miss).
+- **`budget → invoice` (4):** the `tqi16e00` OUTDOOR ESTIMATE RECAP carve-out
+  case (also v11's one 160-set miss), plus check-stub cases.
+- **`letter → memo` (2), `form → presentation` (1):** one-off residuals.
+
+Net: v11 is the best qwen result on the curated archive set (98.7%), fixes
+most of the estimate-vs-bill smoke bucket, and the two remaining 160-set misses
+(`jow70f00`, `tqi16e00`) are precisely the edge cases the next prompt version
+should target.
+

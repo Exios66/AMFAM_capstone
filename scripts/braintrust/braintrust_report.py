@@ -322,6 +322,9 @@ def build_full_report(experiment: str, model: str, prompt_version: str, dataset:
     md.append("| Class | Correct | Total | Accuracy |")
     md.append("|-------|--------:|------:|---------:|")
     for cls in sorted(VALID_CLASSES):
+        if per_class_acc[cls] == 0:
+            md.append(f"| `{cls}` | 0 | 0 | — |")
+            continue
         md.append(f"| `{cls}` | {per_class_ok[cls]} | {per_class_acc[cls]} | "
                   f"{per_class_ok[cls] / per_class_acc[cls] * 100:.0f}% |")
     md.append("")
