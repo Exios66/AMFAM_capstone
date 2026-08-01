@@ -9,7 +9,7 @@ Prerequisites:
     Set BRAINTRUST_API_KEY in your .env file or environment.
 
 Usage:
-    python scripts/braintrust_metrics_visual.py
+    python scripts/braintrust/braintrust_metrics_visual.py
 """
 
 import json

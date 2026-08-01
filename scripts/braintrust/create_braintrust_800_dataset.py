@@ -16,11 +16,11 @@ Prerequisites:
     project in org cc595192-8420-461d-8111-1d3ca1b42948).
 
 Usage:
-    python scripts/create_braintrust_800_dataset.py
-    python scripts/create_braintrust_800_dataset.py --dataset rvl_cdip_800
-    python scripts/create_braintrust_800_dataset.py --project "AMFAM v2"
-    python scripts/create_braintrust_800_dataset.py --images-per-class 50 --seed 42
-    python scripts/create_braintrust_800_dataset.py --output-dir ./fixed_size_sampled
+    python scripts/braintrust/create_braintrust_800_dataset.py
+    python scripts/braintrust/create_braintrust_800_dataset.py --dataset rvl_cdip_800
+    python scripts/braintrust/create_braintrust_800_dataset.py --project "AMFAM v2"
+    python scripts/braintrust/create_braintrust_800_dataset.py --images-per-class 50 --seed 42
+    python scripts/braintrust/create_braintrust_800_dataset.py --output-dir ./fixed_size_sampled
 """
 
 import argparse

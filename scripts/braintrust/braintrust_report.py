@@ -4,7 +4,7 @@ accuracy + per-class, confusion matrix (PNG + markdown), misclassification
 analysis with reasoning traces, and expected-vs-actual cost breakdown.
 
 Usage:
-    python scripts/braintrust_report.py --experiment qwen3.7-flash_v8.5_reasoning
+    python scripts/braintrust/braintrust_report.py --experiment qwen3.7-flash_v8.5_reasoning
       --model qwen/qwen3.7-flash --prompt-version v8.5 --dataset fixed_size_sampled
       --images-per-class 10 --image-size 1024x1024 --input-price 0.03 --output-price 0.13
 """

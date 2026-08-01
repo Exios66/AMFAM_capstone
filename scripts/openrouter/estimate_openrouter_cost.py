@@ -83,7 +83,7 @@ def build_markdown_section(
 
 
 def update_markdown(md_path: Path, section: str, model: str) -> None:
-    """Insert or replace the model section in openrouter_token_calculation.md."""
+    """Insert or replace the model section in docs/experiments/1pic_cost_estimation.md."""
     if md_path.exists():
         content = md_path.read_text(encoding="utf-8")
     else:

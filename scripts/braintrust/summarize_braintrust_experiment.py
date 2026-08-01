@@ -5,7 +5,7 @@ Braintrust. Useful when a run's local summary was lost (e.g. the process hung
 after tasks completed).
 
 Usage:
-    python scripts/summarize_braintrust_experiment.py --experiment gemini-2.5-flash_v4_reasoning
+    python scripts/braintrust/summarize_braintrust_experiment.py --experiment gemini-2.5-flash_v4_reasoning
 """
 
 import argparse

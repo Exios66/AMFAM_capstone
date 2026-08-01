@@ -10,11 +10,11 @@ Prerequisites:
     Set BRAINTRUST_API_KEY and OPENROUTER_API_KEY in your .env file.
 
 Usage:
-    python scripts/braintrust_openrouter_input.py
-    python scripts/braintrust_openrouter_input.py --dataset fixed_size_sampled
-    python scripts/braintrust_openrouter_input.py --images-dir path/to/images
-    python scripts/braintrust_openrouter_input.py --prompt-version v4 --model qwen/qwen3.7-flash
-    python scripts/braintrust_openrouter_input.py --experiment-name qwen3.7-flash_v4_reasoning
+    python scripts/braintrust/braintrust_openrouter_input.py
+    python scripts/braintrust/braintrust_openrouter_input.py --dataset fixed_size_sampled
+    python scripts/braintrust/braintrust_openrouter_input.py --images-dir path/to/images
+    python scripts/braintrust/braintrust_openrouter_input.py --prompt-version v4 --model qwen/qwen3.7-flash
+    python scripts/braintrust/braintrust_openrouter_input.py --experiment-name qwen3.7-flash_v4_reasoning
 """
 
 import argparse
