@@ -695,3 +695,33 @@ misses are unchanged. **v11.9 recovers the Edit B presentation regression while
 holding v11.8's 160-set fix, so the next eval benchmark is the 480-image run
 (queued) to confirm the generalization holds.**
 
+---
+
+## New Evaluation Assets and v13
+
+- Built `fixed_size_sampled_v2`: a fresh balanced 160-image slice from
+  `jordyvl/rvl_cdip_100_examples_per_class`, sampled with seed `1738` (10
+  images per class, 1024x1024 padded grayscale PNGs at 300 DPI). The slice has
+  160 unique filenames and zero pixel-hash overlap with both
+  `fixed_size_sampled` and `fixed_size_sampled_480`.
+- Built and uploaded `qwen_v115_v12_eval`: the deduplicated union of failed
+  rows from the v11.5, v11.6, v11.7, v11.7 reasoning, v12, and v12 reasoning
+  evaluations. It contains 52 unique rows; each row retains the expected
+  class, prior predictions, source versions, and capped reasoning traces.
+- Standing prompt requirement: future prompt changes must address the recurring
+  `scientific_publication` / `scientific_report` confusions, especially
+  specialist periodical pages misread as `news_article` and research-lab
+  records misread as `form`, while preserving v11.9's financial-chart and
+  correspondence safeguards.
+- Added `PROMPT_V13` as a focused derivative of v11.9. It broadens
+  `scientific_publication` to specialist science/medical/technical periodicals,
+  routes identifiable research-lab records to `scientific_report` rather than
+  generic `form`, and keeps product documentation in `specification`. It also
+  narrows future-spend budget handling and preserves the explicit internal
+  title/division requirement for by-name memos.
+- Queued `qwen3.7-flash_v11_9_reasoning_160_v2` on `fixed_size_sampled_v2`,
+  serialized behind the in-flight v11.8 320-image run. After it completes, the
+  queue runs `qwen3.7-flash_v13_reasoning_160` on `fixed_size_sampled` and
+  `qwen3.7-flash_v13_hard_eval` on `qwen_v115_v12_eval`; result logs are
+  `reports/eval_160_v2_v11_9.log`, `reports/eval_160_v13.log`, and
+  `reports/eval_hard_v13.log`.
