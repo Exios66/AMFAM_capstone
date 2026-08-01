@@ -206,3 +206,28 @@
 - Prompt tokens increased from 3,701 → 4,368 due to longer prompt with disambiguation rules, but the accuracy gain far outweighs the ~$0.08 cost increase per 800 images.
 - Only 26 errors remain (down from 42). Top confusion is now `presentation → file_folder` (4 errors) where cover/divider pages get misclassified.
 - See `docs/confusion_matrix_main-1785277280.md` and `docs/misclassification_reasoning_main-1785277280.md` for detailed breakdown.
+
+## v10 (qwen3.7-flash, reasoning enabled)
+
+Prompt v10 is the full v9 ruleset plus new disambiguation rules covering every v9
+miss AND every v8.5→v9 regression:
+- questionnaire vs presentation (v9 misses: 2), questionnaire vs handwritten,
+  resume vs scientific_report, scientific_report vs budget/email/form/presentation,
+  memo vs letter, budget vs invoice, handwritten vs form, advertisement vs
+  news_article.
+
+### v10 smoke (14 v9-miss images)
+
+| Metric | Value |
+| -------- | ------: |
+| **Accuracy (exact_match)** | **100%** (14/14 correct) |
+
+All 13 prompt-related v9 misses now correct. The 14th case
+(news_article→scientific_publication, `test_imagesr_r_c_s_rcs96d00_...`) was a
+dataset mislabel — an American Journal of Epidemiology reprint (Vol. 119, No. 4,
+1984) — ground truth flipped to `scientific_publication`; v10 predicts it
+correctly.
+
+### Notes
+
+- Experiment `qwen3.7-flash_v10_smoke` on Braintrust.
