@@ -1276,6 +1276,56 @@ PROMPT_V13 = PROMPT_V13.replace(
     "Evidence for this check: a named journal on the page plus a publication identifier (volume/issue, page range, DOI, journal copyright line, \"Reprinted from ...\"), OR a formal paper or abstract in published conference proceedings: a named conference/symposium/tagungsband with a year, a titled, authored paper or abstract with an affiliation, and (usually) a page number. An authored, titled, formally formatted paper in conference proceedings is a publication, not a report. A scientific-looking page with no journal or proceedings identifier is NOT a publication.",
     "Evidence for this check: a named journal on the page plus a publication identifier (volume/issue, page range, DOI, journal copyright line, \"Reprinted from ...\"), OR a formal paper or abstract in published conference proceedings: a named conference/symposium/tagungsband with a year, a titled, authored paper or abstract with an affiliation, and (usually) a page number. An authored, titled, formally formatted paper in conference proceedings is a publication, not a report. Also include a dated, titled science, medical, engineering, or technical periodical page whose own masthead identifies that specialist publication (for example a science magazine or medical trade paper), even when it lacks volume/issue/DOI. A scientific-looking page with no publication identity is NOT a publication."
 )
+
+# v14: production precedence pass. Keep v13's validated rules, then make the
+# recurring boundary decisions explicit in one final section so a later weak
+# visual cue cannot override the document's function.
+PROMPT_V14 = PROMPT_V13 + """
+
+## v14 production precedence (final authority)
+
+When cues conflict, apply these rules before choosing the label:
+
+1. **Financial function beats layout.** Choose `invoice` only when an outside
+   vendor, agency, supplier, or payee is billing or requesting payment for a
+   specific good/service/job. Estimates, change orders, vouchers, receipts,
+   rate schedules, and itemized charges count when they identify billable work
+   and amounts. Choose `budget` for internal planning, forecast/actual tracking,
+   recurring account statements, checks, check stubs, registers, and payment
+   instruments. A future-spend estimate with planned periods and no billable job
+   charges is `budget`. A single authorization/request form with approval fields
+   is `form`, even when it contains a large dollar amount.
+
+2. **Generic form is not a technical catch-all.** Choose `form` only when the
+   page's primary purpose is administrative data capture or approval and there
+   is no stronger document function. A page documenting an experiment, sample,
+   compound, protocol, measurement, laboratory result, or research study is
+   `scientific_report` unless it is clearly product/material documentation,
+   which is `specification`. A product code, formulation, MSDS, tolerance,
+   requirement, or product-property table is `specification`.
+
+3. **Publication identity beats article appearance.** A specialist science,
+   medical, engineering, or technical periodical identified by its own masthead
+   is `scientific_publication`, even if the page uses magazine or news-column
+   typography. A general newspaper, general-interest magazine, or encyclopedia
+   remains `news_article`, even when its subject is scientific or cites journals.
+
+4. **Correspondence requires function, not isolated header words.** A `letter`
+   has an external recipient/address or salutation and a formal closing. A
+   `memo` requires an internal organizational context such as an internal title,
+   department/division, or clearly internal distribution, together with memo
+   headers. A bare `TO:/FROM:/SUBJECT:` block without internal context is not
+   sufficient to convert an externally addressed letter into a memo.
+
+5. **Designed charts are presentations.** A titled, branded, sparse, or
+   slide-like chart/graphic is `presentation`. A plain unlabeled data table is
+   not automatically a presentation: classify it by its documented function as
+   `budget`, `form`, `scientific_report`, or `specification`.
+
+Do not use `form`, `budget`, or `scientific_report` as a fallback. If the page is
+ambiguous, select the label supported by the strongest explicit evidence of
+purpose, not the most visually salient word.
+"""
 PROMPT_V13 = PROMPT_V13.replace(
     "Caveat — general news outlets: a page that presents itself as a newspaper, general-magazine, or encyclopedia piece — multi-column published editorial prose with a masthead, magazine cover, or encyclopedia/reference title belonging to a general-audience outlet — is news_article (check 12), not a publication, even if its text is scientific, names an author with credentials, or cites journal articles as references within the prose (a citation like \"Am J Epidemiol 1984;119:624-41\" appearing inside body text is a reference to other work, not this page's own identifier).",
     "Caveat — general news outlets: a page from a general-interest newspaper, general-news magazine, or encyclopedia/reference work is news_article (check 12), not a publication, even if its text is scientific, names an author with credentials, or cites journal articles as references. Do NOT use this caveat for a specialist science, medical, engineering, or technical periodical whose own masthead identifies that publication."
@@ -1320,14 +1370,19 @@ PROMPTS = {
     "v11.8": PROMPT_V11_8,
     "v11.9": PROMPT_V11_9,
     "v13": PROMPT_V13,
+    "v14": PROMPT_V14,
 }
 
-DEFAULT_PROMPT_VERSION = "v4"
+DEFAULT_PROMPT_VERSION = "v14"
 
 
 def get_prompt(version: str = DEFAULT_PROMPT_VERSION) -> str:
     """Get the prompt for a specific version."""
-    return PROMPTS.get(version, PROMPT_V4)
+    try:
+        return PROMPTS[version]
+    except KeyError as exc:
+        available = ", ".join(PROMPTS)
+        raise ValueError(f"Unknown prompt version {version!r}; available versions: {available}") from exc
 
 
 def list_prompt_versions() -> list[str]:

@@ -44,6 +44,7 @@ from PIL import Image
 
 from src.braintrust_config import load_braintrust_config
 from src.braintrust_utils import load_braintrust_dataset
+from src.braintrust_utils import delete_dataset_by_name
 from src.env_utils import require_env
 from src.image_utils import resize_with_padding
 
@@ -161,6 +162,7 @@ def sample_fresh_rows(
     seed: int,
     target_size: tuple[int, int],
     extra_exclusions: list[dict] | None = None,
+    target_per_class: int = TARGET_PER_CLASS,
 ) -> list[dict]:
     """Sample 10 fresh images per class so the new slice is disjoint from the 160.
 
@@ -182,7 +184,7 @@ def sample_fresh_rows(
     fresh: list[dict] = []
     skipped = 0
     for class_name in sorted(by_class):
-        needed = TARGET_PER_CLASS
+        needed = target_per_class
         candidates = list(by_class[class_name])
         rng.shuffle(candidates)
         accepted = 0
@@ -381,7 +383,14 @@ def main() -> None:
         parquet_path = download_parquet(args.source_url, cache_dir)
         rows = load_parquet_rows(parquet_path)
         print(f"Loaded {len(rows)} rows from source parquet")
-        fresh = sample_fresh_rows(rows, originals, args.seed, target_size, extra_exclusions=exclusions)
+        fresh = sample_fresh_rows(
+            rows,
+            originals,
+            args.seed,
+            target_size,
+            extra_exclusions=exclusions,
+            target_per_class=args.target_per_class,
+        )
     finally:
         # Do not keep the source parquet around.
         try:
@@ -395,6 +404,9 @@ def main() -> None:
     if total != expected:
         print(f"Warning: expected {expected} total images, got {total}", file=sys.stderr)
 
+    deleted = delete_dataset_by_name(api_key, args.project_id, args.dataset)
+    if deleted:
+        print(f"Deleted existing dataset {args.dataset} ({deleted})")
     print(f"\nUploading {total} images to {args.project}/{args.dataset} (org {args.org})...")
     summary = upload_dataset(
         fresh,

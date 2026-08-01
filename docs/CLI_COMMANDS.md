@@ -34,6 +34,8 @@ settings; `.env` fills the gaps (notably `OPENROUTER_API_KEY`).
 | Full experiment report | `python scripts/braintrust/braintrust_report.py --experiment <name> --prompt-version <v> --dataset <ds> --images-per-class <n>` |
 | Charts + append experiment log | `python scripts/braintrust/braintrust_metrics_visual.py [<experiment>]` |
 | Build misclassification smoke set | `python scripts/braintrust/create_misclassification_smoke_dataset.py [--dry-run]` |
+| Validate a queued eval | `python scripts/braintrust/preflight_eval.py --dataset <ds> --prompt-version v14` |
+| Run production eval queue | `python scripts/braintrust/run_eval_queue.py --dry-run` |
 
 ## Data pipeline
 
@@ -79,11 +81,12 @@ and 320,000 images.
 # 1. Build the 800-image dataset and upload it to Braintrust
 python scripts/braintrust/create_braintrust_800_dataset.py
 
-# 2. Run the classification prompt against a dataset/model and log to an experiment
+# 2. Run the production prompt against a dataset/model and log to an experiment
 python scripts/braintrust/braintrust_openrouter_input.py \
-  --prompt-version v11 \
+  --prompt-version v14 \
   --model qwen/qwen3.7-flash \
-  --experiment-name qwen3.7-flash_v11_reasoning
+  --experiment-name qwen3.7-flash_v14_reasoning \
+  --manifest reports/manifests/eval_v14.jsonl
 
 # 3. Quick per-class accuracy + exact_match (good if the run's local summary was lost)
 python scripts/braintrust/summarize_braintrust_experiment.py --experiment qwen3.7-flash_v11_reasoning
@@ -92,7 +95,7 @@ python scripts/braintrust/summarize_braintrust_experiment.py --experiment qwen3.
 python scripts/braintrust/braintrust_report.py \
   --experiment qwen3.7-flash_v11_reasoning \
   --model qwen/qwen3.7-flash \
-  --prompt-version v11 \
+  --prompt-version v14 \
   --dataset fixed_size_sampled \
   --images-per-class 10 \
   --image-size 1024x1024 \

@@ -33,6 +33,7 @@ from openai import OpenAI
 from src.braintrust_config import load_braintrust_config
 from src.braintrust_utils import load_braintrust_dataset
 from src.env_utils import require_env
+from src.evaluation import ManifestStore, dataset_fingerprint, validate_dataset
 from src.image_utils import encode_image_base64
 from src.openrouter_classifier import VALID_CLASSES, clean_prediction
 from src.openrouter_utils import OPENROUTER_BASE_URL, build_vision_messages
@@ -129,8 +130,20 @@ def extract_prediction(text: str) -> str:
 # Braintrust Eval
 # ---------------------------------------------------------------------------
 
-def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: str = DEFAULT_PROMPT_VERSION, max_tokens: int = DEFAULT_MAX_TOKENS, project_id: str = PROJECT_ID, experiment_name: str = None) -> None:
+def run_eval(
+    dataset: list[dict],
+    model: str = DEFAULT_MODEL,
+    prompt_version: str = DEFAULT_PROMPT_VERSION,
+    max_tokens: int = DEFAULT_MAX_TOKENS,
+    project_id: str = PROJECT_ID,
+    experiment_name: str = None,
+    dataset_name: str = DEFAULT_DATASET,
+    manifest_path: str | Path | None = None,
+) -> None:
     """Run the classification prompt against the dataset and log to Braintrust."""
+    validate_dataset(dataset)
+    if max_tokens <= 0:
+        raise ValueError("max_tokens must be positive")
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
     braintrust_key = os.environ.get("BRAINTRUST_API_KEY")
     
@@ -139,6 +152,25 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
     
     # Get the appropriate prompt version
     classification_prompt = get_prompt(prompt_version)
+
+    if experiment_name is None:
+        experiment_name = f"{model.split('/')[-1]}_p{prompt_version}"
+
+    manifest = None
+    if manifest_path:
+        manifest = ManifestStore(
+            manifest_path,
+            {
+                "experiment_name": experiment_name,
+                "dataset": dataset_name,
+                "dataset_size": len(dataset),
+                "dataset_fingerprint": dataset_fingerprint(dataset),
+                "model": model,
+                "prompt_version": prompt_version,
+                "max_tokens": max_tokens,
+            },
+        )
+        manifest.initialize()
 
     # Wrap OpenAI client pointed at OpenRouter with Braintrust logging
     client = braintrust.wrap_openai(
@@ -154,6 +186,16 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
     def classify_document(input_data: dict) -> str:
         """Classify a single document image via the vision model."""
         image_b64 = images_by_index[input_data["index"]]
+        filename = input_data["filename"]
+        expected = input_data["expected"]
+
+        if manifest:
+            cached = manifest.get_completed(filename)
+            if cached:
+                braintrust.current_span().log(
+                    metadata={"cached": True, "filename": filename, "prompt_version": prompt_version}
+                )
+                return cached["predicted"]
 
         # Build extra body based on model capabilities
         extra_body = {}
@@ -172,7 +214,9 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
         # grow max_tokens when the model capped out mid-reasoning.
         tokens = max_tokens
         last_error = None
+        attempts = 0
         for attempt in range(MAX_TRIES):
+            attempts = attempt + 1
             try:
                 response = client.chat.completions.create(
                     model=model,
@@ -188,9 +232,10 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
                         f"model returned no usable content (finish_reason={finish_reason})"
                     )
                 if finish_reason == "length":
+                    old_tokens = tokens
                     tokens = min(tokens * 2, MAX_TOKENS_CAP)
                     raise RuntimeError(
-                        f"model hit max_tokens={tokens // 2} (finish_reason=length)"
+                        f"model hit max_tokens={old_tokens} (finish_reason=length); retrying with {tokens}"
                     )
                 break
             except Exception as e:  # noqa: BLE001 - retry transient provider errors
@@ -198,6 +243,15 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
                 if attempt < MAX_TRIES - 1:
                     time.sleep(2 * (attempt + 1))
         else:
+            if manifest:
+                manifest.append({
+                    "filename": filename,
+                    "expected": expected,
+                    "status": "error",
+                    "predicted": "",
+                    "attempts": attempts,
+                    "error": str(last_error),
+                })
             raise last_error
 
         msg = response.choices[0].message
@@ -210,6 +264,28 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
         # V4 wraps the final label in <label>...</label>; parse it first so the
         # scratchpad prose never leaks a wrong class into the prediction.
         predicted = extract_prediction(raw)
+
+        if not predicted:
+            if manifest:
+                manifest.append({
+                    "filename": filename,
+                    "expected": expected,
+                    "status": "empty",
+                    "predicted": "",
+                    "attempts": attempts,
+                    "error": "response contained no valid class",
+                })
+            raise RuntimeError("response contained no valid class")
+
+        if manifest:
+            manifest.append({
+                "filename": filename,
+                "expected": expected,
+                "status": "completed",
+                "predicted": predicted,
+                "attempts": attempts,
+                "error": "",
+            })
 
         # Log metadata for Braintrust UI — includes reasoning trace and prompt
         braintrust.current_span().log(
@@ -229,15 +305,13 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
         """Score 1.0 if prediction matches expected class, else 0.0."""
         return 1.0 if output == expected else 0.0
 
-    if experiment_name is None:
-        experiment_name = f"{model.split('/')[-1]}_p{prompt_version}"
-
     result = braintrust.Eval(
         PROJECT_NAME,
         data=lambda: [
             {
                 "input": {"index": i, "filename": d["filename"]},
                 "expected": d["expected"],
+                "filename": d["filename"],
             }
             for i, d in enumerate(dataset)
         ],
@@ -253,7 +327,8 @@ def run_eval(dataset: list[dict], model: str = DEFAULT_MODEL, prompt_version: st
             "model": model,
             "max_tokens": max_tokens,
             "reasoning": "enabled",
-            "dataset": f"{DEFAULT_DATASET_PROJECT}/{DEFAULT_DATASET}",
+            "dataset": f"{DEFAULT_DATASET_PROJECT}/{dataset_name}",
+            "manifest": str(manifest_path) if manifest_path else None,
         },
         description=f"{model} | prompt {prompt_version} | reasoning enabled | exact_match tracked",
     )
@@ -311,11 +386,13 @@ def main() -> None:
     parser.add_argument("--model", default=DEFAULT_MODEL,
                         help=f"Model to use for classification (default: {DEFAULT_MODEL})")
     parser.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION,
-                        help=f"Prompt version to use (v1-v13) (default: {DEFAULT_PROMPT_VERSION})")
+                        help=f"Prompt version to use (v1-v14) (default: {DEFAULT_PROMPT_VERSION})")
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
                         help=f"Maximum tokens for model response (default: {DEFAULT_MAX_TOKENS})")
     parser.add_argument("--experiment-name", default=None,
                         help="Braintrust experiment name (default: {model-slug}_p{prompt-version})")
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="JSONL checkpoint manifest for resuming an interrupted run")
     args = parser.parse_args()
 
     if args.images_dir:
@@ -334,9 +411,19 @@ def main() -> None:
     if not dataset:
         sys.exit("No labeled images found to classify.")
 
+    validate_dataset(dataset)
     print(f"Running evaluation with {args.model} using prompt {args.prompt_version} on {len(dataset)} images")
     print(f"Evaluation project: {args.project} ({args.project_id}), Dataset from: {args.dataset_project}/{args.dataset}")
-    run_eval(dataset, model=args.model, prompt_version=args.prompt_version, max_tokens=args.max_tokens, project_id=args.project_id, experiment_name=args.experiment_name)
+    run_eval(
+        dataset,
+        model=args.model,
+        prompt_version=args.prompt_version,
+        max_tokens=args.max_tokens,
+        project_id=args.project_id,
+        experiment_name=args.experiment_name,
+        dataset_name=args.dataset,
+        manifest_path=args.manifest,
+    )
 
 
 if __name__ == "__main__":

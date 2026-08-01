@@ -12,7 +12,7 @@ CLI of its own — scripts import from it (they insert the repository root on `s
 | `image_utils.py` | `encode_image_base64()`, `find_images()` (recursive discovery), `resize_with_padding()` (aspect-ratio-preserving, padded). |
 | `openrouter_utils.py` | OpenRouter API endpoints and `build_vision_messages()` (OpenAI-style messages with a base64 image). |
 | `openrouter_classifier.py` | `classify_image()` (send an image to an OpenRouter vision model), `clean_prediction()`, `VALID_CLASSES`. |
-| `prompts.py` | Versioned classification prompts `PROMPT_V1`…`PROMPT_V11`, `PROMPT_V11_5`, the `PROMPTS` map, `get_prompt()`, `list_prompt_versions()`, `DEFAULT_PROMPT_VERSION` (`v4`). |
+| `prompts.py` | Versioned classification prompts through `PROMPT_V14`, the `PROMPTS` map, `get_prompt()`, `list_prompt_versions()`, and strict `DEFAULT_PROMPT_VERSION` (`v14`). |
 | `document_processor.py` | PDF → 300 DPI grayscale PNG conversion with spatial OCR (word bounding boxes). `DocumentProcessor`, `BatchProcessor`, `ClassOrganizedBatchProcessor`, `process_pdf_file()`, `process_pdf_bytes()`. |
 | `env_utils.py` | `load_dotenv_if_available()`, `require_env()` (loads `.env`, validates required variables). |
 | `cli_utils.py` | `print_header()` — console output helpers. |
@@ -33,7 +33,7 @@ from src.braintrust_config import load_braintrust_config
 
 ## Prompt versions
 
-`prompts.py` carries the full evolution of the classification prompt (v1 baseline through v12, plus
+`prompts.py` carries the full evolution of the classification prompt (v1 baseline through v14, plus
 v11.5 and v11.6). Versions differ in disambiguation rules, decision-cascade structure, and the optional scratchpad
 deliberation step. See `docs/prompt_rules_provenance.md` for the provenance of each rule and
 `docs/experiments/experiment_log.md` for how each version performed.

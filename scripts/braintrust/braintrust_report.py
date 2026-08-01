@@ -45,7 +45,7 @@ def fetch_experiment(api_key: str, experiment_name: str, project_id: str) -> tup
     return rows, meta
 
 
-def build_results(rows: list[dict]) -> tuple[list[dict], dict, list[dict]]:
+def build_results(rows: list[dict]) -> tuple[list[dict], list[dict]]:
     # Index span-level metadata (reasoning, filename) and metrics by root_span_id.
     span_meta = {}
     span_metrics = {}
@@ -59,17 +59,36 @@ def build_results(rows: list[dict]) -> tuple[list[dict], dict, list[dict]]:
             span_metrics.setdefault(root_span_id, {}).update(metrics)
 
     tasks = []
-    errors = []
+    failures = []
     for row in rows:
         expected = row.get("expected")
         output = row.get("output")
         error = row.get("error")
+        input_data = row.get("input") or {}
+        row_filename = str(
+            (row.get("metadata") or {}).get("filename")
+            or input_data.get("filename")
+            or ""
+        )
         if expected not in VALID_CLASSES:
             continue
         if error is not None:
-            errors.append(row)
+            failures.append({
+                "expected": expected,
+                "output": str(output or ""),
+                "filename": row_filename,
+                "status": "error",
+                "error": str(error),
+            })
             continue
         if not output:
+            failures.append({
+                "expected": expected,
+                "output": "",
+                "filename": row_filename,
+                "status": "empty",
+                "error": "missing output",
+            })
             continue
         root_span_id = row.get("root_span_id", "")
         meta = dict(row.get("metadata") or {})
@@ -84,7 +103,7 @@ def build_results(rows: list[dict]) -> tuple[list[dict], dict, list[dict]]:
             "filename": str(meta.get("filename", "") or ""),
             "metrics": metrics,
         })
-    return tasks, errors
+    return tasks, failures
 
 
 def avg(xs):
@@ -110,10 +129,11 @@ def compute_cost(tasks: list[dict], input_price: float, output_price: float) -> 
 
 def write_confusion_matrix(tasks: list[dict], experiment: str, out_dir: Path,
                            dataset: str, model: str, per_class: int):
-    labels = sorted(VALID_CLASSES)
+    labels = sorted(VALID_CLASSES) + ["__invalid__"]
     matrix = {e: {p: 0 for p in labels} for e in labels}
     for t in tasks:
-        matrix[t["expected"]][t["output"]] += 1
+        predicted = t["output"] if t["output"] in matrix[t["expected"]] else "__invalid__"
+        matrix[t["expected"]][predicted] += 1
 
     n = len(labels)
     data = np.zeros((n, n))
@@ -281,6 +301,9 @@ def build_full_report(experiment: str, model: str, prompt_version: str, dataset:
     md.append("| Metric | Value |")
     md.append("|--------|------:|")
     md.append(f"| **Accuracy (exact_match)** | **{accuracy:.2f}%** ({correct}/{total}) |")
+    md.append(f"| Scored rows | {total} |")
+    md.append(f"| Failed/empty rows | {len(errors)} |")
+    md.append(f"| Total expected rows | {total + len(errors)} |")
     md.append(f"| Prompt tokens (avg) | {metrics['prompt_tokens_avg']:,.1f} |")
     md.append(f"| Prompt cached tokens (avg) | {metrics['cached_tokens_avg']:,.1f} |")
     md.append(f"| Completion tokens (avg) | {metrics['completion_tokens_avg']:,.1f} |")
@@ -288,7 +311,7 @@ def build_full_report(experiment: str, model: str, prompt_version: str, dataset:
     md.append(f"| Total tokens (avg) | {metrics['prompt_tokens_avg'] + metrics['completion_tokens_avg']:,.1f} |")
     md.append(f"| Time to first token (avg) | {metrics['ttft_avg']:.2f}s |")
     md.append(f"| Duration (avg) | {metrics['duration_avg']:.2f}s |")
-    md.append(f"| Errors | {len(errors)} |")
+    md.append(f"| Evaluation failures | {len(errors)} |")
     md.append("")
     md.append("## Cost — Expected vs Actual")
     md.append("")
@@ -359,11 +382,11 @@ def main():
 
     print(f"Fetching experiment {args.experiment}...")
     rows, meta = fetch_experiment(api_key, args.experiment, args.project_id)
-    tasks, errors = build_results(rows)
-    print(f"Task rows: {len(tasks)} (errors: {len(errors)})")
+    tasks, failures = build_results(rows)
+    print(f"Scored rows: {len(tasks)} (failures: {len(failures)}, total expected rows: {len(tasks) + len(failures)})")
 
     if not tasks:
-        sys.exit("No completed task rows found — experiment still running?")
+        sys.exit("No scored task rows found — experiment may still be running or all rows failed")
 
     # Metrics
     metrics = {
@@ -384,7 +407,7 @@ def main():
     report = build_full_report(
         args.experiment, args.model, args.prompt_version, args.dataset,
         args.images_per_class, args.image_size, args.input_price, args.output_price,
-        args.reasoning, tasks, errors, cost, metrics,
+        args.reasoning, tasks, failures, cost, metrics,
     )
     report_path = out_dir / f"report_{args.experiment}.md"
     report_path.write_text(report, encoding="utf-8")

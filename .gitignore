@@ -52,3 +52,4 @@ fixed_size_sampled_480/
 
 # Logs
 *.log
+reports/manifests/
