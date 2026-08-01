@@ -33,7 +33,7 @@ from src.braintrust_config import load_braintrust_config
 
 ## Prompt versions
 
-`prompts.py` carries the full evolution of the classification prompt (v1 baseline through v11, plus
-v11.5). Versions differ in disambiguation rules, decision-cascade structure, and the optional scratchpad
+`prompts.py` carries the full evolution of the classification prompt (v1 baseline through v12, plus
+v11.5 and v11.6). Versions differ in disambiguation rules, decision-cascade structure, and the optional scratchpad
 deliberation step. See `docs/prompt_rules_provenance.md` for the provenance of each rule and
 `docs/experiments/experiment_log.md` for how each version performed.
