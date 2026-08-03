@@ -26,6 +26,12 @@ processing_summary.json
 sampling_log.json
 verification_log.json
 
+# Auto-generated experiment result files
+docs/confusion_matrix_*.md
+docs/misclassification_reasoning_*.md
+docs/per_class_accuracy_*.png
+docs/confusion_matrix_*.png
+
 # Generated directories (large datasets and processed files)
 data/*
 !data/.gitkeep
