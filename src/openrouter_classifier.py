@@ -4,246 +4,42 @@ Sends only the document image to a vision-capable LLM for classification
 """
 
 import json
-import base64
 import os
 import re
 from pathlib import Path
+from typing import Union
 import requests
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+from src.constants import DOCUMENT_CLASSES
+from src.image_utils import encode_image_base64
+from src.openrouter_utils import OPENROUTER_API_URL, build_vision_messages
+from src.prompts import get_prompt
 
 # Recommended vision models on OpenRouter
 VISION_MODELS = []
 
-CLASSIFICATION_PROMPT = """
+CLASSIFICATION_PROMPT = get_prompt("v14")
 
-You classify scanned business documents (tobacco-industry archive, 300 DPI grayscale) into exactly one of 16 categories.
-
-Judge each page by its FUNCTION, not its subject matter: a page full of technical data can still be a form, and a page about money can still be a form — but a bill is a bill even when it is printed on a form. Do not rush to the label that matches the page's subject matter — deliberate through the checks below, in order, and commit to the FIRST one with strong, concrete evidence you can actually read on the page (a header, a field label, a masthead, an approval block — not a guess from the topic). Once an earlier check matches, later checks do not override it.
-
-Labels (use these exact strings):
-advertisement, budget, email, file_folder, form, handwritten, invoice, letter, memo, news_article, presentation, questionnaire, resume, scientific_publication, scientific_report, specification
-
-Before answering, work through the page in a <scratchpad>.
-
-## Mandatory pre-scan (do this before check 1)
-
-Two things cause repeat errors when skipped, so look for them FIRST, before you start the numbered checks:
-- **A mail-client header block** (From/To/Sent/Subject/cc, or a forwarded/threaded trail) anywhere on the page. If present, the page is email (check 11) no matter how technical, tabular, or report-like its body looks — never let a data table's subject matter pull you toward scientific_report or specification once you've spotted a mail header.
-- **A masthead or running head** — is there a newspaper/magazine masthead, multi-column news typography, byline/dateline (→ points toward check 12), or a journal's OWN running head/volume/issue/page number printed on this specific page (→ points toward check 6)? Note which one you see, if either, before you reach those checks. A journal or author being *cited within the body prose* ("Am J Epidemiol 1984;119:624-41") is NOT the same as the page itself carrying that identifier as its own running head — citations inside running text describe other work; a running head/copyright line on this page describes THIS page.
-
-## Scratchpad procedure
-
-Walk checks 1-14 below IN ORDER. For each check, before moving to the next one, briefly state:
-- What specific evidence for this check IS present on the page (quote or closely paraphrase the actual text/layout you see — header words, field labels, masthead, journal name, "shall" language, approval-block labels, etc.), or "none" if nothing supports it.
-- If evidence is present: STOP HERE. This is your check. Do not keep evaluating later checks, even if the page also superficially resembles a later category.
-- If no evidence: say "not this check" in one short clause and move to the next check.
-
-Keep each check's line short (evidence-focused, not a full paragraph) — the goal is a fast, auditable pass, not an essay. Once you stop at a matching check, add one final line naming the runner-up label you almost picked instead and the single piece of evidence that ruled it out. This forces you to name the trap before falling into it.
-
-Your final label MUST be the check that had positive evidence. Never output a label you explicitly marked "no" in your scratchpad — if you wrote "no" for every check, you missed something (most commonly the labeled-chart/table, product-change, speech/status-sheet, or section-divider cases). Re-scan the page and state the evidence you originally missed.
-
-After the scratchpad, output your final answer.
-
-## The checks
-
-1. IDENTIFIER-ONLY PAGE -> file_folder
-   Almost no body content: only an archive/Bates number, a stamp, a short label or ID, folder/box markings, or a filing index card (INVENTOR / TITLE / patent numbers). No sentences, no topical title. A page is NOT file_folder if it carries any real content — a photograph or slide image, a table, a questionnaire appendix, or a note. Pure filing metadata only.
-   - A Bates number or archive stamp alone is NOT enough: a page that pairs a Bates number with a photographic image (people, a scene, a slide) or with a bold headline title (even a single word/short phrase like "RECOMMENDATIONS" with no subtitle, or a large heading rotated 90 degrees like "COMPETITIVE BAR PROGRAMS" — even alongside a small handwritten letter or number annotation) carries real content — it is a cover/title page, section divider, or photographic slide (presentation, check 9), not file_folder. A prominent topical heading always counts as real content, subtitle or not.
-   - Legal/procedural stamps such as "CONFIDENTIAL," "PRIVILEGED," or "LITIGATION" are routine handling markings, not identifying content — ignore them when deciding file_folder vs. another category. They appear on many document types across this archive; what actually decides file_folder is whether a topical heading or body content exists, not whether a legal stamp is present.
-   - A patent/invention filing index card with several labeled fields (INVENTOR, TITLE, FILING DATE, PATENT NUMBER(S), ATTORNEY) is still file_folder even though it has multiple fields — its sole purpose is to catalog/identify one filed item, which is different from a general form that captures substantive operational data.
-   - A page titled "RECORDS MANAGEMENT INVENTORY" (or similar) containing a multi-row/multi-column table (e.g., CATEGORY NAME, RETENTION PERIOD) covering MANY records is a form (check 10), not file_folder — it's tabulating an inventory of many items as structured data, not identifying a single filed document.
-   - Filing metadata means the page's only purpose is labeling a folder or index entry for ONE item.
-
-2. MAJORITY-HANDWRITTEN PAGE -> handwritten
-   Most of the content is freeform handwriting (notes, letters, memos, drafts) NOT on a printed template. This wins over a typed letter or memo layout. It does NOT win when handwriting merely fills the fields or cells of a printed structured form, table, or questionnaire — that stays form (or the content's own category: a handwritten list of budget categories and dollar amounts — or a handwritten note or log of dated expenses by category (e.g. "Contractor", "Dinner", "Painting", "Houseplant", each with a date) even when amounts are not legible — is budget, not handwritten). This includes meeting-minutes sheets and log tables printed with ruled columns and headers (e.g. a "MEETING" sheet with typed column heads "THEMA"/"ERGEBNIS" whose rows are filled by hand) — the handwriting fills a printed table, so it is a filled form (check 10), not handwritten. A typed page with only a signature, stamp, or margin note is not handwritten.
-   - The real test is PRINTED FIELD LABELS/BOXES vs. FREEFORM PAPER: a handwritten note containing a name, address, or other personal/demographic details written freely on blank or lined paper (no printed field labels, boxes, or ruled entry cells) is handwritten. Handwriting filling in labeled printed fields is form, not handwritten — but the labeled printed structure has to actually be visible; don't infer a form just because the content resembles form-type data (name/address).
-   - Scan noise is not handwriting: on a heavily degraded, noisy scan, don't let illegibility read as "majority handwritten." If the dominant recognizable elements are a stamp, faint archival text, or an ID/number, with only a small rotated handwritten annotation on the side, classify by the stamp/identifier (often file_folder), not handwritten — handwriting must legibly make up most of the page's actual content, not just be the only thing you can partly read on a noisy scan.
-
-3. FAX TRANSMISSION SHEET -> form
-   A "FACSIMILE", "FACSIMILE TRANSMISSION", "FAX COVER SHEET", "TELEFAX", or "TELEFAX MESSAGE NO." header with To/From/company/phone/page-count fields. Fax sheets are forms, never memo or letter, even though they use To:/From:/Date: labels.
-
-4. SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire
-   The page asks the reader to answer, rate, choose, or commit: opinion items, rating scales, multiple choice, open-response lines, an enrolment/commitment application, or a cover letter transmitting a survey. A page does not have to show questions to be a questionnaire: an appendix page, section cover, transmittal note, or page-numbered part of a survey instrument (e.g. "APPENDIX 1" of a questionnaire, a handwritten note about a revised questionnaire) is still questionnaire, not file_folder.
-   - Also counts: instructions or directions given to product-test/consumer-test participants — how to use/try a product and how to record or submit their feedback or reaction — even when phrased as directions rather than as questions. This is survey-administration material, not a generic form.
-   - A cover/transmittal letter keeps its full letter formatting (letterhead, date, salutation, closing signature) and is STILL questionnaire, not letter, if its prose mentions enclosing, attaching, or requesting completion of a survey/questionnaire (e.g. "the attached questionnaire," "please complete the enclosed form") — a single such phrase is enough; don't be pulled toward letter just because the rest of the page looks like ordinary correspondence.
-   - A consumer commitment/enrolment application — signing someone up for a product trial, service, or panel, with identity, billing, or device/account fields — stays questionnaire even when its fields look exactly like an ordinary administrative form. The presence of billing/identity fields does not demote it to form; what matters is that the page enrolls/commits a respondent into something being tested or offered, which is survey/panel-recruitment function, not routine administrative data capture.
-
-5. PERSON'S CAREER HISTORY -> resume
-   CV, resume, professional profile, or biographical sketch listing education, positions, honors, and publications — including standardized templates such as PHS 398 "BIOGRAPHICAL SKETCH" pages, even when they carry a "Form Page" notation — the biographical content decides this, not the form-page label.
-
-6. PUBLISHED EVIDENCE -> scientific_publication
-   First, use your pre-scan finding: does THIS page itself carry a running head/masthead with volume, issue, page range, DOI, or copyright line belonging to a journal or published proceedings? If yes, that's your evidence — proceed here even if the writing reads like a report or the language is German/bilingual (European reprints often show the journal abbreviation, volume, and year in small print in the header or footer, alongside institute affiliations and English/German summaries that otherwise look like an internal report — check the running head/footer specifically before defaulting to scientific_report).
-   Evidence for this check: a named journal on the page plus a publication identifier (volume/issue, page range, DOI, journal copyright line, "Reprinted from ..."), OR a formal paper or abstract in published conference proceedings: a named conference/symposium/tagungsband with a year, a titled, authored paper or abstract with an affiliation, and (usually) a page number. An authored, titled, formally formatted paper in conference proceedings is a publication, not a report. A scientific-looking page with no journal or proceedings identifier is NOT a publication.
-   Caveat — general news outlets: a page that presents itself as a newspaper, general-magazine, or encyclopedia piece — multi-column published editorial prose with a masthead, magazine cover, or encyclopedia/reference title belonging to a general-audience outlet — is news_article (check 12), not a publication, even if its text is scientific, names an author with credentials, or cites journal articles as references within the prose (a citation like "Am J Epidemiol 1984;119:624-41" appearing inside body text is a reference to other work, not this page's own identifier).
-   Caveat — research journal's own news/comment sections: this does NOT apply to a page that itself carries a research journal's own running head and volume/issue/page number (e.g., "SCIENCE, VOL. 224" with a page number) even if the specific piece is written in a "News and Comment" or journalistic style — that page is still a reprint from the journal itself, so it is scientific_publication. The distinguishing question is whose masthead is actually printed on this page: a general newspaper/magazine's, or a research journal's own.
-
-7. FINANCIAL DOCUMENT -> invoice or budget
-   Check 7 applies only when financial content IS the page's primary structure — a line-item table, ledger, statement, voucher, or check face. If the page is otherwise formatted as correspondence (letterhead + external address + "Dear ..." salutation + prose + closing signature, or a TO:/FROM:/RE: memo header followed by prose) and a dollar figure, grant number, or invoice/payment reference is merely mentioned somewhere within that prose, classify it as correspondence (check 11) instead — a letter or memo that references a payment amount is still a letter or memo, not budget or invoice.
-   Money function overrides form layout: a billing or payment page stays financial even when it is printed on a form with fields and approval blocks.
-    invoice: an outside vendor, supplier, or agency states charges owed for goods or services SOLD — an "INVOICE" header with line items and amount due, a payment voucher, a vendor's price or hourly-rate schedule, a receipt, a payment request, or an agency/vendor ESTIMATE document: a production estimate report, estimate change order, estimate recap, or itemized billing statement with unit prices, amounts, and totals. It does not have to be titled "INVOICE" — a voucher, estimate, change order, or recap that lists billable charges and totals is an invoice. Look for goods sold or one-off services performed (items, quantities, unit prices). A hotel/motel guest bill or folio — a statement of charges for a specific stay (room, tax, balance due), often printed on a reservation form with checkboxes and a guest signature — is an invoice: it bills for a one-off service performed (lodging), not a periodic account statement. A running "BALANCE DUE" column does not make a bill a budget "statement of account".
-   budget: internal money planning, tracking, or disbursement — budget or expense lines, forecast vs. actual, expense reports, a statement of account, a check face or check stub, a check/payment register, or a status report tracking budget and spend. Also covers money-only records: a contribution/expenditure request or approval form whose whole content is an amount, and a handwritten list of budget categories and dollar amounts, or a handwritten note/log of dated expenses by category (amounts need not be legible). ALSO a provider's periodic customer statement: a monthly service bill or statement of account issued by a vendor to the company as a customer (e.g. an AT&T "MONTHLY INVOICE" for phone service, a utility or subscription statement) is budget, not invoice — it is a statement of charges for an ongoing account, not a bill for goods sold.
-   Caveat: an internal expenditure-authorization form ("ADVERTISING AND SELLING AUTHORIZATION", purchase/requisition approval, with an approval signature/date block but no billable charges) is a form (check 10), not budget — authorizing a single expenditure is not planning or tracking money. But an agency/vendor document that lists actual charges and totals owed is an invoice (this check), never a form.
-
-8. PRODUCT OR MATERIAL DOCUMENTATION -> specification
-   Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data), product formulation or preparation/mixing instructions, manufacturing-change authorization, test-analysis tables keyed to product/part codes, tolerances, or "shall/must" requirement language. Product-referenced test data is a specification. A titled product-analysis table (e.g., "MAINSTREAM SMOKE ANALYSES FOR PRODUCTS CONTAINING CARBONIZED FILLER" with chemical constituents and measurements) is a specification even without an explicit alphanumeric product/part code in the table itself — the title naming the product/material being analyzed is enough; you don't need a code like "PD 142A" specifically, just clear evidence the table's subject is a product's own composition or properties. But a generic labeled chart or table with no product/material tie-in at all, no requirement language, and no "shall/must" text is an administrative form (check 10), not a specification.
-   Caveat: a product-change authorization or review page — a titled summary describing CHANGES to a specific product (e.g. a "CAMEL Light 83 BOX" prototype change with bullets naming the new blend/filter/packaging) followed by labeled approval/signature blocks (Recommended by, Business Unit Approval, Product Acceptance Committee Concurrence, Reviewed by) — is a specification, not a form. It defines the product's new composition/properties; the approval block is the sign-off on the change, not the page's function. Forms (check 10) capture data; product-change specifications capture WHAT the product will be.
-
-9. SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation
-    Slide/overhead layouts (large sparse type, bullet lists, chart-per-page deck look), a deck title or section-divider page, a meeting/program/speaker cover page, a corporate press release / issued statement ("FOR IMMEDIATE RELEASE", media contact), or a photographic slide image (including a blurred or low-quality photo of a slide, chart, or scene). A near-blank cover or title page — mostly empty space with only a bold headline title and perhaps a subtitle, date, or "Draft" note (e.g. "Internal Communication 2000 Plan" with "Draft for discussion"), a single-word/short-phrase heading with no subtitle at all (e.g. "RECOMMENDATIONS" centered on an otherwise blank page), a deck cover, or a section divider — is a presentation (this check), not file_folder (check 1). A large heading rotated 90 degrees (e.g. "COMPETITIVE BAR PROGRAMS") is a section divider even alongside a small handwritten letter/number annotation. A standalone photographic image (people, a scene, an event photo) carrying only a Bates number is a photographic slide (this check), not file_folder (check 1). A standalone chart or table of values alone is NOT a slide — it is a form (check 10).
-   Scan-artifact signal: a solid black bar along one edge of the page (a common scanning artifact for slides/transparencies) combined with sparse text placed off-center (e.g., lower-right) rather than in running paragraphs, points to a photographed slide/overhead — presentation — even if the sparse text sounds like a research title; don't let a technical-sounding phrase pull this toward scientific_report when the layout itself is sparse and slide-like rather than a prose page.
-   Caveat: a one-page status/location display sheet — a titled sheet stating where a record range or item is located, printed in slide-style layout with a title, a line of reference numbers, and checkbox-style options (e.g. an "ARCHIVE LOCATION VARIANCE SHEET" listing "THE NUMBER (RANGE) 2060574004-2060574012 IS LOCATED: ( ) IN THE AUDIO CABINET ( ) IN THE VIDEO CABINET ( X ) ON THE OVERSIZE SHELF ...") — is a presentation (this check), not a form. It presents where something is, rather than capturing data for records.
-   Caveat: speech text — the typed text of a speech, address, or remarks delivered at a company event (e.g. a "CABARRUS RECOGNITION DINNER" page titled with the event, dated, and opening "Thank you ... and good evening everyone ..." with an RJR-style logo/Bates number) is a presentation (this check), not a letter, memo, or report — a spoken address is presentation content even when it is a prose page.
-
-10. ADMINISTRATIVE FORM -> form
-    Filled or blank fields, boxes, checkboxes, and ruled entry lines for capturing factual data; an application (research grant, employment, service request); a records-management inventory or log table (including a page titled "RECORDS MANAGEMENT INVENTORY" tabulating many records by CATEGORY NAME/RETENTION PERIOD — see check 1); a QA/parameter review sheet. A form does NOT have to be blank — a filled form recording data is still a form, including handwriting in its cells. This also covers: a standalone labeled data chart or table (e.g. "CHART 1" with rows A-Z and numeric values); a filled analytical or lab data sheet ("ANALYTICAL DATA SUMMARY" with COMPOUND:, FORMULA:, FORMULA WEIGHT:, HPLC entries and spectrum captions); and internal authorization/approval forms with an approval signature/date block. It does NOT cover money records: billing documents are invoice (check 7), and money-only forms are budget (check 7). It does NOT cover product-change authorization pages: a page that specifies WHAT a product will be (composition/property changes with labeled approval blocks) is a specification (check 8), not a form.
-    - A research grant application with structured section headings (e.g. Investigator, Objectives, Methods) that are field labels for the applicant to fill in — not continuous narrative sentences — stays form (this check), not scientific_report, even though the topic and section names sound like a research write-up. Likewise, a QA/parameter review sheet naming an institute, review dates, and testing parameters as labeled fields/entries (not running prose) stays form, not scientific_report — check 13 requires actual narrative prose, and a list of reviewed parameters and dates is not narrative.
-
-11. CORRESPONDENCE -> email, memo, or letter
-    email: mail-client header block (From/To/Sent/Subject, cc, attachments) or a forwarded/threaded mail trail. An email page keeps this label even when its body is mostly a data table — per the pre-scan, always check for a mail header before letting a technical-looking table pull you toward scientific_report or specification.
-    memo: internal "TO:/FROM:/RE:/SUBJECT:/DATE:" header block followed directly by memo-style prose (no external address, no "Dear ..." salutation). Without that header-then-prose structure it is not a memo.
-    letter: letterhead with an external recipient address, date, "Dear ..." salutation, prose body, and a closing with signature — OR a dated note addressed to a named person (e.g. "Mr. T. E. Sandefur") with prose and no TO:/FROM: block.
-    - Routing/distribution fields added on top of a full letter (e.g. a mailroom stamp with "To:"/"From:"/"Posted:"/"Subject:" fields) do NOT turn a letter into a memo: if the page still has an external addressee, a "Dear ..." salutation, a prose body, and a closing signature, it stays letter — memo requires the TO/FROM/RE header to be immediately followed by memo-style prose with no salutation or external address, not just the presence of routing-style field labels somewhere on the page.
-    - A page whose primary structure is a memo header + prose, but whose prose merely discusses, forwards, or requests approval of an invoice/bill (even if the word "INVOICE" or a dollar amount appears within that prose), stays memo — see the check 7 principle: financial evidence only wins when it IS the page's own primary structure (its own line-item table/bill), not when it's referenced from within a memo.
-
-12. PUBLISHED JOURNALISM -> news_article
-    Newspaper or magazine masthead, byline, dateline, multi-column news typography, "- more -" continuation, or wire-service credit. Also a magazine feature or an encyclopedia entry/excerpt (e.g. a "TOBACCO ENCYCLOPEDIA" page with a titled, authored article), or any page that presents as published periodical editorial content from a GENERAL-AUDIENCE outlet — even when the topic is scientific and journal citations appear within the text as references to other work. Per check 6, this does not include a page that itself carries a research journal's own running head/volume/issue (e.g. "SCIENCE" magazine's own masthead and page number) — that stays scientific_publication even if the section reads like news/commentary, because the reprint is from the journal itself, not a general news outlet covering science as a beat.
-
-13. ORIGINAL RESEARCH WRITE-UP -> scientific_report
-    Running narrative prose with objectives, methods, results, or discussion; a draft manuscript ("DRAFT", "Send Proofs to:"); a lab or technical study title page with authors and an internal affiliation and no journal identifiers. Requires running prose — a page that is only labeled field-value entries (even an "ANALYTICAL DATA SUMMARY" under a contract number with a Principal Investigator line, a grant application's structured section headings, or a QA parameter-review sheet's listed parameters/dates) is a filled form (check 10), not a scientific report.
-
-14. PROMOTIONAL MATERIAL -> advertisement
-    Marketing layout: product imagery, slogans, brand styling, coupons, flyers, brochures.
-
-If nothing matches, choose the label whose defining evidence is closest to what you can actually read — never default to scientific_report. State in the scratchpad why none of checks 1-14 had positive evidence before doing this.
-
-## Calibration
-
-The evaluation set is balanced — every label is about 1/16 of the pages. No label should dominate your predictions.
-- form, scientific_report, and handwritten are historically the most over-predicted labels; news_article and presentation are historically under-predicted. Only choose a label when its own positive evidence is present, not because the page looks structured, technical, or handwriting-heavy.
-- Filled forms are still forms; a form does not have to be blank. Handwriting that fills a printed form or table is not "handwritten"; freeform handwriting on unlabeled paper is.
-- Meeting-minutes/log sheets with printed ruled columns whose rows are filled by hand are filled forms, not handwritten. Illegible/noisy scans are not "handwritten" just because they're hard to read — check whether legible handwriting actually dominates.
-- Product-change authorization pages (titled change summary + approval blocks) are specifications, not forms. Titled product-analysis tables are specifications even without alphanumeric product codes.
-- Labeled data charts/tables and filled analytical/lab data sheets are forms, not presentations, specifications, or scientific reports. Grant applications and QA parameter sheets with structured field labels (not running prose) are forms, not scientific_report.
-- Expenditure/approval authorization forms are forms, not budgets.
-- scientific_report requires running prose; it is never a catch-all.
-- Money mentioned inside a letter or memo's prose does not make the page invoice/budget — check 7 needs the financial content to be the page's OWN primary structure (its own bill/table/ledger), not a figure referenced in correspondence.
-- Pages that present as newspaper, magazine, or encyclopedia editorial content from a general-audience outlet are news_articles even when their topic is scientific and journal citations appear as references — but a page carrying a research journal's own masthead/volume/page number stays scientific_publication even in a "news and comment" style section.
-- Bilingual (e.g. English/German) reports with institute affiliations may still be scientific_publication — check the running head/footer for a small journal abbreviation, volume, and year before defaulting to scientific_report.
-- Speech text delivered at a company event, one-page status/location display sheets, and sparse slide-style pages with scan artifacts (edge black bars, off-center sparse text) are presentations, not letters, memos, forms, or scientific reports.
-- A near-blank page with only a Bates number plus a photograph, or a Bates number plus any bold topical heading (subtitle or not, upright or rotated), is a presentation (photographic slide or cover/divider page), not file_folder. Legal/handling stamps (CONFIDENTIAL, LITIGATION, PRIVILEGED) don't count toward file_folder either.
-- A patent/invention filing index card with several ID-type fields (Inventor, Title, Filing Date, Patent Number, Attorney) is still file_folder. A "RECORDS MANAGEMENT INVENTORY" table covering many records is form, not file_folder.
-- Fax sheets are forms; press releases and photographic slides are presentations; publications require a named journal or proceedings identifier on the page ITSELF, not just a citation within the prose.
-- A dated note to a named addressee without a TO:/FROM: block is a letter, not a memo — and a routing stamp added on top of a full letter (salutation, prose, closing) does not turn it into a memo.
-- Always check for a mail-client header block before letting a technical data table pull a page toward scientific_report or specification — it may be an email.
-- Technical subject matter alone decides nothing: the page's function decides the label.
-- If two labels remain, prefer the one supported by an explicit header, form field, or masthead you can read over one inferred from topic.
-- If your scratchpad's stopping check and your "gut" label disagree, trust the scratchpad — that disagreement is exactly the signal this process exists to catch.
-
-## Output format
-
-After the scratchpad, output the final label on its own line, wrapped like this and nothing else on that line:
-
-<label>invoice</label>
-
-The label must be lowercase, exactly one of the 16 strings above, no punctuation inside the tags, no explanation after them.
-
-### Worked example
-
-<scratchpad>
-file_folder: no — page has multi-line prose body, not just an identifier/stamp.
-handwritten: no — text is typed throughout.
-fax sheet: no — no FACSIMILE/TELEFAX header.
-questionnaire: no — nothing asks the reader to rate/answer/choose, and no mention of an enclosed survey.
-resume: no — no career/education listing.
-scientific_publication: no — no journal name or volume/issue/DOI present on this page.
-financial: yes — page has "INVOICE" header, itemized goods with unit prices, and an "Amount Due" total from a vendor to the recipient; this IS the page's primary structure. This is invoice, not budget — there's no internal forecast/actual tracking or check stub, and the vendor is billing for goods sold.
-Runner-up: budget, ruled out because the page states what is owed to a vendor for goods, rather than tracking internal spend.
-</scratchpad>
-<label>invoice</label>
-
-A second example — a hotel bill printed on a reservation form:
-
-<scratchpad>
-handwritten: no — the page is typed/printed; only the guest signature and one X are handwritten, and handwriting filling a printed form is not the handwritten class.
-form: no — although it has checkboxes and blank fields at the top (ROOM NO, ARR, RATE, METHOD OF PAYMENT, GUEST SIGNATURE), the page's function is a bill for a completed stay: a charges/credits/balance-due table (ROOM 2035, TAX), a running BALANCE DUE, and "I AGREE THAT MY LIABILITY FOR THIS BILL IS NOT WAIVED".
-financial: yes — a vendor (Hyatt Richmond) states charges owed for a one-off service performed (lodging). No "INVOICE" title, but the header "ACCOMMODATIONS" and the itemized room/tax charges with a balance make it a guest bill/folio, which is invoice. The running BALANCE DUE column does not make it a budget "statement of account" — there is no ongoing account, and no internal money planning or tracking.
-Runner-up: budget, ruled out because this is a bill for a service performed, not a provider's periodic customer statement or internal spend record.
-</scratchpad>
-<label>invoice</label>
-
-A third example — a section-divider page with legal stamps:
-
-<scratchpad>
-file_folder: no — although the page is mostly blank with a page number and "CONFIDENTIAL"/"LITIGATION" stamps, those are routine legal handling markings, not identifying/filing content. The page also carries a prominent centered heading/title, which is real topical content.
-presentation: yes — a near-blank page with a bold centered heading (no subtitle needed) is a section-divider/cover page, which is presentation. There are no fields (not a form), no prose (not a letter/memo/report), no journal (not scientific_publication).
-Runner-up: file_folder, ruled out because the legal stamps don't count as identifying content, and the topical heading makes this a section divider, not a filing-label page.
-</scratchpad>
-<label>presentation</label>
-
-A fourth example — a photographic slide:
-
-<scratchpad>
-file_folder: no — the page pairs a Bates number with a photographic image of people/a scene; a photograph is real content, so this is not identifier-only filing metadata.
-advertisement: no — the photo is not a marketing layout with product imagery, slogans, or brand styling.
-presentation: yes — a standalone photographic image (people, a scene, an event photo) with only a Bates number is a photographic slide, which is presentation. Even a grainy or low-quality scan counts.
-Runner-up: file_folder, ruled out because the photographic image is real content, making this a photographic slide rather than a filing-label page.
-</scratchpad>
-<label>presentation</label>
-
-A fifth example — a letter with a mailroom routing stamp on top:
-
-<scratchpad>
-memo: no — although "To:"/"From:"/"Posted:"/"Subject:" fields appear at the top (a routing stamp), the header is followed by a "Dear ..." salutation, an external addressee, prose body, and a closing signature — memo requires the header to be followed directly by memo-style prose with no salutation, which isn't the case here.
-letter: yes — letterhead, external addressee, dated "Dear ..." salutation, prose body, and closing signature are all present; the routing fields on top are a mailroom addition, not the page's defining structure.
-Runner-up: memo, ruled out because the presence of To/From-style fields alone doesn't override a full letter body with a salutation and closing.
-</scratchpad>
-<label>letter</label>
-
-A sixth example — a memo forwarding an invoice:
-
-<scratchpad>
-financial: no — although the word "INVOICE" and a dollar figure appear in the body, the page's own primary structure is a "TO:/FROM:/RE:" memo header followed by prose discussing/forwarding the billing information — there is no standalone line-item table or bill that IS this page; the financial content is referenced within memo prose, not the page's own structure.
-memo: yes — internal TO:/FROM:/RE: header followed directly by prose (no external address, no salutation).
-Runner-up: invoice, ruled out because the dollar figure and "INVOICE" reference are inside memo prose, not this page's own billing table.
-</scratchpad>
-<label>memo</label>"""
-
-VALID_CLASSES = [
-    "advertisement", "budget", "email", "file_folder", "form", "handwritten",
-    "invoice", "letter", "memo", "news_article", "presentation",
-    "questionnaire", "resume", "scientific_publication", "scientific_report",
-    "specification"
-]
+VALID_CLASSES = list(DOCUMENT_CLASSES)
 
 
-def encode_image(image_path: Path) -> str:
-    """Encode image to base64 string for vision model input"""
-    with open(image_path, "rb") as f:
-        return base64.b64encode(f.read()).decode("utf-8")
-
-
-def clean_prediction(text: str | None) -> str:
-    """Extract valid class name from LLM response"""
+def clean_prediction(text: Union[str, None]) -> str:
+    """Extract valid class name from LLM response using word boundary matching"""
     if not text:
         return ""
-
-    text = text.strip()
-
-    # Prefer an explicit <label> tag from scratchpad-style prompts
-    label_match = re.search(r"<label>(.*?)</label>", text, re.IGNORECASE | re.DOTALL)
-    if label_match:
-        label = label_match.group(1).strip().lower()
-        if label in VALID_CLASSES:
-            return label
-
-    # Strip reasoning/scratchpad blocks, then scan for the first valid class
-    text = re.sub(r"<(thinking|scratchpad)>.*?</\1>", "", text, flags=re.IGNORECASE | re.DOTALL)
-    text = text.lower().strip()
+    text = text.strip().lower()
+    tagged = re.search(r"<label>\s*([^<\s][^<]*?)\s*</label>", text, flags=re.DOTALL)
+    if tagged and tagged.group(1).strip() in VALID_CLASSES:
+        return tagged.group(1).strip()
+    for line in reversed(text.splitlines()):
+        candidate = line.strip().strip("`*_ ").lower()
+        if candidate in VALID_CLASSES:
+            return candidate
     for cls in VALID_CLASSES:
-        if cls in text:
+        # Use word boundary matching to avoid substring false positives
+        # e.g., "information" should not match "form"
+        if re.search(r'\b' + re.escape(cls) + r'\b', text):
             return cls
-
     return text
 
 
@@ -252,25 +48,15 @@ def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o")
     Classify a document image using a vision model through OpenRouter API.
     Sends only the image to the vision model - no OCR text or feature data.
     """
-    image_base64 = encode_image(image_path)
+    image_base64 = encode_image_base64(image_path)
 
     payload = {
         "model": model,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": CLASSIFICATION_PROMPT},
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{image_base64}"
-                        }
-                    }
-                ]
-            }
-        ],
-        "max_tokens": 20,
+        "messages": build_vision_messages(CLASSIFICATION_PROMPT, image_base64),
+        # Reasoning models may consume most of the response budget before the
+        # final label. Keep the standalone path safe for the same models used
+        # by the Braintrust evaluator.
+        "max_tokens": 4096,
         "temperature": 0.1
     }
 

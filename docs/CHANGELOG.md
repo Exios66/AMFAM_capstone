@@ -1,0 +1,148 @@
+# Prompt Version Changelog
+
+This document tracks the changes between prompt iterations (v11 through v14) for the qwen3.7-flash document classifier.
+
+---
+
+## v11 — Estimate vs Bill Rule
+
+**Baseline prompt for the estimate-vs-bill disambiguation work.**
+
+- **Check 7 (Financial Document):** Restored v9 wording for agency/vendor ESTIMATE documents with unit prices/amounts/totals (invoice), and added concrete bill signals ("EST NO", "REVISES EST", "PRIOR ADJUSTMENTS", "EST AMT LESS C/D", original-vs-present estimate columns, "BILLING TYPE PROGRESSIVE").
+- **Budget carve-out narrowed:** A pure planning recap with no billing apparatus (e.g., "OUTDOOR ESTIMATE RECAP" bus-shelter planning) stays budget. Check stubs remain budget even when columns are headed "INVOICE DATE/NO/AMOUNT".
+- **Worked examples:** 4th example teaches estimate-change-order → invoice case.
+
+**Rationale:** v10 had routed three agency estimate documents to budget because the invoice bullet was too narrow ("billing document for COMPLETED work...listing ACTUAL billable charges"). v11 restored the broader v9 wording to recover invoice coverage.
+
+---
+
+## v11.5 — Extended Money-Only Records
+
+**Extended clarification for money-only records and periodic customer statements.**
+
+- **Check 7 (invoice):** Added landlord's rent/lease statement for a specific period as invoice (bills one-off service period, not ongoing account).
+- **Check 7 (budget):** Clarified campaign-contribution/expenditure requests, contribution-request checklists, grant/contribution requests with recipient and amount as budget (internal money requests). Added campaign-contribution/expenditure statements/disclosures and financial/money-data tables (price/value estimates, price-to-earnings, budget-vs-actual, stock/investment figures) as budget.
+- **Check 10 (form):** Explicitly excluded campaign-contribution requests/checklists/statements and financial or money-data tables from form.
+
+**Rationale:** The model was routing money-only records to form because they had approval blocks or field layouts. v11.5 made explicit that bare money requests (amount + recipient, or financial data tables) are budget, not form.
+
+---
+
+## v11.6 — (Intermediate)
+
+No build script preserved. Likely minor tweaks between v11.5 and v11.7.
+
+---
+
+## v11.7 — Minimal Edit Set D + A + B
+
+**Deliberately minimal 3-edit set (C and E skipped to reduce regression risk).**
+
+- **Edit D (Check 7 voucher vs check-stub):** Voucher is a payment instrument that BILLS a named payee for named goods/services/charges (invoice). Check face/check stub is the DISBURSEMENT instrument (budget), even when stub columns are headed "INVOICE DATE/NO/AMOUNT".
+- **Edit A (Check 8 rate-data chart):** A labeled product/parameter rate-data chart (e.g., statistical process-control chart titled with product name plotting measured property against spec limits) is specification even without "shall/must" text.
+- **Edit B (Check 10 standalone-chart carve-out):** A standalone labeled chart is form only when it holds generic administrative/log data. A chart of a product's measured parameters against spec limits → specification (check 8). A financial/money chart → budget (check 7). A research-measurement chart → scientific_report (check 13).
+
+**Rationale:** v11 had two 160-set misses: `jow70f00` (form → budget, ambiguous grant payment) and `tqi16e00` (budget → invoice, planning recap with estimate numbers). v11.7 targeted structural disambiguation (voucher vs check-stub) and chart-type routing (product/parameter charts, financial charts) with minimal changes to avoid regressions.
+
+**Result:** 160-set: 156/159 (98.1%). Eval 56-set: 20/56 (35.7%) — best eval yet (v11.5 = 16/56, v11.6 = 17/56).
+
+---
+
+## v11.8 — Fix 1 (Form-vs-Budget Authorization) + Fix 2 (Memo-vs-Letter)
+
+**Two targeted fixes for v11.7's remaining 160-set misses.**
+
+- **Fix 1 (Form-vs-budget authorization):** Budget money-only clause narrowed to bare amount-only requests ONLY. A project-funding authorization/approval form that names the work to be funded, carries finance-data/expense-code fields (e.g., budgeted department/expense code), and has an approval block is form (check 10), not budget — even when it states an amount (e.g., "AUTHORIZATION REQUEST" for $690,000 to perform a named study). Caveat explicitly includes AUTHORIZATION REQUEST / project-funding forms.
+- **Fix 2 (Memo-vs-letter):** By-name memo rule requires an explicit INTERNAL TITLE/DIVISION in the address line; do not infer internal vs. external from pronoun usage in the prose. A dated note addressed to a bare name with an honorific (e.g., "Mr. T. E. Sandefur:") — no internal title/division, no TO:/FROM:/RE:/SUBJECT: block, no "Dear ..." salutation, and no closing signature — is a letter (external addressee), not a memo.
+
+**Rationale:** v11.7 had three 160-set misses: `yvp54d00` (form → budget, AUTHORIZATION REQUEST $690,000), `cpt85d00` (letter → memo, "Mr. T. E. Sandefur"), `tqi16e00` (budget → invoice). Fix 1 targets the authorization-request form; Fix 2 targets the bare-name external addressee case.
+
+**Result:** 160-set: 157/158 (99.4%) — best ever. All three v11.7 misses fixed. Eval 56-set: 18/56 (32.1%) — regression vs v11.7's 20/56. Two eval rows recovered (`form__0005`, `spec__0019`), but four regressed (`presentation__0001`, `presentation__0011` → budget; `spec__0017` → form; `jed71e00` → presentation).
+
+---
+
+## v11.9 — Narrow Edit B's Financial-Chart→Budget Carve-Out
+
+**Three edits that narrow Edit B so titled/designed deck charts no longer fall into budget.**
+
+- **Edit 1 (Check 10 carve-out narrowed):** A product/parameter rate-data chart → specification. A research/measurement chart → scientific_report. A financial/money chart → budget ONLY when it is a standalone data table used for money planning or tracking (a ledger, budget-vs-actual, price/value table). A financial chart presented as a TITLED, DESIGNED DECK CHART (a chart page styled as a slide with its own title/caption, company logo/date, or chart-per-page deck look, e.g., a "brand shares" pie chart or "performance triggers" table page) → presentation (check 9), not budget.
+- **Edit 2 (Check 9 hardened):** A titled/designed deck chart IS a presentation slide; don't route it to budget. The check-10 carve-out routes money charts to budget only when they are standalone planning/tracking data tables, not when they are titled deck charts.
+- **Edit 3 (Calibration):** Keep the deck-chart exception visible next to the general chart rule.
+
+**Rationale:** v11.8's Edit B carve-out ("a financial/money chart is budget") was too broad — it routed titled designed deck charts to budget ahead of check 9. The eval set had two presentation→budget regressions (`presentation__0001`, `presentation__0011`) from v11.7 to v11.8. v11.9 narrows the carve-out to standalone planning/tracking tables only.
+
+**Result:** Eval 56-set: 20/56 (35.7%) — ties v11.7's best, +2 over v11.8's 18/56. Both presentation→budget regressions recovered, plus bonus fix of `jed71e00` (form → presentation, also v11.8's 160-set miss). Cost: `form__0005` (a v11.8 Fix-1 success) regressed to invoice; new `news_article__0008` → memo miss.
+
+---
+
+## v12 — Major Rewrite (Function-Based Invoice vs Budget)
+
+**Complete rewrite of checks 7, 9, 10 with new calibration and worked examples.**
+
+- **Edit A (Check 7 complete rewrite):** DECIDE BY FUNCTION, NOT BY HEADINGS. Invoice: page charges or requests payment for goods SOLD or services PERFORMED. Budget: internal money planning, tracking, or disbursement. Added explicit guidance on purchase orders (invoice when listing line items/quantities/prices/total), vouchers (payment instrument, invoice), hotel/motel bills (invoice), landlord's rent/lease statements (invoice), agency estimates/change orders (invoice when listing actual charges/totals, budget when only projecting future spend), checks/check stubs (budget).
+- **Edit B (Check 9 last-sentence rewrite):** A chart-per-page deck exhibit (titled chart, pie chart, flowchart, or data table that is a SINGLE visual on a slide-styled page with descriptive title, corporate branding, footer date/code) IS a slide (presentation), not a form. A dense data-RECORD table (multi-row/multi-column records log, data-capture sheet, chart data table with generic row labels) is form (check 10).
+- **Edit C (Check 10 data-table clause):** Covers dense multi-row data-RECORD tables (records logs, data-capture sheets, chart data tables with generic row labels). NOT covered: single-exhibit chart/table on slide-styled page (presentation); titled product-analysis table keyed to product/material (specification).
+- **Edit D (Calibration trim):** Updated calibration section with refined rules for form/scientific_report/handwritten/news_article/presentation over/under-prediction.
+- **Edit E (Worked examples):** Updated worked examples for agency estimate change order (invoice) vs planning recap (budget).
+
+**Rationale:** v11.5-v11.9 incremental edits had accumulated complexity. v12 rewrites check 7 from scratch with a function-based decision framework (bill vs plan/track/statement), clarifies check 9 for chart-per-page deck exhibits vs dense data-record tables, and streamlines calibration.
+
+---
+
+## v13 — Specialist Periodicals + Scientific Research Records
+
+**Built from v11.9. Extends scientific_publication to specialist periodicals and scientific_report to research records.**
+
+- **Check 6 (Published evidence):** Include a dated, titled science, medical, engineering, or technical periodical page whose own masthead identifies that specialist publication (e.g., a science magazine or medical trade paper), even when it lacks volume/issue/DOI.
+- **Check 12 (News article caveat):** Don't use general-news caveat for specialist science, medical, engineering, or technical periodicals. A specialist periodical with its own dated masthead is scientific_publication, not news_article, even if its page uses magazine/news typography or a section title such as "Monitor" or "World Wide Report".
+- **Check 10 (Form carve-out):** Generic administrative forms remain form, but a page whose fields, tables, signatures, or handwritten entries document a scientific experiment, laboratory result, compound test, analytical measurement, protocol review, or technical research report → scientific_report (check 13), not form.
+- **Check 10 (additional):** It does NOT cover scientific/laboratory research records merely because they use fields, tables, QA sign-offs, or a report cover.
+
+**Rationale:** The model was routing specialist science/medical/technical periodicals (with their own mastheads) to news_article because they used magazine/news typography. It was also routing scientific research records (experiments, lab results, compound tests) to form because they used structured fields/tables. v13 extends scientific_publication to specialist periodicals and scientific_report to research records.
+
+**Result:** v2 160-set: 137/159 (86.2%).
+
+---
+
+## v14 — Production Precedence Rules
+
+**Built from v13. Adds final authority rules for conflicting cues.**
+
+- **Added section:** "v14 production precedence (final authority)" with explicit rules:
+  1. **Financial function beats layout:** Invoice for vendor/agency billing specific good/service/job. Budget for internal planning/tracking/recurring statements/checks. Form for single authorization/request with approval fields (even with large dollar amount).
+  2. **Generic form is not a technical catch-all:** Form only when primary purpose is administrative data capture/approval and no stronger document function. Page documenting experiment/sample/compound/protocol/measurement/lab result/research study → scientific_report unless clearly product/material documentation.
+  3. **Additional precedence rules** (from truncated output): Likely covers other recurring boundary decisions.
+
+**Rationale:** v13 extended scientific_publication and scientific_report, but the model still had edge cases where layout cues (structured fields, approval blocks, dollar amounts) overrode document function. v14 makes the recurring boundary decisions explicit as final authority rules.
+
+**Result:** v2 160-set retry: 136/160 (85.0%).
+
+---
+
+## Summary Table
+
+| Version | Based On | Key Changes | 160-set | 320-set | 480-set | Eval 56 |
+|---------|----------|-------------|---------|---------|---------|---------|
+| v11 | v10 | Estimate vs bill rule | 156/158 (98.7%) | 266/317 (83.9%) | — | — |
+| v11.5 | v11 | Extended money-only records | — | — | — | — |
+| v11.6 | v11.5 | (Intermediate) | — | — | — | — |
+| v11.7 | v11.6 | Edit D+A/B (voucher/check-stub, rate-data chart, standalone-chart) | 156/159 (98.1%) | — | — | 20/56 (35.7%) |
+| v11.8 | v11.7 | Fix 1 (authorization form) + Fix 2 (memo vs letter) | 157/158 (99.4%) | 279/320 (87.2%) | 424/476 (89.1%) | 18/56 (32.1%) |
+| v11.9 | v11.8 | Narrow Edit B (titled deck charts → presentation) | — | — | — | 20/56 (35.7%) |
+| v12 | v11.6 | Major rewrite (function-based invoice/budget, chart-per-page deck) | — | — | — | — |
+| v13 | v11.9 | Specialist periodicals + scientific research records | 137/159 (86.2%) [v2] | — | — | — |
+| v14 | v13 | Production precedence rules | 136/160 (85.0%) [v2 retry] | — | — | — |
+
+---
+
+## Best Results by Dataset
+
+| Dataset | Best Version | Accuracy |
+|---------|--------------|----------|
+| 160-image (original) | v11.8 | 157/158 (99.4%) |
+| 320-image | v11.8 | 279/320 (87.2%) |
+| 480-image | v11.8 | 424/476 (89.1%) |
+| Eval 56 | v11.7 / v11.9 | 20/56 (35.7%) |
+| 160-image v2 | v11.9 | 137/159 (86.2%) |
+
+**Note:** v11.8 generalizes best to larger, noisier datasets (320, 480). v11.7 and v11.9 tie on the eval 56-set. v13 and v14 target specialist periodicals and scientific research records but show lower accuracy on the v2 dataset.

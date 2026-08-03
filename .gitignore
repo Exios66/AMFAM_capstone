@@ -5,10 +5,17 @@ __pycache__/
 *.so
 .Python
 
+# Virtual environments
+.venv/
+venv/
+env/
+
 # Environment variables / secrets
 .env
 .env.local
+braintrust.env
 !.env.example
+!braintrust.env.example
 
 # IDE
 .vscode/
@@ -45,7 +52,10 @@ processed_balanced_dataset
 2550x3300_50perclass_800/
 1024x1024_50perclass_800/
 fixed_size_sampled/
+fixed_size_sampled_320/
+fixed_size_sampled_480/
 
 
 # Logs
 *.log
+reports/manifests/
