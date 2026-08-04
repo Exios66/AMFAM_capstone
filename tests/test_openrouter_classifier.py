@@ -45,12 +45,12 @@ class TestEncodeImage:
         raw = b"\x89PNG fake bytes"
         img = tmp_path / "img.png"
         img.write_bytes(raw)
-        encoded = oc.encode_image(img)
+        encoded = oc.encode_image_base64(img)
         assert base64.b64decode(encoded) == raw
 
     def test_missing_file_raises(self, tmp_path):
         with pytest.raises(FileNotFoundError):
-            oc.encode_image(tmp_path / "missing.png")
+            oc.encode_image_base64(tmp_path / "missing.png")
 
 
 def _mock_response(status=200, json_body=None, raise_http=False):
@@ -68,7 +68,7 @@ def _mock_response(status=200, json_body=None, raise_http=False):
 
 class TestClassifyImage:
     @patch("src.openrouter_classifier.requests.post")
-    @patch("src.openrouter_classifier.encode_image", return_value="ZmFrZQ==")
+    @patch("src.openrouter_classifier.encode_image_base64", return_value="ZmFrZQ==")
     def test_success_path_builds_payload_and_parses(self, _enc, mock_post, tmp_path):
         body = {
             "choices": [{"message": {"content": "Invoice"}}],
@@ -94,7 +94,7 @@ class TestClassifyImage:
         assert content[1]["image_url"]["url"] == "data:image/png;base64,ZmFrZQ=="
 
     @patch("src.openrouter_classifier.requests.post")
-    @patch("src.openrouter_classifier.encode_image", return_value="ZmFrZQ==")
+    @patch("src.openrouter_classifier.encode_image_base64", return_value="ZmFrZQ==")
     def test_empty_response_sets_status(self, _enc, mock_post, tmp_path):
         body = {"choices": [{"message": {"content": ""}}], "usage": {}}
         mock_post.return_value = _mock_response(json_body=body)
@@ -104,7 +104,7 @@ class TestClassifyImage:
         assert result["classification"] == ""
 
     @patch("src.openrouter_classifier.requests.post")
-    @patch("src.openrouter_classifier.encode_image", return_value="ZmFrZQ==")
+    @patch("src.openrouter_classifier.encode_image_base64", return_value="ZmFrZQ==")
     def test_malformed_choices_default_to_empty(self, _enc, mock_post, tmp_path):
         mock_post.return_value = _mock_response(json_body={"choices": []})
         result = oc.classify_image("k", tmp_path / "x.png")
@@ -113,7 +113,7 @@ class TestClassifyImage:
         assert result["usage"] == {}
 
     @patch("src.openrouter_classifier.requests.post")
-    @patch("src.openrouter_classifier.encode_image", return_value="ZmFrZQ==")
+    @patch("src.openrouter_classifier.encode_image_base64", return_value="ZmFrZQ==")
     def test_http_error_is_raised(self, _enc, mock_post, tmp_path):
         import requests
 

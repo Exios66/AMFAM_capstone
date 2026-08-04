@@ -2,7 +2,7 @@
 
 import json
 
-from scripts import create_balanced_dataset as cb
+from scripts.datasets import create_balanced_dataset as cb
 
 
 def _make_source(tmp_path, class_to_count):

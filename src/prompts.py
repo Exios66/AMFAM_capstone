@@ -1486,10 +1486,13 @@ _V17_HANDWRITTEN_ADDENDUM = """\
 
 # Build v17 from v11.9 by splicing out check-7's bloated invoice+budget+caveat
 # and inserting a stronger handwritten-vs-letter rule.
-# The v11.9 worked examples are stripped — they redundantly teach rules already
-# explicit in the check structure and contributed to v16's 81.6 % accuracy.
+# The v11.9 calibration and worked examples are stripped — they redundantly
+# teach rules already explicit in the check structure and caused attention
+# dilution in v17.2 (invoice regressed 8/10→6/10 on v1 slice).
 _we_start = PROMPT_V11_9.find("### Worked example")
-_b = PROMPT_V11_9[:_we_start] if _we_start != -1 else PROMPT_V11_9
+_cal_start = PROMPT_V11_9.find("## Calibration")
+_output_start = PROMPT_V11_9.find("## Output format")
+_b = PROMPT_V11_9[:_cal_start] + PROMPT_V11_9[_output_start:_we_start] if _cal_start != -1 and _output_start != -1 else PROMPT_V11_9[:_we_start] if _we_start != -1 else PROMPT_V11_9
 _fin = _b.find("    invoice: an outside vendor")
 _chk8 = _b.find("\n\n8. PRODUCT OR MATERIAL DOCUMENTATION")
 _hand = _b.find("   Most of the content is freeform handwriting")
@@ -1521,6 +1524,8 @@ PROMPT_V17_1 = (
 # failure analysis (4 misclassified handwritten pages on v2 alone, 2
 # scientific_report→specification, 3 news_article→advertisement).
 _V17_1_CALIBRATION_ADDENDUM = """\
+## Calibration
+
 - A research study's own experimental data tables, test measurements, and results belong to `scientific_report`, not `specification`. Specification requires the page's PRIMARY function to be defining a product's composition, tolerances, or requirements — a technical report that merely contains data tables or measurement charts is still a report.
 - Judge newspaper/magazine pages by editorial intent, not embedded ads: a page with a running masthead, multi-column news text, bylines, and journalistic typography is `news_article` even when it CONTAINS a branded advertisement. Only classify as `advertisement` when the ENTIRE page is a standalone promotional piece with no editorial wrapper."""
 

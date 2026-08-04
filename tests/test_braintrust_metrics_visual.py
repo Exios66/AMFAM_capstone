@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from scripts import braintrust_metrics_visual as bmv
+from scripts.braintrust import braintrust_metrics_visual as bmv
 
 
 @pytest.fixture(autouse=True)

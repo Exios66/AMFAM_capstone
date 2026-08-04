@@ -11,7 +11,7 @@ from unittest.mock import mock_open, patch
 import pytest
 from PIL import Image
 
-from scripts import eda_analysis as ea
+from scripts.eda import eda_analysis as ea
 
 
 @pytest.fixture(autouse=True)

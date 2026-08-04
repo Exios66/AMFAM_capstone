@@ -4,29 +4,30 @@ import json
 
 from PIL import Image
 
-from scripts import create_fixed_size_dataset as cf
+from scripts.datasets import create_fixed_size_dataset as cf
+from src.image_utils import _pad_color_for_mode
 
 
 class TestPadColorForMode:
     def test_grayscale_from_int(self):
-        assert cf._pad_color_for_mode("L", 255) == 255
+        assert _pad_color_for_mode("L", 255) == 255
 
     def test_grayscale_from_tuple(self):
-        assert cf._pad_color_for_mode("L", (200, 200, 200)) == 200
+        assert _pad_color_for_mode("L", (200, 200, 200)) == 200
 
     def test_bilevel(self):
-        assert cf._pad_color_for_mode("1", 255) == 1
-        assert cf._pad_color_for_mode("1", 0) == 0
+        assert _pad_color_for_mode("1", 255) == 1
+        assert _pad_color_for_mode("1", 0) == 0
 
     def test_rgba_from_int(self):
-        assert cf._pad_color_for_mode("RGBA", 255) == (255, 255, 255, 255)
+        assert _pad_color_for_mode("RGBA", 255) == (255, 255, 255, 255)
 
     def test_rgba_from_tuple(self):
-        assert cf._pad_color_for_mode("RGBA", (1, 2, 3, 4)) == (1, 2, 3, 4)
+        assert _pad_color_for_mode("RGBA", (1, 2, 3, 4)) == (1, 2, 3, 4)
 
     def test_rgb_default(self):
-        assert cf._pad_color_for_mode("RGB", 128) == (128, 128, 128)
-        assert cf._pad_color_for_mode("RGB", (1, 2, 3)) == (1, 2, 3)
+        assert _pad_color_for_mode("RGB", 128) == (128, 128, 128)
+        assert _pad_color_for_mode("RGB", (1, 2, 3)) == (1, 2, 3)
 
 
 class TestResizeWithPadding:

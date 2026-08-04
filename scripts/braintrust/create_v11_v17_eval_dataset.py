@@ -27,8 +27,10 @@ Usage:
 import argparse
 import base64
 import hashlib
+import json
 import os
 import sys
+import time
 from collections import Counter
 from dataclasses import replace
 from pathlib import Path
@@ -281,6 +283,29 @@ def print_summary(records: list[dict]) -> None:
         print(f"  {cls:<24} {by_class[cls]}")
 
 
+def save_records_cache(path: str, records: list[dict]) -> None:
+    """Persist deduped records as JSON so re-runs can skip experiment fetching."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    serializable = []
+    for r in records:
+        item = dict(r)
+        item["also_missed_by"] = sorted(r.get("also_missed_by", []))
+        item["versions"] = sorted(r.get("versions", []))
+        item["predictions"] = dict(r.get("predictions", {}))
+        serializable.append(item)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(serializable, f, indent=2)
+    print(f"Saved {len(serializable)} records to {path}")
+
+
+def load_records_cache(path: str) -> list[dict]:
+    """Load records previously persisted by save_records_cache."""
+    with open(path, "r", encoding="utf-8") as f:
+        records = json.load(f)
+    print(f"Loaded {len(records)} records from cache {path}")
+    return records
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", default="braintrust.env")
@@ -290,6 +315,9 @@ def main() -> None:
                         help="Space-separated prompt versions to include (overrides v11-v17 default)")
     parser.add_argument("--skip-experiment", action="append", default=[],
                         help="Experiment name to exclude (may repeat)")
+    parser.add_argument("--cache", default=None,
+                        help="Path to a records JSON cache; loads it instead of fetching experiments if it exists, "
+                             "and always writes it after collection")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -307,14 +335,21 @@ def main() -> None:
     print(f"Slice datasets: {SLICE_DATASETS}")
     print(f"Eval dataset: {args.dataset}")
 
-    experiments = discover_pv_experiments(api_key, config.project_id, config.api_base, target_pvs, skip)
-    print(f"\nDiscovered {len(experiments)} experiments:")
-    for e in experiments:
-        print(f"  {e['name']}  (pv={resolve_prompt_version(e)}, id={e['id'][:12]})")
+    if args.cache and os.path.exists(args.cache):
+        deduped = load_records_cache(args.cache)
+        print_summary(deduped)
+    else:
+        experiments = discover_pv_experiments(api_key, config.project_id, config.api_base, target_pvs, skip)
+        print(f"\nDiscovered {len(experiments)} experiments:")
+        for e in experiments:
+            print(f"  {e['name']}  (pv={resolve_prompt_version(e)}, id={e['id'][:12]})")
 
-    records = collect_misses(api_key, experiments, config.api_base)
-    deduped = dedupe_by_filename(records)
-    print_summary(deduped)
+        records = collect_misses(api_key, experiments, config.api_base)
+        deduped = dedupe_by_filename(records)
+        print_summary(deduped)
+
+        if args.cache:
+            save_records_cache(args.cache, deduped)
 
     if args.dry_run:
         print("\nDry run — no dataset created.")
@@ -329,10 +364,28 @@ def main() -> None:
         sys.exit("No rows could be built (all source images missing).")
 
     print(f"\nUploading {len(rows)} rows to {args.dataset}...")
-    upload_rows(config, api_key, args.dataset, rows)
+    upload_rows_with_retry(config, api_key, args.dataset, rows)
 
     per_version = Counter(r["prompt_version"] for r in deduped)
     print(f"Uploaded {len(rows)} rows across {len(per_version)} prompt versions to {args.dataset}.")
+
+
+def upload_rows_with_retry(config, api_key: str, dataset_name: str, rows: list[tuple[str, dict]],
+                           retries: int = 3, wait: int = 60) -> None:
+    """Upload rows, retrying on transient network failures (e.g. S3 timeouts).
+
+    The dataset is rebuilt idempotently (deleted and recreated) each attempt, so
+    a partial failure leaves no half-written dataset behind.
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            upload_rows(config, api_key, dataset_name, rows)
+            return
+        except Exception as exc:  # noqa: BLE001 - retry transient failures
+            if attempt == retries:
+                raise
+            print(f"Upload attempt {attempt} failed ({exc}); retrying in {wait}s...", file=sys.stderr)
+            time.sleep(wait)
 
 
 if __name__ == "__main__":

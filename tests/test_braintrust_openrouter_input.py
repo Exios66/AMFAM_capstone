@@ -1,6 +1,6 @@
 """Unit tests for the pure helpers in scripts.braintrust_openrouter_input."""
 
-from scripts import braintrust_openrouter_input as bi
+from scripts.braintrust import braintrust_openrouter_input as bi
 
 
 class TestExtractClassFromFilename:
@@ -40,7 +40,7 @@ class TestLoadDatasetImages:
         classes = sorted(d["expected"] for d in dataset)
         assert classes == ["invoice", "letter"]
         for d in dataset:
-            assert set(d.keys()) == {"image_path", "filename", "expected"}
+            assert set(d.keys()) == {"image_b64", "filename", "expected"}
 
     def test_empty_dir_returns_empty_list(self, tmp_path):
         assert bi.load_dataset_images(tmp_path) == []
@@ -54,8 +54,10 @@ class TestGetApiKeys:
 
     def test_exits_when_any_missing(self, monkeypatch):
         import pytest
+        from unittest import mock
 
         monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
         monkeypatch.delenv("BRAINTRUST_API_KEY", raising=False)
-        with pytest.raises(SystemExit):
-            bi.get_api_keys()
+        with mock.patch("src.env_utils.load_dotenv_if_available"):
+            with pytest.raises(SystemExit):
+                bi.get_api_keys()

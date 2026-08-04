@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, mock_open, patch
 
-from scripts import run_tiff_processing as rtp
+from scripts.datasets import run_tiff_processing as rtp
 
 
 class TestMain:

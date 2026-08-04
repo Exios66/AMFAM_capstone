@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from scripts import estimate_openrouter_cost as ec
+from scripts.openrouter import estimate_openrouter_cost as ec
 
 
 class TestBuildMarkdownSection:
@@ -127,6 +127,8 @@ class TestGetApiKey:
     def test_exits_when_missing(self, monkeypatch):
         monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
         import pytest
+        from unittest import mock
 
-        with pytest.raises(SystemExit):
-            ec.get_api_key()
+        with mock.patch("src.env_utils.load_dotenv_if_available"):
+            with pytest.raises(SystemExit):
+                ec.get_api_key()

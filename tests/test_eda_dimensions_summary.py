@@ -2,7 +2,7 @@
 
 from PIL import Image
 
-from scripts import eda_dimensions_summary as eds
+from scripts.eda import eda_dimensions_summary as eds
 
 
 class TestCollectDimensions:
