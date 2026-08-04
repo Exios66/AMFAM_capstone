@@ -1469,7 +1469,16 @@ Runner-up: handwritten, ruled out because the document's primary function is a c
 # evaluation: agency estimate rules misclassified budget→invoice (7 errors across slices).
 _V17_NEW_FINANCIAL = """\
     invoice: a bill for goods or services provided — the page states a payment demand. Look for an "INVOICE" header, "Amount Due", "Pay This Amount", "Total Due", payment instructions, remittance address, or language billing for completed work ("Final invoice to reflect total actual costs"). A payment voucher naming a payee with "AMOUNT"/"PAY THIS AMOUNT" is invoice. A hotel/guest folio, a rent statement billing for a specific period — these all demand payment for services. The key signal is an explicit request to pay; without it the page is not invoice.
-    budget: internal money planning, tracking, or disbursement WITHOUT demanding payment. Budget includes: expense reports, forecast-vs-actual, a statement of account (periodic statement from a provider like AT&T), a check face/check stub, a check register, a financial/money-data table, a handwritten list of expenses, a campaign-contribution/expenditure statement, or a money-only REQUEST/CHECKLIST/STATEMENT. A document titled "ESTIMATE" is budget — it PLANS spending, even when it compares previous/current amounts, has revision columns, or lists project costs. Only an explicit payment demand makes it invoice; the word "estimate" itself signals planning, not billing. A provider's periodic customer statement (e.g. an AT&T "MONTHLY INVOICE") is budget — it states ongoing-account activity, not a one-off bill for goods sold.
+    budget: internal money planning, tracking, or disbursement WITHOUT demanding payment. Budget includes: expense reports, forecast-vs-actual, a statement of account, a check face/check stub, a check register, a financial/money-data table, a handwritten list of expenses, a campaign-contribution/expenditure statement, or a money-only REQUEST/CHECKLIST/STATEMENT. A document titled "ESTIMATE" is budget — it PLANS spending, even when it compares previous/current amounts, has revision columns, or lists project costs. Only an explicit payment demand makes it invoice; the word "estimate" itself signals planning, not billing. A provider's periodic customer statement (e.g. an AT&T "MONTHLY INVOICE" for phone service, a utility or subscription statement) is budget — it states ongoing-account activity, not a one-off bill for goods sold.
+   Caveat: an internal expenditure-authorization form that names the work to be funded and carries an approval block but no billable charges or payment demand is a form (check 10). A technical/project status report whose content is primarily technical is scientific_report (check 13), even if it embeds a cost section."""
+
+# v17.1: v17 with the periodic-statement carveout moved into the invoice bullet so the model
+# sees it before stopping at the "INVOICE" header match. v17.1 fixes the AT&T MONTHLY INVOICE
+# case where v17 classified the periodic phone-service bill as invoice despite the budget-bullet
+# carveout (model matched invoice bullet first and never reached the budget bullet).
+_V17_1_NEW_FINANCIAL = """\
+    invoice: a bill for goods or services provided — the page states a payment demand. Look for an "INVOICE" header, "Amount Due", "Pay This Amount", "Total Due", payment instructions, remittance address, or language billing for completed work ("Final invoice to reflect total actual costs"). A payment voucher naming a payee with "AMOUNT"/"PAY THIS AMOUNT" is invoice. A hotel/guest folio, a rent statement billing for a specific period — these all demand payment for services. The key signal is an explicit request to pay. BUT a provider's periodic customer statement that says "MONTHLY INVOICE" or "INVOICE" at the top while representing ongoing subscription/service account charges (e.g. an AT&T phone-service bill, a utility statement, a subscription/retainer statement) is budget, not invoice — the periodic-account-statement function overrides the "invoice" title, because the statement covers ongoing service rather than billing for discrete goods sold.
+    budget: internal money planning, tracking, or disbursement WITHOUT demanding payment. Budget includes: expense reports, forecast-vs-actual, a statement of account, a check face/check stub, a check register, a financial/money-data table, a handwritten list of expenses, a campaign-contribution/expenditure statement, or a money-only REQUEST/CHECKLIST/STATEMENT. A document titled "ESTIMATE" is budget — it PLANS spending, even when it compares previous/current amounts, has revision columns, or lists project costs. Only an explicit payment demand makes it invoice; the word "estimate" itself signals planning, not billing. A provider's periodic customer statement (e.g. an AT&T "MONTHLY INVOICE" for phone service, a utility or subscription statement) is budget — it states ongoing-account activity, not a one-off bill for goods sold, and the periodic-statement function overrides the "invoice" wording in the header.
    Caveat: an internal expenditure-authorization form that names the work to be funded and carries an approval block but no billable charges or payment demand is a form (check 10). A technical/project status report whose content is primarily technical is scientific_report (check 13), even if it embeds a cost section."""
 
 _V17_HANDWRITTEN_ADDENDUM = """\
@@ -1491,6 +1500,18 @@ PROMPT_V17 = (
     PROMPT_V17[:_hand_dash] + _V17_HANDWRITTEN_ADDENDUM + "\n" + PROMPT_V17[_hand_dash:]
     if _hand != -1 and _hand_dash != -1
     else PROMPT_V17
+)
+
+# v17.1: same as v17 but with periodic-statement carveout in the invoice bullet
+PROMPT_V17_1 = (
+    _b[:_fin] + _V17_1_NEW_FINANCIAL + "\n" + _b[_chk8:]
+    if _fin != -1 and _chk8 != -1
+    else _b
+)
+PROMPT_V17_1 = (
+    PROMPT_V17_1[:_hand_dash] + _V17_HANDWRITTEN_ADDENDUM + "\n" + PROMPT_V17_1[_hand_dash:]
+    if _hand != -1 and _hand_dash != -1
+    else PROMPT_V17_1
 )
 
 PROMPTS = {
@@ -1517,9 +1538,10 @@ PROMPTS = {
     "v15": PROMPT_V15,
     "v16": PROMPT_V16,
     "v17": PROMPT_V17,
+    "v17.1": PROMPT_V17_1,
 }
 
-DEFAULT_PROMPT_VERSION = "v17"
+DEFAULT_PROMPT_VERSION = "v17.1"
 
 
 def get_prompt(version: str = DEFAULT_PROMPT_VERSION) -> str:

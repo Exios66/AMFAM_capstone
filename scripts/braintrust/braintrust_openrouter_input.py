@@ -222,8 +222,8 @@ def run_eval(
 
         # Build extra body based on model capabilities. Defaults aim for the
         # maximum reasoning the model family exposes; --reasoning-effort can
-        # override (e.g. "high" for a heavier run). qwen3.x runs at "medium"
-        # to reduce token burn and eliminate finish_reason=length failures (v16 pain point).
+        # override (e.g. "medium" for a lighter run). qwen3.x runs at "high"
+        # as the sweet spot for accuracy vs token burn.
         effort = reasoning_effort
         extra_body = {}
         if "kimi" in model.lower():
@@ -234,7 +234,7 @@ def run_eval(
             # Qwen3.x are hybrid reasoning models; force thinking on and ask
             # OpenRouter to include the reasoning trace so we can log it.
             extra_body = {
-                "reasoning": {"enabled": True, "effort": effort or "medium"},
+                "reasoning": {"enabled": True, "effort": effort or "high"},
                 "include_reasoning": True,
             }
         
