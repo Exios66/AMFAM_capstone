@@ -256,3 +256,25 @@ settings in Braintrust experiment metadata for reproducibility.
 - **Calibration — news_article vs advertisement.** 3 news_article→advertisement errors where the model fixated on embedded ad imagery. New sentence: "Judge newspaper/magazine pages by editorial intent, not embedded ads — a page with masthead, columns, and bylines is news_article even when it CONTAINS a branded advertisement."
 
 **Token profile:** +2,177 chars (+4.7%). v17.1 total: 48,462 chars vs v16: 51,753 chars. Still significantly lighter than v16 while carrying 2 more worked examples (6 total vs v16's 6, but v16's were actively harmful).
+
+---
+
+## v17.2 — Three-Slice Generalization (Aug 2026)
+
+**Data-driven corrections from v17.1 v1+v2+v3 combined analysis (480 images, 53 failures, ~89% accuracy).**
+
+v17.1 successfully eliminated handwritten→letter (0 misses across all 3 slices) and length errors (4 vs v16's 15). Five clusters survived the v17.1 fix:
+
+- **invoice→budget (6) + budget→invoice (3) + invoice→form (4):** 13 financial document failures in 480 images. The simplified check-7 reduced v16's 20 financial failures but the form-override rule ("money function overrides form layout") wasn't consistently applied when invoices had form-like layouts.
+- **news_article→advertisement (3):** The v17.1 calibration sentence wasn't sufficient — the model still fixated on embedded ad imagery within newspaper pages.
+- **Form over-prediction (8 instances of form as predicted class):** invoice→form (4), budget→form (2), specification→form (2), scientific_report→form (2), advertisement→form (1). The model defaulted to form when unsure.
+- **scientific_publication→scientific_report (3):** Journal reprint boundary still fuzzy.
+- **Presentation confusion (4):** presentation→memo (2), →handwritten (1), →budget (1) — the model read slide-style layouts as prose memos.
+
+**Changes:**
+- **Calibration — form-is-never-a-default.** "If you are choosing form because no other check clearly matched, you have missed a check — go back through checks 1-14." Addresses the 8 form-overprediction instances.
+- **Calibration — presentation vs memo.** "A presentation with slide-style layout is presentation, not memo — memo requires internal organizational context and prose body, not slide typography." Addresses the 2 presentation→memo cases.
+- **Worked example — invoice with form layout → invoice.** Shows a vendor bill with labeled fields, amount boxes, and approval blocks being classified as invoice because "money function overrides form layout." Addresses the 4 invoice→form cases.
+- **Worked example — newspaper page with embedded ad → news_article.** Shows a newspaper page with masthead, columns, bylines, and an embedded brand ad being classified as news_article because "the page's dominant function is newspaper editorial content." Addresses the 3 news→ad cases.
+
+**Token profile:** +2,216 chars (+4.6% vs v17.1). v17.2 total: 50,678 chars. 8 worked examples total. Still 1,075 chars lighter than v16.

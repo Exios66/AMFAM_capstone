@@ -142,6 +142,7 @@ def run_eval(
     experiment_name: str = None,
     dataset_name: str = DEFAULT_DATASET,
     manifest_path: str | Path | None = None,
+    max_concurrency: int = 8,
 ) -> None:
     """Run the classification prompt against the dataset and log to Braintrust."""
     validate_dataset(dataset)
@@ -379,7 +380,7 @@ def run_eval(
         ],
         task=classify_document,
         scores=[exact_match, failed],
-        max_concurrency=8,
+        max_concurrency=max_concurrency,
         reporter=quiet_reporter(),
         project_id=project_id,
         experiment_name=experiment_name,
@@ -471,6 +472,8 @@ def main() -> None:
                         help="Braintrust experiment name (default: {model-slug}_p{prompt-version})")
     parser.add_argument("--manifest", type=Path, default=None,
                         help="JSONL checkpoint manifest for resuming an interrupted run")
+    parser.add_argument("--max-concurrency", type=int, default=8,
+                        help="Maximum concurrent API calls (default: 8)")
     args = parser.parse_args()
 
     if args.images_dir:
@@ -503,6 +506,7 @@ def main() -> None:
         experiment_name=args.experiment_name,
         dataset_name=args.dataset,
         manifest_path=args.manifest,
+        max_concurrency=args.max_concurrency,
     )
 
 

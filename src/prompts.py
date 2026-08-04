@@ -1486,7 +1486,10 @@ _V17_HANDWRITTEN_ADDENDUM = """\
 
 # Build v17 from v11.9 by splicing out check-7's bloated invoice+budget+caveat
 # and inserting a stronger handwritten-vs-letter rule.
-_b = PROMPT_V11_9
+# The v11.9 worked examples are stripped — they redundantly teach rules already
+# explicit in the check structure and contributed to v16's 81.6 % accuracy.
+_we_start = PROMPT_V11_9.find("### Worked example")
+_b = PROMPT_V11_9[:_we_start] if _we_start != -1 else PROMPT_V11_9
 _fin = _b.find("    invoice: an outside vendor")
 _chk8 = _b.find("\n\n8. PRODUCT OR MATERIAL DOCUMENTATION")
 _hand = _b.find("   Most of the content is freeform handwriting")
@@ -1548,6 +1551,36 @@ Runner-up: invoice, ruled out by the absence of any payment demand.
 # v17.1+: surgical calibration + worked examples from multi-slice failure analysis
 PROMPT_V17_1 = PROMPT_V17_1 + _V17_1_CALIBRATION_ADDENDUM + _V17_1_WORKED_EXAMPLES
 
+# v17.2: three-slice generalization pass. v17.1 fixed handwritten→letter (zero
+# misses across 60 images) and scientific_report→spec (zero). Remaining clusters
+# in order of frequency: invoice→form (4), invoice→budget (6), budget→invoice (3),
+# news_article→advertisement (3), scientific_publication→scientific_report (3),
+# and scattered form-overprediction (8 instances of form as predicted class).
+_V17_2_ENHANCEMENTS = """
+- form is NEVER a default or fallback. If you are choosing `form` because no other check clearly matched, you have missed a check — go back through checks 1-14 and find the positive evidence you overlooked. The evaluation set has 4-5 genuine forms per 30 images across most slices; if you are predicting form more often than that, you are over-using it. Choose `form` only when the page has explicit fill-in fields, checkboxes, or ruled entry lines AND no stronger document function is present.
+- A presentation/memo with slide-style layout (sparse text, bullet-like formatting, titled headings, deck look) is `presentation`, not memo or letter — memo requires internal organizational context and prose body, not slide typography.
+
+### Worked example — invoice with form layout (invoice, not form)
+
+<scratchpad>
+form: no — although the page has labeled fields, an amount box, and approval/date blocks, check 7 says money function overrides form layout. The page is a vendor bill with "INVOICE" header, line items, and a total due.
+financial: yes — an outside vendor bills for goods with item descriptions, unit prices, and "TOTAL DUE".
+invoice: yes — the page demands payment from a vendor for goods provided; the form-like layout does not change the billing function.
+Runner-up: form, ruled out because a billing document with a payment demand is invoice regardless of visual layout.
+</scratchpad>
+<label>invoice</label>
+
+### Worked example — newspaper page with embedded advertisement (news_article, not advertisement)
+
+<scratchpad>
+advertisement: no — although the page contains a branded product ad with imagery and slogans, the DOMINANT layout is a newspaper page with a running masthead ("THE ... TIMES"), multi-column editorial text, a byline, and journalistic prose. The ad is embedded alongside editorial content, not the page's primary function.
+news_article: yes — newspaper masthead, columns, byline, editorial prose — the page's identity is published journalism, even with an ad present.
+Runner-up: advertisement, ruled out because the page's dominant function is newspaper editorial content — an embedded ad does not override the masthead and news typography.
+</scratchpad>
+<label>news_article</label>"""
+
+PROMPT_V17_2 = PROMPT_V17_1 + _V17_2_ENHANCEMENTS
+
 PROMPTS = {
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
@@ -1573,9 +1606,10 @@ PROMPTS = {
     "v16": PROMPT_V16,
     "v17": PROMPT_V17,
     "v17.1": PROMPT_V17_1,
+    "v17.2": PROMPT_V17_2,
 }
 
-DEFAULT_PROMPT_VERSION = "v17.1"
+DEFAULT_PROMPT_VERSION = "v17.2"
 
 
 def get_prompt(version: str = DEFAULT_PROMPT_VERSION) -> str:
