@@ -167,6 +167,52 @@ No build script preserved. Likely minor tweaks between v11.5 and v11.7.
 
 ---
 
+## v16 — v11.9 + Two Worked Examples (Estimate→Invoice, Handwritten→Letter)
+
+**Appended two worked examples to the v11.9 prompt to target the top confusion pairs from prior evaluations.**
+
+- **Worked example 1:** Estimate vs Invoice — a "DATABASE MARKETING ESTIMATE" with PREVIOUS/CURRENT ESTIMATE columns showing planned agency spending is budget, not invoice (no payment demand).
+- **Worked example 2:** Handwritten letter vs handwritten note — a complete handwritten letter with salutation, prose body, and closing remains letter, not handwritten.
+- **Prompt length:** 51,753 chars (v11.9 = 50,254).
+
+**Result (multispect on 3 slices):**
+| Slice | Accuracy | Failure rate |
+|-------|----------|-------------|
+| v1 (test_images) | 154/160 (96.2%) | 1 failed row |
+| v2 (HF mirror) | 134/160 (83.8%) | 6 failed rows |
+| v3 (HF mirror) | 127/160 (79.4%) | 9 failed rows |
+
+**Findings:** Worked examples did not prevent the top confusions (handwritten→letter = 10, budget→invoice = 7 across slices). 16 total failed rows (13 finish_reason=length, 3 provider errors). v2/v3 HF-mirror source is ~15pp harder than v1 test_images source, independent of prompt version.
+
+---
+
+## v17 — Simplified Financial Rules + Handwritten → Letter Override
+
+**Data-driven rebuild of the v11.9 check-7 (financial) rules, eliminating the agency-estimate sub-protocol that caused v11.9–v16's budget→invoice errors. Adds explicit LETTER/MEMO OVERRIDE in check-2 (handwritten) to enforce ordered-checklist precedence.**
+
+Driven by three root causes identified in the v16 multispect evaluation (`reports/v16_multislice_evaluation_report.md`):
+
+1. **Provider failures (16 rows / 3.3%)** — 13 finish_reason=length (qwen3.7-flash exhausts reasoning tokens on the bloated check-7 section) → **Fix:** Trim check-7 from 6,284 chars to ~1,100 chars (simplified invoice=payment-demand, budget=planning, estimate=budget). Reduced reasoning effort to `medium`. Raised MAX_TOKENS_CAP to 32,768. Added 300s HTTP timeout.
+
+2. **Slice source quality gap (~15pp)** — v2/v3 (HF mirror) images are inherently harder than v1 (test_images) → **Mitigation:** Stronger rules should be more robust across sources.
+
+3. **Prompt regression from v11.8's 99.4%** — the agency-estimate sub-protocol caused the model to misclassify budgets (planning estimates) as invoices when "PREVIOUS/CURRENT ESTIMATE" revision columns were present. → **Fix:** Removed the entire agency-estimate sub-protocol. The rule is now simple: "A document titled ESTIMATE is budget — it PLANS spending. Only an explicit payment demand (Amount Due, Pay, Invoice header) makes it invoice."
+
+**Key changes from v11.9/v16:**
+- **Check-7 (invoice):** Replaced 2,450-char agency-estimate maze with a 250-char clean rule: payment demand = invoice.
+- **Check-7 (budget):** Replaced 3,030-char budget section (including the planning-recap vs agency-bill sub-protocol) with a 700-char clean rule: estimate = budget.
+- **Check-2 (handwritten):** Added "LETTER/MEMO OVERRIDE" bullet: if most of the page is handwritten, it IS handwritten — even with complete letter structure (salutation, body, closing) or memo layout (To/From/Re/Date headers). Check 2 fires before check 11; do not evaluate letter/memo for handwritten pages.
+- **Prompt length:** 46,277 chars — 3,977 shorter than v11.9, 5,476 shorter than v16.
+
+**Infrastructure:**
+- Reasoning effort reduced to `medium` for qwen models (was `high`).
+- MAX_TOKENS_CAP raised to 32,768 (was 16,384).
+- Failed rows now return ERROR: sentinel output and are scored as a tracked `failed` metric in Braintrust.
+- HTTP timeout (300s) on OpenAI client.
+- All eval runs now use `--manifest` for resumability.
+
+---
+
 ## Cross-model v11.8 Validation Runs (Aug 2026)
 
 The v11.8 prompt was evaluated across additional OpenRouter models on the original 160-image

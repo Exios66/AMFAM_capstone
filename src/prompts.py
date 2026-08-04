@@ -1463,6 +1463,36 @@ Runner-up: handwritten, ruled out because the document's primary function is a c
 <label>letter</label>
 """
 
+# v17: v11.9 base — simplified check-7 financial rules (agency-estimate sub-protocol removed),
+# strengthened handwritten-vs-letter rule. Trims ~5000 chars from check-7 to cut reasoning
+# verbosity and eliminate finish_reason=length failures. Data-driven from v16 multispect
+# evaluation: agency estimate rules misclassified budget→invoice (7 errors across slices).
+_V17_NEW_FINANCIAL = """\
+    invoice: a bill for goods or services provided — the page states a payment demand. Look for an "INVOICE" header, "Amount Due", "Pay This Amount", "Total Due", payment instructions, remittance address, or language billing for completed work ("Final invoice to reflect total actual costs"). A payment voucher naming a payee with "AMOUNT"/"PAY THIS AMOUNT" is invoice. A hotel/guest folio, a rent statement billing for a specific period — these all demand payment for services. The key signal is an explicit request to pay; without it the page is not invoice.
+    budget: internal money planning, tracking, or disbursement WITHOUT demanding payment. Budget includes: expense reports, forecast-vs-actual, a statement of account (periodic statement from a provider like AT&T), a check face/check stub, a check register, a financial/money-data table, a handwritten list of expenses, a campaign-contribution/expenditure statement, or a money-only REQUEST/CHECKLIST/STATEMENT. A document titled "ESTIMATE" is budget — it PLANS spending, even when it compares previous/current amounts, has revision columns, or lists project costs. Only an explicit payment demand makes it invoice; the word "estimate" itself signals planning, not billing. A provider's periodic customer statement (e.g. an AT&T "MONTHLY INVOICE") is budget — it states ongoing-account activity, not a one-off bill for goods sold.
+   Caveat: an internal expenditure-authorization form that names the work to be funded and carries an approval block but no billable charges or payment demand is a form (check 10). A technical/project status report whose content is primarily technical is scientific_report (check 13), even if it embeds a cost section."""
+
+_V17_HANDWRITTEN_ADDENDUM = """\
+   - LETTER/MEMO OVERRIDE: If most of the page content is handwritten, it IS handwritten — even when the page has a complete letter structure (salutation, body, closing signature) or memo layout (To/From/Re/Date headers). Check 2 fires before check 11; once handwritten matches, stop and do NOT evaluate letter/memo later. The page's letter-like formatting does not matter; handwritten content wins every time. Only one exception: freeform handwriting that fills the fields/cells of a PRINTED typed form template (labeled boxes, data-column headers) is a filled form (check 10), not handwritten."""
+
+# Build v17 from v11.9 by splicing out check-7's bloated invoice+budget+caveat
+# and inserting a stronger handwritten-vs-letter rule.
+_b = PROMPT_V11_9
+_fin = _b.find("    invoice: an outside vendor")
+_chk8 = _b.find("\n\n8. PRODUCT OR MATERIAL DOCUMENTATION")
+_hand = _b.find("   Most of the content is freeform handwriting")
+_hand_dash = _b.find("   - The real test is PRINTED FIELD", _hand)
+PROMPT_V17 = (
+    _b[:_fin] + _V17_NEW_FINANCIAL + "\n" + _b[_chk8:]
+    if _fin != -1 and _chk8 != -1
+    else _b
+)
+PROMPT_V17 = (
+    PROMPT_V17[:_hand_dash] + _V17_HANDWRITTEN_ADDENDUM + "\n" + PROMPT_V17[_hand_dash:]
+    if _hand != -1 and _hand_dash != -1
+    else PROMPT_V17
+)
+
 PROMPTS = {
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
@@ -1486,9 +1516,10 @@ PROMPTS = {
     "v14": PROMPT_V14,
     "v15": PROMPT_V15,
     "v16": PROMPT_V16,
+    "v17": PROMPT_V17,
 }
 
-DEFAULT_PROMPT_VERSION = "v16"
+DEFAULT_PROMPT_VERSION = "v17"
 
 
 def get_prompt(version: str = DEFAULT_PROMPT_VERSION) -> str:

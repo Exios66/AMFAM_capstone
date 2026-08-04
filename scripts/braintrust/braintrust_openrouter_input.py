@@ -46,7 +46,7 @@ from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
 DEFAULT_MAX_TOKENS = 4096  # Enough for reasoning trace + scratchpad + final label
 MAX_TRIES = 3  # Retry transient provider failures (502s, token caps, empty responses)
 ERROR_PREFIX = "ERROR: "  # Task output sentinel so failed rows get tracked scores
-MAX_TOKENS_CAP = 16384  # Upper bound when growing max_tokens on "length" finish reasons
+MAX_TOKENS_CAP = 32768  # Upper bound when growing max_tokens on "length" finish reasons (v17 fix: 16→32K)
 
 _CONFIG = load_braintrust_config()
 PROJECT_NAME = _CONFIG.project_name
@@ -222,8 +222,8 @@ def run_eval(
 
         # Build extra body based on model capabilities. Defaults aim for the
         # maximum reasoning the model family exposes; --reasoning-effort can
-        # override (e.g. "medium" for a lighter run). qwen3.x runs at "high",
-        # not max, so it does not burn tokens past the point of usefulness.
+        # override (e.g. "high" for a heavier run). qwen3.x runs at "medium"
+        # to reduce token burn and eliminate finish_reason=length failures (v16 pain point).
         effort = reasoning_effort
         extra_body = {}
         if "kimi" in model.lower():
@@ -234,7 +234,7 @@ def run_eval(
             # Qwen3.x are hybrid reasoning models; force thinking on and ask
             # OpenRouter to include the reasoning trace so we can log it.
             extra_body = {
-                "reasoning": {"enabled": True, "effort": effort or "high"},
+                "reasoning": {"enabled": True, "effort": effort or "medium"},
                 "include_reasoning": True,
             }
         
