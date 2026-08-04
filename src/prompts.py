@@ -1326,6 +1326,91 @@ Do not use `form`, `budget`, or `scientific_report` as a fallback. If the page i
 ambiguous, select the label supported by the strongest explicit evidence of
 purpose, not the most visually salient word.
 """
+
+# v15: replace v14's brittle precedence shortcuts with function-first pairwise
+# decisions. The v13 base retains the validated broad class definitions while
+# this section resolves the recurring v14 regressions.
+PROMPT_V15 = PROMPT_V13 + """
+
+## v15 final decision rules
+
+Use the page's primary real-world function, not one isolated word, field, border,
+or layout cue. A label is valid only when its positive evidence is present. Do
+not keep reconsidering a decision after the evidence has been evaluated.
+
+### Financial documents
+
+- Choose `invoice` only when the page is a bill or payment instrument: an outside
+  vendor/supplier/agency/payee is charging for a good, service, placement, or
+  completed client job, with clear billing evidence such as INVOICE, AMOUNT DUE,
+  BALANCE DUE, BILL TO, REMIT, PAYMENT TERMS, charges owed, or a payment voucher.
+- Choose `budget` for internal money planning, forecasts, allocations, spend
+  tracking, tax/financial reports, checks, check stubs, registers, and projected
+  future spending.
+- An estimate, estimate recap, estimate number, revision number, revised estimate,
+  prior/current columns, unit prices, totals, or agency letterhead does NOT by
+  itself make a page an invoice. If the page plans future work or placements and
+  does not explicitly bill or request payment, choose `budget`.
+- A purchase order, requisition, authorization request, expenditure approval, or
+  similar buyer-side form is `form` when its primary function is authorization or
+  data capture, even when it lists quoted prices. It is `invoice` only when it is
+  actually billing for payment.
+- A financial document's visual form layout does not override its function, but
+  neither does a financial keyword override clear evidence that it is a planning
+  or authorization document.
+
+### Correspondence and handwriting
+
+- Choose `letter` for a recipient-directed letter with a salutation or direct
+  addressee, a prose message, and a letter-like closing/signature. Letterhead and
+  a complete external street address are helpful but not required.
+- A complete handwritten letter remains `letter` when its function is clearly a
+  formal letter. Choose `handwritten` for freeform notes, comments, cards, drafts,
+  or personal writing that does not form a recognizable letter; handwriting that
+  fills printed fields remains `form`.
+- Choose `memo` for clearly internal organizational communication, especially an
+  inter-office memorandum or a TO/FROM/SUBJECT/DATE block followed by prose.
+  Do not call a recipient-directed letter a memo merely because it lacks letterhead.
+- Choose `email` only for genuine mail-client evidence: From/To plus Sent or Date
+  and Subject, a mail address, or a forwarded/threaded email trail. A phone
+  message, voicemail printout, fax metadata, or generic From/To form is not email.
+
+### Forms, questionnaires, and technical pages
+
+- Choose `form` when the page's main job is collecting or recording fields,
+  checkboxes, approvals, logs, or measurements. A filled form is still a form.
+- Choose `questionnaire` only when the page is a survey instrument for a respondent:
+  printed questions, prompts, rating scales, answer choices, or response boxes.
+  A questionnaire's results, a research summary, or a note about sending a survey
+  is not automatically the questionnaire itself.
+- Choose `specification` for normative product/material documentation: requirements,
+  tolerances, formulation, composition, properties, safety data, or explicit
+  product/part requirements. A filled quality-control or laboratory data-capture
+  sheet without normative requirements remains `form`.
+- Choose `scientific_report` for an identifiable study, experiment, technical
+  investigation, or research results page with methods, findings, interpretation,
+  or research conclusions. A results table plus concise numbered findings can be
+  a scientific report; it does not require long continuous paragraphs.
+
+### Presentation, publication, and news
+
+- Choose `presentation` only when the page is clearly a slide/overhead/deck page,
+  deck cover, section divider, speaker/program page, or intentionally designed
+  sparse display. Rotation, a scan border, a Bates number, or a titled table alone
+  is not enough.
+- Choose `scientific_publication` when the page identifies its own specialist
+  journal, conference proceedings, or technical periodical. Choose `news_article`
+  for general-news or general-interest editorial content.
+- Choose `advertisement` only when the page is primarily a paid promotional layout
+  with explicit advertiser identity, product/service promotion, call to action,
+  branding, or advertising copy. A newspaper masthead or editorial/reprinted
+  article is `news_article` unless the page clearly functions as an advertisement.
+
+### Final output
+
+After private reasoning, output exactly one label in this form and nothing else:
+`<label>one_of_the_16_labels</label>`
+"""
 PROMPT_V13 = PROMPT_V13.replace(
     "Caveat — general news outlets: a page that presents itself as a newspaper, general-magazine, or encyclopedia piece — multi-column published editorial prose with a masthead, magazine cover, or encyclopedia/reference title belonging to a general-audience outlet — is news_article (check 12), not a publication, even if its text is scientific, names an author with credentials, or cites journal articles as references within the prose (a citation like \"Am J Epidemiol 1984;119:624-41\" appearing inside body text is a reference to other work, not this page's own identifier).",
     "Caveat — general news outlets: a page from a general-interest newspaper, general-news magazine, or encyclopedia/reference work is news_article (check 12), not a publication, even if its text is scientific, names an author with credentials, or cites journal articles as references. Do NOT use this caveat for a specialist science, medical, engineering, or technical periodical whose own masthead identifies that publication."
@@ -1350,6 +1435,34 @@ PROMPT_V13 = PROMPT_V13.replace(
     "Requires running prose — a page that is only labeled field-value entries (even an \"ANALYTICAL DATA SUMMARY\" under a contract number with a Principal Investigator line, a grant application's structured section headings, or a QA parameter-review sheet's listed parameters/dates) is a filled form (check 10), not a scientific report.",
     "A scientific report can be a research-laboratory record, not only running prose: include a technical-study or monthly-report cover, compound/testing summary, QA or protocol review, analytical/lab results sheet, research-measurement table, or handwritten scientific results table when the page documents an experiment, method, specimen, compound, measurement, study, or research institute. Structured fields and signatures do not make such a page an administrative form. Exclude only a genuinely generic administrative data-capture sheet with no identifiable research or technical-study function."
 )
+
+# v16: v11.9 base + two targeted worked examples for top confusion pairs
+# (estimate→invoice, handwritten→letter) without adding conflicting precedence rules
+PROMPT_V16 = PROMPT_V11_9 + """
+
+### Worked example 1 — estimate versus invoice
+
+<scratchpad>
+file_folder: no — the page has a financial table and project details.
+invoice: no — although it says ESTIMATE and compares previous/current amounts, there is no amount-due, payment, remittance, or explicit billing request; it is planning future agency work.
+budget: yes — the primary function is projected client spending for future placements/work, so estimate wording and revision columns do not convert it into a bill.
+form: no — the signatures approve the plan, but the page is primarily a spending plan rather than a generic administrative data-capture form.
+Runner-up: invoice, ruled out by the absence of positive billing/payment evidence.
+</scratchpad>
+<label>budget</label>
+
+### Worked example 2 — complete handwritten letter versus handwritten note
+
+<scratchpad>
+file_folder: no — the page contains a full message, not only an archive label.
+handwritten: no — although the writing is handwritten, it has a complete letter structure rather than a freeform note or form entry.
+letter: yes — it is addressed to a recipient, begins with a salutation, contains prose, and ends with a letter-like closing/signature. A complete handwritten letter remains letter even without letterhead or a street address.
+memo: no — there is no internal organizational header or internal context.
+Runner-up: handwritten, ruled out because the document's primary function is a complete recipient-directed letter.
+</scratchpad>
+<label>letter</label>
+"""
+
 PROMPTS = {
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
@@ -1371,9 +1484,11 @@ PROMPTS = {
     "v11.9": PROMPT_V11_9,
     "v13": PROMPT_V13,
     "v14": PROMPT_V14,
+    "v15": PROMPT_V15,
+    "v16": PROMPT_V16,
 }
 
-DEFAULT_PROMPT_VERSION = "v14"
+DEFAULT_PROMPT_VERSION = "v16"
 
 
 def get_prompt(version: str = DEFAULT_PROMPT_VERSION) -> str:

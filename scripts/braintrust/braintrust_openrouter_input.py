@@ -45,6 +45,7 @@ from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
 
 DEFAULT_MAX_TOKENS = 4096  # Enough for reasoning trace + scratchpad + final label
 MAX_TRIES = 3  # Retry transient provider failures (502s, token caps, empty responses)
+ERROR_PREFIX = "ERROR: "  # Task output sentinel so failed rows get tracked scores
 MAX_TOKENS_CAP = 16384  # Upper bound when growing max_tokens on "length" finish reasons
 
 _CONFIG = load_braintrust_config()
@@ -135,6 +136,8 @@ def run_eval(
     model: str = DEFAULT_MODEL,
     prompt_version: str = DEFAULT_PROMPT_VERSION,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    temperature: float = 0.1,
+    reasoning_effort: str | None = None,
     project_id: str = PROJECT_ID,
     experiment_name: str = None,
     dataset_name: str = DEFAULT_DATASET,
@@ -168,26 +171,32 @@ def run_eval(
                 "model": model,
                 "prompt_version": prompt_version,
                 "max_tokens": max_tokens,
+                "temperature": temperature,
+                "reasoning_effort": reasoning_effort,
             },
         )
         manifest.initialize()
 
-    # Wrap OpenAI client pointed at OpenRouter with Braintrust logging
+    # Wrap OpenAI client pointed at OpenRouter with Braintrust logging.
+    # Timeout prevents a stalled provider connection from hanging the run
+    # forever; the retry loop above treats timeouts as transient failures.
     client = braintrust.wrap_openai(
         OpenAI(
             base_url=OPENROUTER_BASE_URL,
             api_key=openrouter_key,
+            timeout=300,
         )
     )
 
     images_by_index = {i: d["image_b64"] for i, d in enumerate(dataset)}
+    expected_by_index = {i: d["expected"] for i, d in enumerate(dataset)}
 
     @braintrust.traced
     def classify_document(input_data: dict) -> str:
         """Classify a single document image via the vision model."""
         image_b64 = images_by_index[input_data["index"]]
         filename = input_data["filename"]
-        expected = input_data["expected"]
+        expected = expected_by_index[input_data["index"]]
 
         if manifest:
             cached = manifest.get_completed(filename)
@@ -197,15 +206,19 @@ def run_eval(
                 )
                 return cached["predicted"]
 
-        # Build extra body based on model capabilities
+        # Build extra body based on model capabilities. Defaults aim for the
+        # maximum reasoning the model family exposes; --reasoning-effort can
+        # override (e.g. "medium" for a lighter run).
         extra_body = {}
-        if "gemini" in model.lower():
-            extra_body = {"reasoning": {"effort": "medium"}}
+        if "kimi" in model.lower():
+            extra_body = {"reasoning": {"enabled": True, "effort": reasoning_effort or "xhigh"}}
+        elif "gemini" in model.lower():
+            extra_body = {"reasoning": {"effort": reasoning_effort or "max"}, "include_reasoning": True}
         elif "qwen" in model.lower():
             # Qwen3.x are hybrid reasoning models; force thinking on and ask
             # OpenRouter to include the reasoning trace so we can log it.
             extra_body = {
-                "reasoning": {"enabled": True, "effort": "high"},
+                "reasoning": {"enabled": True, "effort": reasoning_effort or "high"},
                 "include_reasoning": True,
             }
         
@@ -222,7 +235,7 @@ def run_eval(
                     model=model,
                     messages=build_vision_messages(classification_prompt, image_b64),
                     max_tokens=tokens,
-                    temperature=0.1,
+                    temperature=temperature,
                     extra_body=extra_body,
                 )
                 raw = response.choices[0].message.content or ""
@@ -252,7 +265,12 @@ def run_eval(
                     "attempts": attempts,
                     "error": str(last_error),
                 })
-            raise last_error
+            msg = f"{ERROR_PREFIX}{filename}: {last_error}"
+            print(msg, file=sys.stderr)
+            braintrust.current_span().log(
+                metadata={"filename": filename, "error": str(last_error), "attempts": attempts}
+            )
+            return msg
 
         msg = response.choices[0].message
         reasoning_text = ""
@@ -275,7 +293,12 @@ def run_eval(
                     "attempts": attempts,
                     "error": "response contained no valid class",
                 })
-            raise RuntimeError("response contained no valid class")
+            msg = f"{ERROR_PREFIX}{filename}: response contained no valid class"
+            print(msg, file=sys.stderr)
+            braintrust.current_span().log(
+                metadata={"filename": filename, "error": "response contained no valid class", "attempts": attempts}
+            )
+            return msg
 
         if manifest:
             manifest.append({
@@ -305,6 +328,10 @@ def run_eval(
         """Score 1.0 if prediction matches expected class, else 0.0."""
         return 1.0 if output == expected else 0.0
 
+    def failed(output: str, expected: str) -> float:
+        """Score 1.0 for rows the model failed to classify (error sentinel output)."""
+        return 1.0 if output.startswith(ERROR_PREFIX) else 0.0
+
     result = braintrust.Eval(
         PROJECT_NAME,
         data=lambda: [
@@ -312,7 +339,6 @@ def run_eval(
                 "input": {
                     "index": i,
                     "filename": d["filename"],
-                    "expected": d["expected"],
                 },
                 "expected": d["expected"],
                 "filename": d["filename"],
@@ -320,7 +346,7 @@ def run_eval(
             for i, d in enumerate(dataset)
         ],
         task=classify_document,
-        scores=[exact_match],
+        scores=[exact_match, failed],
         max_concurrency=8,
         reporter=quiet_reporter(),
         project_id=project_id,
@@ -330,33 +356,42 @@ def run_eval(
             "prompt_version": prompt_version,
             "model": model,
             "max_tokens": max_tokens,
-            "reasoning": "enabled",
+            "temperature": temperature,
+            "reasoning": reasoning_effort or "model-max",
             "dataset": f"{DEFAULT_DATASET_PROJECT}/{dataset_name}",
             "manifest": str(manifest_path) if manifest_path else None,
         },
-        description=f"{model} | prompt {prompt_version} | reasoning enabled | exact_match tracked",
+        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or 'max'} | temperature {temperature} | exact_match tracked",
     )
 
     print_classifications(result)
 
 
 def print_classifications(result) -> None:
-    """Print only the classification outcome: per-image labels and accuracy."""
+    """Print only the classification outcome: per-image labels and accuracy.
+
+    Failed rows (ERROR_PREFIX sentinel output) count as misses in the totals
+    but are not shown in the per-image listing."""
     rows = [
         (r.input["filename"], r.expected, r.output, r.expected == r.output)
         for r in result.results
-        if r.error is None
+        if r.error is None and not str(r.output).startswith(ERROR_PREFIX)
     ]
+    failed_rows = [r for r in result.results if str(r.output).startswith(ERROR_PREFIX)]
     rows.sort(key=lambda row: (row[1], row[0]))
 
     for filename, expected, predicted, correct in rows:
         print(f"{'OK ' if correct else 'MISS'}  {expected:<24} {predicted:<24} {filename}")
+    for r in failed_rows:
+        print(f"FAIL {r.expected:<24} {'':<24} {r.input['filename']}")
 
     per_class = Counter()
     per_class_correct = Counter()
     for _, expected, _, correct in rows:
         per_class[expected] += 1
         per_class_correct[expected] += int(correct)
+    for r in failed_rows:
+        per_class[r.expected] += 1
 
     print()
     for cls in sorted(per_class):
@@ -364,9 +399,11 @@ def print_classifications(result) -> None:
         correct = per_class_correct[cls]
         print(f"{cls:<24} {correct}/{total} ({correct / total:.0%})")
 
-    total = len(rows)
+    total = len(rows) + len(failed_rows)
     correct = sum(1 for row in rows if row[3])
     print()
+    if failed_rows:
+        print(f"{len(failed_rows)} failed rows counted as misses (tracked as `failed` metric)")
     print(f"exact_match {correct}/{total} ({correct / total:.1%})" if total else "no results")
 
 
@@ -393,6 +430,11 @@ def main() -> None:
                         help=f"Prompt version to use (v1-v14) (default: {DEFAULT_PROMPT_VERSION})")
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS,
                         help=f"Maximum tokens for model response (default: {DEFAULT_MAX_TOKENS})")
+    parser.add_argument("--temperature", type=float, default=0.1,
+                        help="Sampling temperature for the model (default: 0.1)")
+    parser.add_argument("--reasoning-effort", default=None,
+                        help="Override reasoning effort (minimal/low/medium/high/xhigh/max); "
+                             "defaults to the max the model family supports")
     parser.add_argument("--experiment-name", default=None,
                         help="Braintrust experiment name (default: {model-slug}_p{prompt-version})")
     parser.add_argument("--manifest", type=Path, default=None,
@@ -423,6 +465,8 @@ def main() -> None:
         model=args.model,
         prompt_version=args.prompt_version,
         max_tokens=args.max_tokens,
+        temperature=args.temperature,
+        reasoning_effort=args.reasoning_effort,
         project_id=args.project_id,
         experiment_name=args.experiment_name,
         dataset_name=args.dataset,

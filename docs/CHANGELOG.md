@@ -1,6 +1,6 @@
 # Prompt Version Changelog
 
-This document tracks the changes between prompt iterations (v11 through v14) for the qwen3.7-flash document classifier.
+This document tracks the changes between prompt iterations (v11 through v15) for the qwen3.7-flash document classifier.
 
 ---
 
@@ -119,6 +119,24 @@ No build script preserved. Likely minor tweaks between v11.5 and v11.7.
 
 ---
 
+## v15 — Function-First Regression Repair
+
+**Built from the validated v13 base after analyzing the v14 reasoning traces.**
+
+- **Financial boundary:** Requires positive billing evidence for `invoice`; estimate numbers, revisions, agency letterhead, projected periods, and quoted totals alone remain `budget` when the page plans future spend. Purchase orders and authorization requests remain `form` when their function is approval.
+- **Letter boundary:** Recognizes recipient-directed prose with a salutation or closing as `letter` without requiring letterhead or a complete street address. Complete handwritten letters remain `letter`; freeform notes and cards remain `handwritten`.
+- **Email boundary:** Preserves genuine mail-client evidence requirements so phone-message logs, voicemail records, fax metadata, and generic From/To forms do not become email.
+- **Form/questionnaire boundary:** Requires a respondent-facing survey instrument for `questionnaire`; retains `form` for administrative capture and QC sheets.
+- **Technical boundary:** Separates normative product requirements (`specification`), filled QC/data-capture sheets (`form`), and study findings/results (`scientific_report`).
+- **Presentation/news boundary:** Requires explicit deck or promotional function instead of relying on rotation, scan borders, sparse tables, or isolated mastheads.
+- **Output contract:** Requires exactly one parser-safe `<label>...</label>` result.
+
+**Rationale:** v14 fell to 85.0% on `fixed_size_sampled_v2`, with repeated budget/invoice and form-boundary errors. Its final precedence rules over-weighted weak visual or lexical cues and contradicted function-based evidence in the traces.
+
+**Validation assets:** Adds two disjoint 160-image Braintrust slices, `fixed_size_sampled_v3` and `fixed_size_sampled_v4`, sampled primarily from the full Hugging Face `chainyo/rvl-cdip` test split and using the Kaggle test checkout only as a fallback when the Hugging Face source cannot satisfy disjoint quotas.
+
+---
+
 ## Summary Table
 
 | Version | Based On | Key Changes | 160-set | 320-set | 480-set | Eval 56 |
@@ -146,3 +164,36 @@ No build script preserved. Likely minor tweaks between v11.5 and v11.7.
 | 160-image v2 | v11.9 | 137/159 (86.2%) |
 
 **Note:** v11.8 generalizes best to larger, noisier datasets (320, 480). v11.7 and v11.9 tie on the eval 56-set. v13 and v14 target specialist periodicals and scientific research records but show lower accuracy on the v2 dataset.
+
+---
+
+## Cross-model v11.8 Validation Runs (Aug 2026)
+
+The v11.8 prompt was evaluated across additional OpenRouter models on the original 160-image
+`fixed_size_sampled` slice, with each model running at its maximum reasoning effort. Temperature
+was varied per run (0.1 default, 0.3 for the qwen3.7-flash re-run, 0.2 for gemini-2.5-flash-lite).
+
+| Model | Reasoning effort | Temp | 160-set Accuracy |
+|-------|------------------|-----:|------------------|
+| qwen3.7-flash (temp 0.1 baseline) | high | 0.1 | 157/158 (99.4%) |
+| qwen3.7-flash (temp 0.3) | high | 0.3 | 157/159 (98.7%) |
+| qwen3.5-35b-a3b | high | 0.1 | 155/157 (98.7%) |
+| kimi-k2.6 | xhigh | 0.1 | aborted mid-run (network outage) |
+| gemini-2.5-flash-lite | max | 0.2 | 139/160 (86.9%) |
+
+**Findings so far:**
+
+- qwen3.7-flash at temp 0.3 holds 98.7% but regresses `tqi16e00` (budget → invoice) that was
+  fixed at temp 0.1; `jed71e00` (form → presentation) remains the recurring miss across models.
+- qwen3.5-35b-a3b matches the qwen3.7-flash accuracy (98.7%) on the 160-set but needs a larger
+  max_tokens budget — long reasoning traces capped several rows even after doubling to 16k.
+- gemini-2.5-flash-lite at max reasoning scores 86.9% with zero failed rows; it uniquely
+  resolves `jed71e00` but over-uses `specification` (memo/form/handwritten/letter pull) and
+  still confuses `scientific_publication → scientific_report` and `budget → invoice`.
+- On the deliberately hard `qwen_v12_retroactive_eval` slice (52 rows, all v12 misses),
+  qwen3.5-35b-a3b scores 30.8% (16/52); expected given the slice only contains known hard cases.
+- kimi-k2.6 run aborted ~109/160 due to a transient DNS outage against `api.braintrust.dev`
+  that crashed the Braintrust logging thread; the partial experiment is not comparable.
+
+The temperature and reasoning-effort flags added to `braintrust_openrouter_input.py` record both
+settings in Braintrust experiment metadata for reproducibility.
