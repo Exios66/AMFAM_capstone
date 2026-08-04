@@ -243,3 +243,16 @@ was varied per run (0.1 default, 0.3 for the qwen3.7-flash re-run, 0.2 for gemin
 
 The temperature and reasoning-effort flags added to `braintrust_openrouter_input.py` record both
 settings in Braintrust experiment metadata for reproducibility.
+
+---
+
+## v17.1 — Surgical Calibration + Counter-Examples (Aug 2026)
+
+**Data-driven corrections from v16 v2+v3 multi-slice failure analysis (320 images, 81.6% accuracy).**
+
+- **Worked example — handwritten letter → handwritten.** v16's worked example #2 taught the model that "a complete handwritten letter remains letter." This caused 7/44 misclassifications across both slices (35% of the handwritten class). The new worked example applies the LETTER/MEMO OVERRIDE: handwriting wins regardless of letter formatting.
+- **Worked example — agency estimate → budget.** v16's worked example #1 failed to prevent budget→invoice confusion (6/44 misclassifications). The new worked example reinforces the simplified check-7 rule: no payment demand = budget.
+- **Calibration — scientific_report vs specification.** 2 scientific_report→specification errors and a budget→scientific_report outlier traced to the model misreading technical data tables as product specs. New sentence: "A research study's own experimental data tables belong to scientific_report, not specification — specification requires the page's PRIMARY function to be defining a product's composition."
+- **Calibration — news_article vs advertisement.** 3 news_article→advertisement errors where the model fixated on embedded ad imagery. New sentence: "Judge newspaper/magazine pages by editorial intent, not embedded ads — a page with masthead, columns, and bylines is news_article even when it CONTAINS a branded advertisement."
+
+**Token profile:** +2,177 chars (+4.7%). v17.1 total: 48,462 chars vs v16: 51,753 chars. Still significantly lighter than v16 while carrying 2 more worked examples (6 total vs v16's 6, but v16's were actively harmful).

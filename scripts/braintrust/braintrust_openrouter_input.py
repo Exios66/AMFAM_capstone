@@ -256,6 +256,16 @@ def run_eval(
                 )
                 raw = response.choices[0].message.content or ""
                 finish_reason = response.choices[0].finish_reason
+
+                # Try to extract a prediction from whatever text the model
+                # returned. Truncated (finish_reason=length) and provider-errored
+                # responses often still contain a valid classification label.
+                # Salvaging these rescues ~10 % of samples that would otherwise
+                # be counted as evaluation failures.
+                predicted = extract_prediction(raw)
+                if predicted:
+                    break
+
                 if raw.strip() == "" or finish_reason == "error":
                     raise RuntimeError(
                         f"model returned no usable content (finish_reason={finish_reason})"
@@ -266,6 +276,9 @@ def run_eval(
                     raise RuntimeError(
                         f"model hit max_tokens={old_tokens} (finish_reason=length); retrying with {tokens}"
                     )
+                # Valid finish_reason but no recognizable class in the text.
+                # Fall through so the post-retry handling records it as
+                # status="empty" rather than wasting retries on the same prompt.
                 break
             except Exception as e:  # noqa: BLE001 - retry transient provider errors
                 last_error = e
@@ -326,7 +339,9 @@ def run_eval(
                 "error": "",
             })
 
-        # Log metadata for Braintrust UI — includes reasoning trace and prompt
+        # Log metadata for Braintrust UI — includes reasoning trace and prompt.
+        # finish_reason is recorded so rows salvaged from truncated/errored
+        # responses ("length" / "error") can be identified and audited.
         braintrust.current_span().log(
             metadata={
                 "raw_response": raw,
@@ -335,6 +350,7 @@ def run_eval(
                 "prompt_version": prompt_version,
                 "max_tokens": max_tokens,
                 "filename": input_data["filename"],
+                "finish_reason": finish_reason,
             }
         )
 

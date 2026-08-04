@@ -141,3 +141,114 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 **Production eval queue** (`run_eval_queue.py`): runs multiple eval jobs sequentially with preflight checks and manifest verification after each job.
 
 **REST API**: `src/braintrust_utils.py` handles all Braintrust HTTP calls (experiment fetch with pagination/rate-limit retry, dataset CRUD, attachment downloads). API base is always normalized to `.../v1`.
+
+## Debugging Braintrust Errors
+
+### Error surfaces and where to look
+
+| Symptom | Where it appears | Likely cause |
+|---|---|---|
+| `ERROR: <filename>: ...` on stderr | Eval runner stdout | All 3 retries exhausted — check stderr for the exception text |
+| `FAIL` rows in per-image listing | Eval runner stdout | Row produced an `ERROR: ` sentinel output (scored as miss + `failed` metric) |
+| `SKIP <class> <filename>: ...` on stderr | Dataset loading | Attachment download failed for one row — eval continues with remaining rows |
+| `WARNING: skipped N rows with unreadable attachments` | Dataset loading | Multiple attachment fetches failed — check network/API key |
+| `Rate limited, waiting Ns` | Report/visual scripts | Braintrust 429 — exponential backoff up to 30s, 6 retries max |
+| `Timeout, retry N/6` | Report/visual scripts | Braintrust fetch timeout (120s) — linear backoff |
+| `Error: experiment 'X' not found` | Report/visual scripts | Experiment name misspelled or wrong project_id |
+| `No scored task rows found` | `braintrust_report.py` | Experiment still running or all rows failed — check Braintrust UI |
+| `manifest metadata does not match` | Manifest load | Reusing a manifest from a different eval config — delete and re-run |
+| `Missing environment variables: ...` | Any script | `.env` or `braintrust.env` not populated — check with `require_env()` |
+
+### Eval runner failure modes (`braintrust_openrouter_input.py`)
+
+The retry loop (`MAX_TRIES=3`, linear backoff 2s/4s) handles:
+1. **Empty response / `finish_reason=error`** — provider returned no usable content (Alibaba 502s, content filtering)
+2. **`finish_reason=length`** — model hit token cap; `max_tokens` doubles on retry, capped at `MAX_TOKENS_CAP=32768`
+3. **Network exceptions** — 502, timeout (300s on OpenAI client), connection errors
+4. **No valid class in response** — model returned text but `extract_prediction()` found no matching class name
+
+On all-retries-exhausted: writes `status: "error"` to manifest, returns `ERROR: ` sentinel, logs error metadata to Braintrust span. Manifest resume re-attempts `"error"` and `"empty"` rows but skips `"completed"`.
+
+### Braintrust UI debugging
+
+Every eval row logs metadata to its Braintrust span: `raw_response`, `reasoning`, `model`, `prompt_version`, `max_tokens`, `filename`. Error rows also log `error` and `attempts`. Use the Braintrust UI to inspect individual row traces when stdout logs are insufficient.
+
+### Common fixes
+
+- **High failure rate**: check OpenRouter provider status; increase `MAX_TRIES` or `MAX_TOKENS_CAP`
+- **All rows fail**: verify `OPENROUTER_API_KEY` is valid and has credits
+- **Attachment failures on dataset load**: check `BRAINTRUST_API_KEY` has read access to the dataset project; `DATA_BRAINTRUST_KEY` may be needed for cross-account datasets
+- **Manifest errors**: delete `reports/manifests/<name>.jsonl` to start fresh; manifests are keyed by dataset fingerprint so changing the dataset invalidates them
+
+## High-Volume Sampling (No Local Disk)
+
+All `create_braintrust_*.py` scripts stream images from source → in-memory processing → Braintrust upload without saving to the project filesystem. Use these patterns to generate larger dataset slices.
+
+### Data flow (no-disk path)
+
+```
+HF Parquet URL → requests.get(stream) → io.BytesIO / temp file
+    → pq.read_table() → list[dict] in RAM (label + raw image bytes)
+    → deterministic sample (seed + pixel-hash dedup against existing datasets)
+    → to_png_bytes(): Image.open(BytesIO) → .convert("L") → resize_with_padding() → .save(BytesIO, "PNG")
+    → braintrust.Attachment(data=png_bytes, filename=..., content_type="image/png")
+    → dataset.insert(input={...}, expected=class_name, metadata={...})
+    → dataset.flush() + dataset.close()
+```
+
+### Key patterns
+
+- **`to_png_bytes(tiff_bytes, target_size)`** — converts raw TIFF bytes to 1024x1024 grayscale PNG with white padding, entirely in RAM via `io.BytesIO`
+- **Pixel-hash dedup** — `hashlib.sha256(image.convert("L").tobytes()).hexdigest()` ensures no duplicate images across slices
+- **Exclusion sets** — new slices load existing Braintrust datasets, hash their images, and skip any matching pixels
+- **`--output-dir` is optional** — omit it to skip disk writes entirely; only the Braintrust upload runs
+- **Temp parquet** — the 800/480 scripts stream the HF parquet to `/tmp/` and delete it in a `finally` block; the v3/v4 script holds all shards in RAM (no temp file)
+- **`dataset.flush()` + `dataset.close()`** — must be called after all inserts to ensure writes complete
+
+### Scaling up
+
+To create a larger slice (e.g., 800 images at 50/class), use the existing `create_braintrust_800_dataset.py` with `--images-per-class 50`. To go beyond 50/class, point at a different HF parquet URL or the full Kaggle RVL-CDIP download. The in-memory pipeline handles thousands of images without disk pressure.
+
+### Upload API pattern
+
+```python
+braintrust.login(api_key=api_key)
+dataset = braintrust.init_dataset(project_id=config.project_id, name="new_slice_name")
+for record in records:
+    dataset.insert(
+        input={
+            "image": braintrust.Attachment(data=png_bytes, filename=fn, content_type="image/png"),
+            "metadata": {"class": label, "placeholder": False},
+        },
+        expected=label,
+        metadata={"source": "rvl_cdip_hf_parquet", "slice": "new_slice_name"},
+    )
+dataset.flush()
+dataset.close()
+```
+
+For idempotent re-runs (smoke datasets), pass `id=<deterministic_hash>` to `dataset.insert()` and `delete_dataset_by_name()` before `init_dataset()`.
+
+## Changelog Updates
+
+### What is automatically updated
+
+| File | Updated by | Mechanism |
+|---|---|---|
+| `docs/experiments/experiment_log.md` | `braintrust_metrics_visual.py` | Appends a per-experiment section after generating charts; de-duplicates by checking if experiment name already exists in file |
+| `docs/experiments/1pic_cost_estimation.md` | `estimate_openrouter_cost.py` | Idempotent insert-or-replace per `## Model:` section via regex |
+
+### What requires manual updates
+
+| File | When to update |
+|---|---|
+| `CHANGELOG.md` (root) | After meaningful code changes (new features, bug fixes, config changes). Follow existing `## Unreleased` / `### Changed` / `### Added` format |
+| `docs/CHANGELOG.md` (prompt changelog) | After adding a new prompt version to `src/prompts.py`. Document: what changed from previous version, rationale, accuracy results on each dataset slice |
+| `src/prompts.py` PROMPTS dict | When adding a prompt version: append `PROMPT_V*` constant, register in `PROMPTS` dict, update `DEFAULT_PROMPT_VERSION` if it should be the new default |
+
+### Agent workflow after running a new experiment
+
+1. Run eval → summarize → report → metrics_visual (auto-appends to `experiment_log.md`)
+2. If the experiment used a **new prompt version**: update `docs/CHANGELOG.md` with the version's changes, rationale, and results table row
+3. If the experiment produced **meaningful accuracy improvements or regressions**: update `CHANGELOG.md` under `## Unreleased`
+4. If the experiment introduced **new failure modes or fixes**: document them in `CHANGELOG.md`

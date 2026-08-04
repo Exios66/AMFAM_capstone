@@ -1514,6 +1514,40 @@ PROMPT_V17_1 = (
     else PROMPT_V17_1
 )
 
+# v17.1 calibration addendum — two surgical fixes sourced from the v16 v2+v3
+# failure analysis (4 misclassified handwritten pages on v2 alone, 2
+# scientific_report→specification, 3 news_article→advertisement).
+_V17_1_CALIBRATION_ADDENDUM = """\
+- A research study's own experimental data tables, test measurements, and results belong to `scientific_report`, not `specification`. Specification requires the page's PRIMARY function to be defining a product's composition, tolerances, or requirements — a technical report that merely contains data tables or measurement charts is still a report.
+- Judge newspaper/magazine pages by editorial intent, not embedded ads: a page with a running masthead, multi-column news text, bylines, and journalistic typography is `news_article` even when it CONTAINS a branded advertisement. Only classify as `advertisement` when the ENTIRE page is a standalone promotional piece with no editorial wrapper."""
+
+# v17.1 worked examples — two lean counter-examples to v16's harmful worked
+# examples (handwritten letter → handwritten, agency estimate → budget).
+# Kept ~250 chars each to preserve v17.1's slim token profile.
+_V17_1_WORKED_EXAMPLES = """
+
+### Worked example — handwritten letter (handwritten, not letter)
+
+<scratchpad>
+handwritten: yes — the page is HANDWRITTEN throughout ("Dear ..." salutation, prose body, signed closing). Check 2 LETTER/MEMO OVERRIDE: the majority of content is handwritten; letter formatting does not override this.
+letter: not evaluated — check 2 already matched and stops here.
+Runner-up: letter, ruled out because check 2 fires before check 11; handwriting content wins.
+</scratchpad>
+<label>handwritten</label>
+
+### Worked example — agency estimate (budget, not invoice)
+
+<scratchpad>
+financial: yes — an outside agency lists planned media placements with projected costs in an estimate table.
+invoice: no — no "Amount Due", no payment demand, no remittance instructions. The "ESTIMATE" title and planning columns signal future work, not a bill for completed services.
+budget: yes — planning future spending.
+Runner-up: invoice, ruled out by the absence of any payment demand.
+</scratchpad>
+<label>budget</label>"""
+
+# v17.1+: surgical calibration + worked examples from multi-slice failure analysis
+PROMPT_V17_1 = PROMPT_V17_1 + _V17_1_CALIBRATION_ADDENDUM + _V17_1_WORKED_EXAMPLES
+
 PROMPTS = {
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
