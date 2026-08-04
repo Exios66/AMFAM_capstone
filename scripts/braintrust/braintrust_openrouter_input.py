@@ -159,6 +159,20 @@ def run_eval(
     if experiment_name is None:
         experiment_name = f"{model.split('/')[-1]}_p{prompt_version}"
 
+    # Effective reasoning effort used when --reasoning-effort is not passed.
+    # qwen3.x runs at "high" (not max) to avoid burning tokens; kimi and
+    # gemini default to their families' maximum effort.
+    if reasoning_effort:
+        resolved_effort = reasoning_effort
+    elif "kimi" in model.lower():
+        resolved_effort = "xhigh"
+    elif "gemini" in model.lower():
+        resolved_effort = "max"
+    elif "qwen" in model.lower():
+        resolved_effort = "high"
+    else:
+        resolved_effort = "high"
+
     manifest = None
     if manifest_path:
         manifest = ManifestStore(
@@ -208,17 +222,19 @@ def run_eval(
 
         # Build extra body based on model capabilities. Defaults aim for the
         # maximum reasoning the model family exposes; --reasoning-effort can
-        # override (e.g. "medium" for a lighter run).
+        # override (e.g. "medium" for a lighter run). qwen3.x runs at "high",
+        # not max, so it does not burn tokens past the point of usefulness.
+        effort = reasoning_effort
         extra_body = {}
         if "kimi" in model.lower():
-            extra_body = {"reasoning": {"enabled": True, "effort": reasoning_effort or "xhigh"}}
+            extra_body = {"reasoning": {"enabled": True, "effort": effort or "xhigh"}}
         elif "gemini" in model.lower():
-            extra_body = {"reasoning": {"effort": reasoning_effort or "max"}, "include_reasoning": True}
+            extra_body = {"reasoning": {"effort": effort or "max"}, "include_reasoning": True}
         elif "qwen" in model.lower():
             # Qwen3.x are hybrid reasoning models; force thinking on and ask
             # OpenRouter to include the reasoning trace so we can log it.
             extra_body = {
-                "reasoning": {"enabled": True, "effort": reasoning_effort or "high"},
+                "reasoning": {"enabled": True, "effort": effort or "high"},
                 "include_reasoning": True,
             }
         
@@ -357,11 +373,11 @@ def run_eval(
             "model": model,
             "max_tokens": max_tokens,
             "temperature": temperature,
-            "reasoning": reasoning_effort or "model-max",
+            "reasoning": reasoning_effort or resolved_effort,
             "dataset": f"{DEFAULT_DATASET_PROJECT}/{dataset_name}",
             "manifest": str(manifest_path) if manifest_path else None,
         },
-        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or 'max'} | temperature {temperature} | exact_match tracked",
+        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} | temperature {temperature} | exact_match tracked",
     )
 
     print_classifications(result)
@@ -434,7 +450,7 @@ def main() -> None:
                         help="Sampling temperature for the model (default: 0.1)")
     parser.add_argument("--reasoning-effort", default=None,
                         help="Override reasoning effort (minimal/low/medium/high/xhigh/max); "
-                             "defaults to the max the model family supports")
+                             "defaults: qwen=high, kimi=xhigh, gemini=max")
     parser.add_argument("--experiment-name", default=None,
                         help="Braintrust experiment name (default: {model-slug}_p{prompt-version})")
     parser.add_argument("--manifest", type=Path, default=None,
