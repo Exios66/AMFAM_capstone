@@ -274,3 +274,136 @@ figure, img.svg {
 @media (max-width: 576px) {
   .hero { padding: 2rem 1.3rem; h1, .hero-title { font-size: 1.9rem; } }
 }
+
+// ---------------------------------------------------------------------------
+// Research memos — manuscript-style memorandum pages
+// ---------------------------------------------------------------------------
+
+// Research question block (bold lead under the title)
+div.quarto-title-block {
+  .title, .subtitle, .quarto-title-meta { margin-bottom: 0.5rem; }
+}
+
+p.rq-block,
+strong.rq-block {
+  display: block;
+}
+
+// GitHub access buttons under the title block (landing + memos)
+.github-access {
+  margin: 1.25rem 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+
+  .github-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d4dce8;
+    background: #ffffff;
+    color: $primary;
+    font-size: 0.88rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+
+    &:hover {
+      border-color: $accent;
+      box-shadow: 0 2px 8px rgba(20, 33, 61, 0.1);
+      text-decoration: none;
+    }
+
+    i.bi { font-size: 0.95rem; }
+  }
+}
+
+// Memo footer — sources line
+.memo-sources {
+  margin-top: 1.4rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e3e8f0;
+  font-size: 0.82rem;
+  color: #6b7a93;
+}
+
+// ---------------------------------------------------------------------------
+// Floating sidebar + margin TOC polish (matches manuscript-site chrome)
+// ---------------------------------------------------------------------------
+
+#quarto-sidebar {
+  font-size: 0.9rem;
+
+  .sidebar-section > .sidebar-item-container .sidebar-item-text {
+    font-weight: 700;
+    color: $primary;
+    letter-spacing: 0.02em;
+  }
+
+  .sidebar-item-text.sidebar-link {
+    padding: 0.32rem 0.5rem;
+    border-radius: 0.35rem;
+
+    &.active {
+      background: rgba(45, 108, 223, 0.10);
+      color: $accent;
+      font-weight: 600;
+    }
+
+    &:hover { color: $accent; }
+  }
+}
+
+#quarto-margin-sidebar {
+  #toc-title {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #5a6b85;
+  }
+
+  .nav-link {
+    font-size: 0.84rem;
+    padding: 0.18rem 0.4rem;
+    border-radius: 0.3rem;
+
+    &.active { color: $accent; font-weight: 600; }
+  }
+
+  .toc-actions {
+    margin-top: 1rem;
+    border-top: 1px solid #e3e8f0;
+    padding-top: 0.6rem;
+
+    .toc-action {
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: #5a6b85;
+
+      &:hover { color: $accent; }
+    }
+  }
+}
+
+// Breadcrumbs
+.quarto-secondary-nav .breadcrumb {
+  font-size: 0.82rem;
+  .breadcrumb-item a { color: #5a6b85; &:hover { color: $accent; } }
+}
+
+// Page navigation (prev/next)
+nav.page-navigation {
+  margin-top: 2.5rem;
+  .nav-page-link {
+    border: 1px solid #e3e8f0;
+    border-radius: 0.6rem;
+    background: #ffffff;
+    padding: 0.8rem 1rem;
+
+    &:hover { border-color: $accent; }
+  }
+}

@@ -1,0 +1,44 @@
+---
+title: "Memo: Does majority-vote ensembling improve accuracy?"
+subtitle: "Research memorandum — ensemble voting simulation"
+author: "Jack J. Burleson"
+date: "2026-08-05"
+---
+
+**Research question:** If we ran the classifier K times per image and took a majority vote, how much accuracy would we recover — and at what cost multiplier?
+
+**Formal write-up:** [`montecarlo/ensemble-voting.qmd`](../montecarlo/ensemble-voting.html) · [`reports/monte_carlo/ensemble_accuracy_vs_k.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/monte_carlo/ensemble_accuracy_vs_k.md)
+
+---
+
+## Answer, Response, + Summary of Results
+
+**Majority voting buys +4.2 pp at 25× cost, with diminishing returns after K=7.** Simulated over the 1,512-image corpus (2,000 committee votes per image per K):
+
+| K | Accuracy | 95% CI | Cost |
+|---:|---:|---|---:|
+| 1 | 0.821 | 0.805–0.836 | 1× |
+| 3 | 0.836 | 0.820–0.851 | 3× |
+| 5 | 0.844 | 0.828–0.859 | 5× |
+| 7 | 0.850 | 0.834–0.865 | 7× |
+| 10 | 0.853 | 0.837–0.869 | 10× |
+| 15 | 0.859 | 0.842–0.874 | 15× |
+| 25 | 0.863 | 0.846–0.879 | 25× |
+
+The curve is concave and flattening: K=3 gives 1.5 pp for 3×, K=7 gives 2.9 pp for 7×, and doubling to K=25 adds only 1.3 pp more. **K=5–7 is the practical sweet spot** (2.3–2.9 pp at 5–7× cost).
+
+**Per-class:** the classes that gain most from voting are the hardest ones — `handwritten` 0.841 → 0.908 at K=25 (+6.7 pp), `questionnaire` +6.2 pp, `resume` +4.9 pp, `budget` +5.1 pp — while `letter` is nearly flat (0.742 → 0.757, +1.5 pp) because its errors are systematic (letter↔memo), not random.
+
+**Conclusion.** Ensembling recovers real accuracy but at a steep price and with diminishing returns; it helps most where errors are non-systematic and least where the model is deterministically wrong (the near-synonym pairs).
+
+*Sources:* `reports/monte_carlo/ensemble_accuracy_vs_k.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+
+---
+
+## What questions or uncertainties remain?
+
+The simulation reuses the *same model's* per-image prediction distribution (draws from observed correct/incorrect labels), so it measures label-noise averaging, not the benefit of *diverse* models. A heterogeneous committee (different models per vote) would likely beat same-model voting; that is untested.
+
+## What other levers may also improve accuracy?
+
+[Confidence-gated escalation](confidence-routing.qmd) targets the same error budget for 1.02–1.8× cost instead of 3–25× — strictly better on cost per pp. [Few-shot exemplars](exemplar-mining.qmd) attack the deterministic-error classes that voting cannot fix.

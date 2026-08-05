@@ -1,9 +1,18 @@
 ---
 title: "RVL-CDIP Document Classifier"
+subtitle: "A prompt-engineering lab over the RVL-CDIP benchmark — 16-class document intelligence via OpenRouter vision models and Braintrust evals"
+author: "Jack J. Burleson"
+date: "2026-08-05"
+keywords: "RVL-CDIP, document classification, prompt engineering, OpenRouter, Braintrust, vision language models, exact-match evaluation, Monte Carlo, ensemble voting, cost analysis"
 format:
   html:
     body-classes: landing
 ---
+
+<div class="github-access">
+<a class="github-btn" href="https://github.com/Exios66/AMFAM_capstone"><i class="bi bi-github"></i> View repository</a>
+<a class="github-btn" href="https://github.com/Exios66/AMFAM_capstone/issues/new"><i class="bi bi-bug"></i> Report an issue</a>
+</div>
 
 ::: {.hero}
 <div class="hero-title">RVL-CDIP Document Classifier</div>

@@ -1,0 +1,43 @@
+---
+title: "Memo: Which OpenRouter model performs best on the shared slice?"
+subtitle: "Research memorandum — cross-model comparison"
+author: "Jack J. Burleson"
+date: "2026-08-05"
+---
+
+**Research question:** Holding the prompt and the 160-image slice fixed, how do the candidate OpenRouter vision models rank on exact-match accuracy?
+
+**Formal write-up:** [`results/experiment-log.qmd`](../results/experiment-log.html) · [`docs/experiments/experiment_log.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/docs/experiments/experiment_log.md)
+
+---
+
+## Answer, Response, + Summary of Results
+
+On the 160-image `fixed_size_sampled` slice with comparable v11.8-era prompts, **qwen3.7-flash leads the qwen family and the field**:
+
+| Model | Prompt | Accuracy | Notes |
+|---|---:|---:|---:|
+| **qwen/qwen3.7-flash** | v11.8 | **99.4%** (157/158) | best result on the curated slice |
+| qwen/qwen3.7-flash (temp 0.3) | v11.8 | 98.7% (157/159) | +0.3 temp costs ~0.7 pp |
+| qwen/qwen3.5-35b-a3b | v11.8 | 98.7% (155/157) | hybrid reasoning; 3 length-failed rows |
+| google/gemini-2.5-flash-lite | v11.8 | 86.9% (139/160) | zero failed rows; different miss profile |
+| google/gemini-2.5-flash | v3/v4 | 77.4% / 77.7% | pre-v7 prompt family |
+| moonshotai/kimi-k3 | v1 | 70.0% (112/160) | reasoning-model token budget issues |
+
+The gap is **prompt-family × model interaction**, not raw capability: qwen3.7-flash with the same prompt family reaches 91–97% from v7 onward while gemini-2.5-flash stays at ~77% (see the cross-model note in the experiment log). qwen's forced high-effort reasoning produces the structured 14-check scratchpad the v7+ cascade depends on; gemini's medium-effort reasoning follows the cascade less reliably. Only one row type is model-agnostic: the recurring `jed71e00` (form → presentation) deck-chart miss appears in every qwen run but **not** in gemini's.
+
+**Cost-adjusted view:** qwen3.7-flash is also the cheapest among the live runs — see the [cost memo](cost-per-image.qmd). Gemini-2.5-flash-lite, at 86.9% with zero failed rows, is a credible fallback/second-opinion model for the routing study.
+
+**Conclusion.** For this 16-class cascade, qwen3.7-flash + v11.8/v17.x is the best accuracy and cost choice; the other models bracket a 12–29 pp accuracy range that prompt family largely explains.
+
+*Sources:* `docs/experiments/experiment_log.md` · `reports/report_*_v11_8_*.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+
+---
+
+## What questions or uncertainties remain?
+
+Only qwen3.7-flash was run on the full prompt ladder; the other models were evaluated on fewer versions (kimi-k3 only v1; gemini only v3/v4/v11.8). Whether a v17.2-era prompt would close the gemini/qwen gap is untested. The 160-image sample is small (10/class) — per-model differences of a few points are within sampling error; a 320+ image head-to-head is needed for decisive ranking.
+
+## What other levers may also improve model selection?
+
+The [confidence-routing memo](confidence-routing.qmd) uses a stronger escalation model only on the low-confidence tail; the [ensemble memo](ensemble-voting.qmd) tests whether combining multiple model opinions (majority vote) beats any single model.
