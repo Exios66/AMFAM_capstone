@@ -30,12 +30,21 @@ No linter, formatter, or typecheck is configured.
 
 Two env files (both gitignored):
 
-- `.env` — API keys: `OPENROUTER_API_KEY`, `BRAINTRUST_API_KEY`
+- `.env` — API keys: `OPENROUTER_API_KEY`, `BRAINTRUST_API_KEY`; optional `RESEARCH_FUNDING_API_KEY`, `DATA_BRAINTRUST_KEY`, `BRAINTRUST_SOURCE_API_KEY`, `BRAINTRUST_DEST_API_KEY`
 - `braintrust.env` — single source of truth for Braintrust org/project/dataset/model config, loaded by `src/braintrust_config.py`
 
 Copy `*.env.example` templates to create them. Missing env vars cause `sys.exit(1)` via `src/env_utils.require_env()`.
 
 System binaries required: **Tesseract OCR** and **Poppler** (for `pdf2image`).
+
+### Research Funding API Key (`RESEARCH_FUNDING_API_KEY`)
+
+`RESEARCH_FUNDING_API_KEY` (optional, in `.env`) is a separate OpenRouter key reserved for **large or significant runs only**:
+
+- **Default access**: every run uses `OPENROUTER_API_KEY` as its OpenRouter access point. All routine testing and prompt iteration runs on the default key.
+- **Explicit invocation only**: the research funding key is used only when a script explicitly requests it — e.g. `run_v11_8_800_after_480.py` calls `require_env("RESEARCH_FUNDING_API_KEY")` and injects it into the child eval's environment. It is never selected by default.
+- **Vetting gate**: it is only saved for runs that have passed all vetting steps — a settled, most-confident prompt that has cleared preflight and prior slice evaluations — such as a final 800-image slice on the current best prompt.
+- **Automatic failover**: `braintrust_openrouter_input.py:_candidate_keys()` falls back to `RESEARCH_FUNDING_API_KEY` when the primary key hits an OpenRouter quota/credit 403, so a funded run survives the default key running out of credits.
 
 ## Architecture
 
@@ -87,6 +96,7 @@ python scripts/braintrust/braintrust_metrics_visual.py \
 ```
 
 Manifest-backed runs (no `--experiment` needed; also matches Braintrust's resume-loop version suffixes like `-06b91b68`):
+
 ```bash
 # Full report suite directly from a manifest + Braintrust trace merge
 python scripts/braintrust/braintrust_report_manifest.py \
@@ -136,6 +146,36 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 
 **Config hierarchy**: `braintrust.env` (gitignored, single source of truth) → loaded by `src/braintrust_config.py` → falls back to `.env` for unset variables. `BraintrustConfig` dataclass exposes: `org_id`, `project_id`, `project_name`, `dataset`, `dataset_project`, `smoke_dataset`, `model`, `qwen_experiments`, `api_key`, `data_api_key`. CLI flags override config per run.
 
+### Using `braintrust.env`
+
+`braintrust.env` is the **single source of truth** for Braintrust configuration. `src/braintrust_config.py:load_braintrust_config()` loads it first (highest precedence) and only falls back to `.env` for variables it does not set. Today `braintrust.env` carries the **new** account's credentials (`AMFAMv2` org/project plus the new `BRAINTRUST_API_KEY`) while `.env` may still hold the **previous** account's key. Because `braintrust.env` loads first, `config.api_key` from `load_braintrust_config()` resolves to the **new** key — but scripts that read `os.environ["BRAINTRUST_API_KEY"]` directly will silently pick up the stale `.env` value. **Always resolve Braintrust keys/ids via `config.api_key` / `config.project_id` from `load_braintrust_config()`.** OpenRouter keys (`OPENROUTER_API_KEY`, `RESEARCH_FUNDING_API_KEY`) normally live in `.env`.
+
+### Adding / configuring new Braintrust credentials
+
+1. Create the env file from the template: `cp braintrust.env.example braintrust.env` (never commit it — it holds API keys).
+2. In the new Braintrust account, generate an API key with write access to the target org/project.
+3. Fill in `braintrust.env`: `BRAINTRUST_ORG_ID`, `BRAINTRUST_PROJECT_ID`, `BRAINTRUST_PROJECT_NAME`, `BRAINTRUST_DATASET_PROJECT`, `BRAINTRUST_DATASET`, `BRAINTRUST_SMOKE_DATASET`, `QWEN_EXPERIMENTS`, `BRAINTRUST_MODEL`, `BRAINTRUST_API_BASE`, and the new `BRAINTRUST_API_KEY`.
+4. Optional: set `DATA_BRAINTRUST_KEY` to a read-only key for a source account when datasets live in a different org (cross-account reads); leave blank to reuse `BRAINTRUST_API_KEY`.
+5. Verify resolution: `python -c "from src.braintrust_config import load_braintrust_config; print(load_braintrust_config())"` should show the new org/project id and a non-empty `api_key`. Then run `python scripts/braintrust/preflight_eval.py --dataset <ds> --prompt-version v17` to confirm the dataset is reachable with the new credentials before spending any model credits.
+6. Port any datasets you need from the previous account (below), then re-run experiments against the new project.
+
+### Porting datasets from the previous account
+
+- **Preferred — `copy_datasets_to_new_env.py`**: reads source credentials from `braintrust.env`/`.env` and writes to an explicitly-passed destination (the new account). Attachments are uploaded synchronously with retries (8 attempts) so a row is inserted only after its object upload succeeds, and every row is then verified by re-downloading it.
+
+  ```bash
+  python scripts/braintrust/copy_datasets_to_new_env.py \
+    --datasets fixed_size_sampled fixed_size_sampled_320 \
+    --dest-project-id <new-project-id> \
+    --dest-project-name AMFAMv2 \
+    --dest-org <new-org-id> \
+    --dest-api-key <new-key>          # or export BRAINTRUST_DEST_API_KEY
+  ```
+
+  Flags: `--source-project` (defaults to the `braintrust.env` project), `--source-api-key` (or `BRAINTRUST_SOURCE_API_KEY`; defaults to the `braintrust.env` key), `--no-verify` to skip the full re-download check, and `--delete-existing` to drop a same-named destination dataset first (idempotent re-copy).
+
+- **One-off — `copy_braintrust_dataset.py`**: a simple hardcoded variant. Edit the `SOURCE_API_KEY` / `SOURCE_PROJECT` / `SOURCE_DATASET` and `DEST_API_KEY` / `DEST_PROJECT` / `DEST_DATASET` constants at the top before running; no CLI flags. Prefer `copy_datasets_to_new_env.py` for repeatable, verified porting.
+
 **Key Braintrust concepts used**:
 - **Datasets** — rows with `input` (image base64 + filename), `expected` (ground-truth class). Stored in a Braintrust project. Multiple named datasets coexist (`fixed_size_sampled`, `fixed_size_sampled_v2`, `_v3`, `_v4`, `_480`, smoke sets).
 - **Experiments** — a named run of a prompt+model against a dataset. Each row produces `output` (predicted class), `scores` (exact_match, failure, cost), and `metadata` (reasoning trace, model, prompt_version, runner_up, cost). Experiment names follow: `{model}_{prompt_version}_reasoning`. Near-miss (runner_up == expected while predicted != expected) is computed locally by `score_manifest.py` from the runner-up line, not by a Braintrust scorer.
@@ -165,6 +205,8 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 | `Error: experiment 'X' not found` | Report/visual scripts | Experiment name misspelled or wrong project_id |
 | `No scored task rows found` | `braintrust_report.py` | Experiment still running or all rows failed — check Braintrust UI |
 | `manifest metadata does not match` | Manifest load | Reusing a manifest from a different eval config — delete and re-run |
+| Quota/credit `403` on a funded run | Eval runner stdout | Primary OpenRouter key out of credits; `_candidate_keys()` fails over to `RESEARCH_FUNDING_API_KEY` if set |
+| Experiments/datasets point at the old account | Report/visual scripts | `.env` still holds the previous account's `BRAINTRUST_API_KEY`; ensure `braintrust.env` holds the new key and the script uses `config.api_key` from `load_braintrust_config()` |
 | `Missing environment variables: ...` | Any script | `.env` or `braintrust.env` not populated — check with `require_env()` |
 
 ### Eval runner failure modes (`braintrust_openrouter_input.py`)
@@ -184,8 +226,9 @@ Every eval row logs metadata to its Braintrust span: `raw_response`, `reasoning`
 ### Common fixes
 
 - **High failure rate**: check OpenRouter provider status; increase `MAX_TRIES` or `MAX_TOKENS_CAP`
-- **All rows fail**: verify `OPENROUTER_API_KEY` is valid and has credits
+- **All rows fail**: verify the OpenRouter key is valid and has credits — `OPENROUTER_API_KEY` for routine runs, `RESEARCH_FUNDING_API_KEY` for a vetted large/funded run
 - **Attachment failures on dataset load**: check `BRAINTRUST_API_KEY` has read access to the dataset project; `DATA_BRAINTRUST_KEY` may be needed for cross-account datasets
+- **Stale `.env` Braintrust key**: `.env` may carry the previous account's key while `braintrust.env` holds the new one — always use `config.api_key` from `load_braintrust_config()` so the new key wins over any stale `.env` value
 - **Manifest errors**: delete `reports/manifests/<name>.jsonl` to start fresh; manifests are keyed by dataset fingerprint so changing the dataset invalidates them
 
 ## High-Volume Sampling (No Local Disk)
