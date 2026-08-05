@@ -2,7 +2,7 @@
 title: "RVL-CDIP Document Classifier"
 format:
   html:
-    class: landing
+    body-classes: landing
 ---
 
 ::: {.hero}

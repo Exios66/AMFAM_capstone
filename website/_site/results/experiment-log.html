@@ -1,0 +1,2693 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Every Braintrust eval: accuracy, tokens, errors, cost projections, and prompt-version notes.">
+
+<title>Braintrust Experiment Log – RVL-CDIP Document Classifier</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-df5af9fadd5181f8cda5c5b9e347827e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+</head>
+
+<body class="floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">RVL-CDIP Document Classifier</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-methods--reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Methods &amp; Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-methods--reference">    
+        <li>
+    <a class="dropdown-item" href="../methods/overview.html">
+ <span class="dropdown-text">Pipeline &amp; Architecture</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/document-processor.html">
+ <span class="dropdown-text">Document Processor Module</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/cli-commands.html">
+ <span class="dropdown-text">CLI Commands Reference</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/classes.html">
+ <span class="dropdown-text">Document Classes</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/prompt-rules-provenance.html">
+ <span class="dropdown-text">Prompt Rules Provenance</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-results" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Results</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-results">    
+        <li>
+    <a class="dropdown-item" href="../results/headline-results.html">
+ <span class="dropdown-text">Headline Results</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/experiment-log.html">
+ <span class="dropdown-text">Braintrust Experiment Log</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/experiment-reports.html">
+ <span class="dropdown-text">Experiment Reports</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/confusion-matrices.html">
+ <span class="dropdown-text">Confusion Matrices</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/gemini-800-notes.html">
+ <span class="dropdown-text">Gemini 2.5 Flash — 800 Images</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/gemini-160-notes.html">
+ <span class="dropdown-text">Gemini 2.5 Flash — 160 Images</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-prompt-evolution" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Prompt Evolution</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-prompt-evolution">    
+        <li>
+    <a class="dropdown-item" href="../prompts/prompt-changelog.html">
+ <span class="dropdown-text">Prompt Version Changelog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../prompts/enhancements.html">
+ <span class="dropdown-text">Data-Backed Enhancement List</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-cost-analysis" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Cost Analysis</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-cost-analysis">    
+        <li>
+    <a class="dropdown-item" href="../cost/cost-estimation.html">
+ <span class="dropdown-text">OpenRouter Cost Estimation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../cost/cost-projections.html">
+ <span class="dropdown-text">Cost Projections</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-monte-carlo" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Monte Carlo</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-monte-carlo">    
+        <li>
+    <a class="dropdown-item" href="../montecarlo/overview.html">
+ <span class="dropdown-text">Monte Carlo Simulation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/prompt-ablation.html">
+ <span class="dropdown-text">Prompt Ablation — Paired Bootstrap</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/ensemble-voting.html">
+ <span class="dropdown-text">Ensemble Voting — Accuracy vs K</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/routing-abstention.html">
+ <span class="dropdown-text">Confidence-Gated Escalation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/failure-pipeline.html">
+ <span class="dropdown-text">Failure Pipeline Simulation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/exemplar-mining.html">
+ <span class="dropdown-text">Few-Shot Exemplar Mining</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/ale-stopword.html">
+ <span class="dropdown-text">ALE + Stop-Word Analysis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/verification.html">
+ <span class="dropdown-text">Verification Evals — Measured vs Simulated</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/corpus-summary.html">
+ <span class="dropdown-text">Monte Carlo Corpus Summary</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-appendix" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Appendix</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-appendix">    
+        <li>
+    <a class="dropdown-item" href="../appendix/misclassifications.html">
+ <span class="dropdown-text">Misclassification Reasoning — 1,120-Image v11.8 Run</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/Exios66/AMFAM_capstone"> <i class="bi bi-github" role="img" aria-label="GitHub repository">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#experiment-moonshotaikimi-k3-160-images-10-per-class-16-classes" id="toc-experiment-moonshotaikimi-k3-160-images-10-per-class-16-classes" class="nav-link active" data-scroll-target="#experiment-moonshotaikimi-k3-160-images-10-per-class-16-classes">Experiment: <code>moonshotai/kimi-k3</code> — 160 Images (10 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a></li>
+  <li><a href="#notes" id="toc-notes" class="nav-link" data-scroll-target="#notes">Notes</a></li>
+  <li><a href="#cost-projections-kimi-k3-max_tokens500-10241024-images" id="toc-cost-projections-kimi-k3-max_tokens500-10241024-images" class="nav-link" data-scroll-target="#cost-projections-kimi-k3-max_tokens500-10241024-images">Cost Projections (Kimi K3, <code>max_tokens=500</code>, 1024×1024 images)</a></li>
+  </ul></li>
+  <li><a href="#experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes" id="toc-experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes" class="nav-link" data-scroll-target="#experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes">Experiment: <code>google/gemini-2.5-flash</code> — 160 Images (10 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results-1" id="toc-results-1" class="nav-link" data-scroll-target="#results-1">Results</a></li>
+  <li><a href="#notes-1" id="toc-notes-1" class="nav-link" data-scroll-target="#notes-1">Notes</a></li>
+  <li><a href="#cost-projections-gemini-2.5-flash-max_tokens1024-10241024-images" id="toc-cost-projections-gemini-2.5-flash-max_tokens1024-10241024-images" class="nav-link" data-scroll-target="#cost-projections-gemini-2.5-flash-max_tokens1024-10241024-images">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 1024×1024 images)</a></li>
+  </ul></li>
+  <li><a href="#experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-1" id="toc-experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-1" class="nav-link" data-scroll-target="#experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-1">Experiment: <code>google/gemini-2.5-flash</code> — 160 Images (10 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results-2" id="toc-results-2" class="nav-link" data-scroll-target="#results-2">Results</a></li>
+  <li><a href="#notes-2" id="toc-notes-2" class="nav-link" data-scroll-target="#notes-2">Notes</a></li>
+  <li><a href="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images" id="toc-cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images" class="nav-link" data-scroll-target="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</a></li>
+  </ul></li>
+  <li><a href="#experiment-googlegemini-2.5-flash-800-images-50-per-class-16-classes" id="toc-experiment-googlegemini-2.5-flash-800-images-50-per-class-16-classes" class="nav-link" data-scroll-target="#experiment-googlegemini-2.5-flash-800-images-50-per-class-16-classes">Experiment: <code>google/gemini-2.5-flash</code> — 800 Images (50 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results-3" id="toc-results-3" class="nav-link" data-scroll-target="#results-3">Results</a></li>
+  <li><a href="#notes-3" id="toc-notes-3" class="nav-link" data-scroll-target="#notes-3">Notes</a></li>
+  <li><a href="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-1" id="toc-cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-1" class="nav-link" data-scroll-target="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-1">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</a></li>
+  </ul></li>
+  <li><a href="#experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-2" id="toc-experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-2" class="nav-link" data-scroll-target="#experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-2">Experiment: <code>google/gemini-2.5-flash</code> — 160 Images (10 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results-4" id="toc-results-4" class="nav-link" data-scroll-target="#results-4">Results</a></li>
+  <li><a href="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-2" id="toc-cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-2" class="nav-link" data-scroll-target="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-2">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</a></li>
+  <li><a href="#notes-4" id="toc-notes-4" class="nav-link" data-scroll-target="#notes-4">Notes</a></li>
+  </ul></li>
+  <li><a href="#v10-qwen3.7-flash-reasoning-enabled" id="toc-v10-qwen3.7-flash-reasoning-enabled" class="nav-link" data-scroll-target="#v10-qwen3.7-flash-reasoning-enabled">v10 (qwen3.7-flash, reasoning enabled)</a>
+  <ul class="collapse">
+  <li><a href="#v10-smoke-14-v9-miss-images" id="toc-v10-smoke-14-v9-miss-images" class="nav-link" data-scroll-target="#v10-smoke-14-v9-miss-images">v10 smoke (14 v9-miss images)</a></li>
+  <li><a href="#v10-full-run-160-image-fixed_size_sampled" id="toc-v10-full-run-160-image-fixed_size_sampled" class="nav-link" data-scroll-target="#v10-full-run-160-image-fixed_size_sampled">v10 full run (160-image <code>fixed_size_sampled</code>)</a></li>
+  <li><a href="#notes-5" id="toc-notes-5" class="nav-link" data-scroll-target="#notes-5">Notes</a></li>
+  </ul></li>
+  <li><a href="#amfam-v2-qwen3.7-flash-gemini-2.5-flash-reasoning-experiments-complete" id="toc-amfam-v2-qwen3.7-flash-gemini-2.5-flash-reasoning-experiments-complete" class="nav-link" data-scroll-target="#amfam-v2-qwen3.7-flash-gemini-2.5-flash-reasoning-experiments-complete">AMFAM v2 — qwen3.7-flash &amp; gemini-2.5-flash reasoning experiments (complete)</a>
+  <ul class="collapse">
+  <li><a href="#summary" id="toc-summary" class="nav-link" data-scroll-target="#summary">Summary</a></li>
+  <li><a href="#qwen3.7-flash-v1-run-1-partial" id="toc-qwen3.7-flash-v1-run-1-partial" class="nav-link" data-scroll-target="#qwen3.7-flash-v1-run-1-partial">qwen3.7-flash v1 (run 1, partial)</a></li>
+  <li><a href="#qwen3.7-flash-v1-run-2" id="toc-qwen3.7-flash-v1-run-2" class="nav-link" data-scroll-target="#qwen3.7-flash-v1-run-2">qwen3.7-flash v1 (run 2)</a></li>
+  <li><a href="#qwen3.7-flash-v2" id="toc-qwen3.7-flash-v2" class="nav-link" data-scroll-target="#qwen3.7-flash-v2">qwen3.7-flash v2</a></li>
+  <li><a href="#qwen3.7-flash-v3" id="toc-qwen3.7-flash-v3" class="nav-link" data-scroll-target="#qwen3.7-flash-v3">qwen3.7-flash v3</a></li>
+  <li><a href="#qwen3.7-flash-v4" id="toc-qwen3.7-flash-v4" class="nav-link" data-scroll-target="#qwen3.7-flash-v4">qwen3.7-flash v4</a></li>
+  <li><a href="#qwen3.7-flash-v5" id="toc-qwen3.7-flash-v5" class="nav-link" data-scroll-target="#qwen3.7-flash-v5">qwen3.7-flash v5</a></li>
+  <li><a href="#qwen3.7-flash-v6" id="toc-qwen3.7-flash-v6" class="nav-link" data-scroll-target="#qwen3.7-flash-v6">qwen3.7-flash v6</a></li>
+  <li><a href="#qwen3.7-flash-v7" id="toc-qwen3.7-flash-v7" class="nav-link" data-scroll-target="#qwen3.7-flash-v7">qwen3.7-flash v7</a></li>
+  <li><a href="#qwen3.7-flash-v8" id="toc-qwen3.7-flash-v8" class="nav-link" data-scroll-target="#qwen3.7-flash-v8">qwen3.7-flash v8</a></li>
+  <li><a href="#qwen3.7-flash-v8.5" id="toc-qwen3.7-flash-v8.5" class="nav-link" data-scroll-target="#qwen3.7-flash-v8.5">qwen3.7-flash v8.5</a></li>
+  <li><a href="#qwen3.7-flash-v9" id="toc-qwen3.7-flash-v9" class="nav-link" data-scroll-target="#qwen3.7-flash-v9">qwen3.7-flash v9</a></li>
+  <li><a href="#qwen3.7-flash-v10-full-run" id="toc-qwen3.7-flash-v10-full-run" class="nav-link" data-scroll-target="#qwen3.7-flash-v10-full-run">qwen3.7-flash v10 (full run)</a></li>
+  <li><a href="#qwen3.7-flash-v10-320-image-run" id="toc-qwen3.7-flash-v10-320-image-run" class="nav-link" data-scroll-target="#qwen3.7-flash-v10-320-image-run">qwen3.7-flash v10 (320-image run)</a></li>
+  <li><a href="#qwen3.7-flash-v10-smoke-run-full-set" id="toc-qwen3.7-flash-v10-smoke-run-full-set" class="nav-link" data-scroll-target="#qwen3.7-flash-v10-smoke-run-full-set">qwen3.7-flash v10 (smoke run, full set)</a></li>
+  <li><a href="#gemini-2.5-flash-v3" id="toc-gemini-2.5-flash-v3" class="nav-link" data-scroll-target="#gemini-2.5-flash-v3">gemini-2.5-flash v3</a></li>
+  <li><a href="#gemini-2.5-flash-v4" id="toc-gemini-2.5-flash-v4" class="nav-link" data-scroll-target="#gemini-2.5-flash-v4">gemini-2.5-flash v4</a></li>
+  <li><a href="#cross-model-note" id="toc-cross-model-note" class="nav-link" data-scroll-target="#cross-model-note">Cross-model note</a></li>
+  </ul></li>
+  <li><a href="#v11-qwen3.7-flash-estimate-vs-bill-rule" id="toc-v11-qwen3.7-flash-estimate-vs-bill-rule" class="nav-link" data-scroll-target="#v11-qwen3.7-flash-estimate-vs-bill-rule">v11 (qwen3.7-flash) — estimate vs bill rule</a>
+  <ul class="collapse">
+  <li><a href="#v11-full-run-results" id="toc-v11-full-run-results" class="nav-link" data-scroll-target="#v11-full-run-results">v11 full-run results</a></li>
+  </ul></li>
+  <li><a href="#v11.7-qwen3.7-flash-minimal-edit-set-d-a-b" id="toc-v11.7-qwen3.7-flash-minimal-edit-set-d-a-b" class="nav-link" data-scroll-target="#v11.7-qwen3.7-flash-minimal-edit-set-d-a-b">v11.7 (qwen3.7-flash) — minimal edit set D + A + B</a>
+  <ul class="collapse">
+  <li><a href="#v11.7-full-run-results" id="toc-v11.7-full-run-results" class="nav-link" data-scroll-target="#v11.7-full-run-results">v11.7 full-run results</a></li>
+  </ul></li>
+  <li><a href="#v11.8-qwen3.7-flash-fix-1-form-vs-budget-authorization-fix-2-memo-vs-letter" id="toc-v11.8-qwen3.7-flash-fix-1-form-vs-budget-authorization-fix-2-memo-vs-letter" class="nav-link" data-scroll-target="#v11.8-qwen3.7-flash-fix-1-form-vs-budget-authorization-fix-2-memo-vs-letter">v11.8 (qwen3.7-flash) — Fix 1 (form-vs-budget authorization) + Fix 2 (memo-vs-letter)</a>
+  <ul class="collapse">
+  <li><a href="#v11.8-highlights-best-result-on-the-curated-archive-set" id="toc-v11.8-highlights-best-result-on-the-curated-archive-set" class="nav-link" data-scroll-target="#v11.8-highlights-best-result-on-the-curated-archive-set">v11.8 highlights — best result on the curated archive set</a></li>
+  </ul></li>
+  <li><a href="#v11.9-qwen3.7-flash-narrow-edit-bs-financial-chartbudget-carve-out" id="toc-v11.9-qwen3.7-flash-narrow-edit-bs-financial-chartbudget-carve-out" class="nav-link" data-scroll-target="#v11.9-qwen3.7-flash-narrow-edit-bs-financial-chartbudget-carve-out">v11.9 (qwen3.7-flash) — narrow Edit B’s financial-chart→budget carve-out</a>
+  <ul class="collapse">
+  <li><a href="#v11.9-full-run-results" id="toc-v11.9-full-run-results" class="nav-link" data-scroll-target="#v11.9-full-run-results">v11.9 full-run results</a></li>
+  <li><a href="#v11.8-on-the-320-image-set-qwen3.7-flash_v11_8_reasoning_320" id="toc-v11.8-on-the-320-image-set-qwen3.7-flash_v11_8_reasoning_320" class="nav-link" data-scroll-target="#v11.8-on-the-320-image-set-qwen3.7-flash_v11_8_reasoning_320">v11.8 on the 320-image set — <code>qwen3.7-flash_v11_8_reasoning_320</code></a></li>
+  <li><a href="#v11.8-on-the-480-image-set-qwen3.7-flash_v11_8_reasoning_480" id="toc-v11.8-on-the-480-image-set-qwen3.7-flash_v11_8_reasoning_480" class="nav-link" data-scroll-target="#v11.8-on-the-480-image-set-qwen3.7-flash_v11_8_reasoning_480">v11.8 on the 480-image set — <code>qwen3.7-flash_v11_8_reasoning_480</code></a></li>
+  </ul></li>
+  <li><a href="#new-evaluation-assets-and-v13" id="toc-new-evaluation-assets-and-v13" class="nav-link" data-scroll-target="#new-evaluation-assets-and-v13">New Evaluation Assets and v13</a></li>
+  <li><a href="#cross-model-v11.8-runs-temperaturereasoning-sweep-on-fixed_size_sampled-v1" id="toc-cross-model-v11.8-runs-temperaturereasoning-sweep-on-fixed_size_sampled-v1" class="nav-link" data-scroll-target="#cross-model-v11.8-runs-temperaturereasoning-sweep-on-fixed_size_sampled-v1">Cross-model v11.8 runs — temperature/reasoning sweep on <code>fixed_size_sampled</code> (v1)</a>
+  <ul class="collapse">
+  <li><a href="#qwen3.7-flash-at-temperature-0.3-qwen3.7-flash_v11_8_reasoning_160_t0_3" id="toc-qwen3.7-flash-at-temperature-0.3-qwen3.7-flash_v11_8_reasoning_160_t0_3" class="nav-link" data-scroll-target="#qwen3.7-flash-at-temperature-0.3-qwen3.7-flash_v11_8_reasoning_160_t0_3">qwen3.7-flash at temperature 0.3 — <code>qwen3.7-flash_v11_8_reasoning_160_t0_3</code></a></li>
+  <li><a href="#qwen3.5-35b-a3b-max-reasoning-qwen3.5-35b-a3b_v11_8_reasoning_160" id="toc-qwen3.5-35b-a3b-max-reasoning-qwen3.5-35b-a3b_v11_8_reasoning_160" class="nav-link" data-scroll-target="#qwen3.5-35b-a3b-max-reasoning-qwen3.5-35b-a3b_v11_8_reasoning_160">qwen3.5-35b-a3b (max reasoning) — <code>qwen3.5-35b-a3b_v11_8_reasoning_160</code></a></li>
+  <li><a href="#qwen3.5-35b-a3b-on-the-v12-retroactive-slice-qwen3.5-35b-a3b_v11_8_reasoning_v12retro" id="toc-qwen3.5-35b-a3b-on-the-v12-retroactive-slice-qwen3.5-35b-a3b_v11_8_reasoning_v12retro" class="nav-link" data-scroll-target="#qwen3.5-35b-a3b-on-the-v12-retroactive-slice-qwen3.5-35b-a3b_v11_8_reasoning_v12retro">qwen3.5-35b-a3b on the v12 retroactive slice — <code>qwen3.5-35b-a3b_v11_8_reasoning_v12retro</code></a></li>
+  <li><a href="#gemini-2.5-flash-lite-max-reasoning-gemini-2.5-flash-lite_v11_8_reasoning_160" id="toc-gemini-2.5-flash-lite-max-reasoning-gemini-2.5-flash-lite_v11_8_reasoning_160" class="nav-link" data-scroll-target="#gemini-2.5-flash-lite-max-reasoning-gemini-2.5-flash-lite_v11_8_reasoning_160">gemini-2.5-flash-lite (max reasoning) — <code>gemini-2.5-flash-lite_v11_8_reasoning_160</code></a></li>
+  <li><a href="#kimi-k2.6-xhigh-reasoning-kimi-k2.6_v11_8_reasoning_160-aborted" id="toc-kimi-k2.6-xhigh-reasoning-kimi-k2.6_v11_8_reasoning_160-aborted" class="nav-link" data-scroll-target="#kimi-k2.6-xhigh-reasoning-kimi-k2.6_v11_8_reasoning_160-aborted">kimi-k2.6 (xhigh reasoning) — <code>kimi-k2.6_v11_8_reasoning_160</code> (aborted)</a></li>
+  </ul></li>
+  <li><a href="#experiment-googlegemini-2.5-flash-480-images-30-per-class-16-classes" id="toc-experiment-googlegemini-2.5-flash-480-images-30-per-class-16-classes" class="nav-link" data-scroll-target="#experiment-googlegemini-2.5-flash-480-images-30-per-class-16-classes">Experiment: <code>google/gemini-2.5-flash</code> — 480 Images (30 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results-5" id="toc-results-5" class="nav-link" data-scroll-target="#results-5">Results</a></li>
+  <li><a href="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-3" id="toc-cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-3" class="nav-link" data-scroll-target="#cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-3">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</a></li>
+  </ul></li>
+  <li><a href="#experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes" id="toc-experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes" class="nav-link" data-scroll-target="#experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes">Experiment: <code>qwen/qwen3.7-flash</code> — 800 Images (50 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results-6" id="toc-results-6" class="nav-link" data-scroll-target="#results-6">Results</a></li>
+  <li><a href="#cost-expected-vs-actual" id="toc-cost-expected-vs-actual" class="nav-link" data-scroll-target="#cost-expected-vs-actual">Cost — Expected vs Actual</a></li>
+  </ul></li>
+  <li><a href="#experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes-1" id="toc-experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes-1" class="nav-link" data-scroll-target="#experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes-1">Experiment: <code>qwen/qwen3.7-flash</code> — 800 Images (50 per class × 16 classes)</a>
+  <ul class="collapse">
+  <li><a href="#results-7" id="toc-results-7" class="nav-link" data-scroll-target="#results-7">Results</a></li>
+  <li><a href="#cost-expected-vs-actual-1" id="toc-cost-expected-vs-actual-1" class="nav-link" data-scroll-target="#cost-expected-vs-actual-1">Cost — Expected vs Actual</a></li>
+  </ul></li>
+  <li><a href="#experiment-qwen3.7-flash_v11.8_reasoning_1600_balanced_1120-1120-images-70-per-class-16-classes" id="toc-experiment-qwen3.7-flash_v11.8_reasoning_1600_balanced_1120-1120-images-70-per-class-16-classes" class="nav-link" data-scroll-target="#experiment-qwen3.7-flash_v11.8_reasoning_1600_balanced_1120-1120-images-70-per-class-16-classes">Experiment: <code>qwen3.7-flash_v11.8_reasoning_1600_balanced_1120</code> — 1120 images (70 per class × 16 classes)</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Braintrust Experiment Log</h1>
+</div>
+
+<div>
+  <div class="description">
+    Every Braintrust eval: accuracy, tokens, errors, cost projections, and prompt-version notes.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="experiment-moonshotaikimi-k3-160-images-10-per-class-16-classes" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-moonshotaikimi-k3-160-images-10-per-class-16-classes">Experiment: <code>moonshotai/kimi-k3</code> — 160 Images (10 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> main-1785257772<br>
+<strong>Link:</strong> <a href="https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/p/AMFAM-Doc-Classification/experiments/main-1785257772" class="uri">https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/p/AMFAM-Doc-Classification/experiments/main-1785257772</a><br>
+<strong>Dataset:</strong> <code>fixed_size_sampled/images/</code> (1024×1024 padded PNGs)<br>
+<strong>Prompt:</strong> <code>CLASSIFICATION_PROMPT</code> from <code>src/openrouter_classifier.py</code><br>
+<strong>Settings:</strong> <code>max_tokens=500</code>, <code>temperature=0.1</code> <strong>image size:</strong> <code>1024×1024</code></p>
+<section id="results" class="level3">
+<h3 class="anchored" data-anchor-id="results">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>70.00%</strong> (112/160 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">1,768.89</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">872.80</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">171.51</td>
+</tr>
+<tr class="odd">
+<td>Completion reasoning tokens (avg)</td>
+<td style="text-align: right;">156.02</td>
+</tr>
+<tr class="even">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">1,940.41</td>
+</tr>
+<tr class="odd">
+<td>Duration (avg)</td>
+<td style="text-align: right;">106.74s</td>
+</tr>
+<tr class="even">
+<td>LLM duration (avg)</td>
+<td style="text-align: right;">10.08s</td>
+</tr>
+<tr class="odd">
+<td>Time to first token (avg)</td>
+<td style="text-align: right;">10.06s</td>
+</tr>
+<tr class="even">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes" class="level3">
+<h3 class="anchored" data-anchor-id="notes">Notes</h3>
+<ul>
+<li>First run (main-1785255418) scored 0% due to <code>max_tokens=20</code> — reasoning model used all tokens on hidden reasoning, leaving nothing for output.</li>
+<li>Bumping to <code>max_tokens=500</code> resolved the issue.</li>
+<li>~156 of ~171 completion tokens are hidden reasoning tokens (not visible in output).</li>
+<li>48 misclassifications need investigation in Braintrust UI to identify confused class pairs.</li>
+<li>Images resized to 1024×1024 (vs original full-res) significantly reduces prompt tokens (1,769 vs 11,996 in original test).</li>
+</ul>
+</section>
+<section id="cost-projections-kimi-k3-max_tokens500-10241024-images" class="level3">
+<h3 class="anchored" data-anchor-id="cost-projections-kimi-k3-max_tokens500-10241024-images">Cost Projections (Kimi K3, <code>max_tokens=500</code>, 1024×1024 images)</h3>
+<p><strong>Pricing:</strong> $0.30/M input tokens, $15.00/M output tokens</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Prompt Tokens</th>
+<th style="text-align: right;">Completion Tokens</th>
+<th style="text-align: right;">Total Tokens</th>
+<th style="text-align: right;"><strong>Estimated Cost</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">1,415,112</td>
+<td style="text-align: right;">137,208</td>
+<td style="text-align: right;">1,552,320</td>
+<td style="text-align: right;"><strong>$2.48</strong></td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">44,222,250</td>
+<td style="text-align: right;">4,287,750</td>
+<td style="text-align: right;">48,510,000</td>
+<td style="text-align: right;"><strong>$64.74</strong></td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">566,044,800</td>
+<td style="text-align: right;">54,883,200</td>
+<td style="text-align: right;">620,928,000</td>
+<td style="text-align: right;"><strong>$823.57</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>vs.&nbsp;Original Kimi K3 estimate (full-res images, <code>max_tokens=20</code>):</strong> $1,257.98 for 320K — resizing to 1024×1024 saves ~$434.</p>
+<hr>
+</section>
+</section>
+<section id="experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes">Experiment: <code>google/gemini-2.5-flash</code> — 160 Images (10 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> main-1785265188<br>
+<strong>Link:</strong> <a href="https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/p/AMFAM-Doc-Classification/experiments/main-1785265188" class="uri">https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/p/AMFAM-Doc-Classification/experiments/main-1785265188</a><br>
+<strong>Dataset:</strong> <code>fixed_size_sampled/images/</code> (1024×1024 padded PNGs)<br>
+<strong>Prompt:</strong> <code>CLASSIFICATION_PROMPT</code> from <code>src/openrouter_classifier.py</code><br>
+<strong>Settings:</strong> <code>max_tokens=1024</code>, <code>temperature=0.1</code>, <code>reasoning.effort=medium</code><br>
+<strong>Image size:</strong> <code>1024×1024</code></p>
+<section id="results-1" class="level3">
+<h3 class="anchored" data-anchor-id="results-1">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>74.38%</strong> (119/160 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">1,637</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">8.17</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">415.64</td>
+</tr>
+<tr class="odd">
+<td>Completion reasoning tokens (avg)</td>
+<td style="text-align: right;">413.82</td>
+</tr>
+<tr class="even">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">2,052.64</td>
+</tr>
+<tr class="odd">
+<td>Duration (avg)</td>
+<td style="text-align: right;">48.10s</td>
+</tr>
+<tr class="even">
+<td>LLM duration (avg)</td>
+<td style="text-align: right;">4.60s</td>
+</tr>
+<tr class="odd">
+<td>Time to first token (avg)</td>
+<td style="text-align: right;">4.58s</td>
+</tr>
+<tr class="even">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes-1" class="level3">
+<h3 class="anchored" data-anchor-id="notes-1">Notes</h3>
+<ul>
+<li>+4.38% accuracy over Kimi K3 (74.38% vs 70.00%) with 13 improvements and 6 regressions.</li>
+<li>Reasoning tokens are visible in Braintrust UI metadata for debugging misclassifications.</li>
+<li>2.2x faster than Kimi K3 (48s vs 107s avg duration per image).</li>
+<li>More completion tokens (416 vs 172) due to visible reasoning chain, but cheaper output pricing.</li>
+<li>41 misclassifications to investigate in Braintrust UI.</li>
+</ul>
+</section>
+<section id="cost-projections-gemini-2.5-flash-max_tokens1024-10241024-images" class="level3">
+<h3 class="anchored" data-anchor-id="cost-projections-gemini-2.5-flash-max_tokens1024-10241024-images">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 1024×1024 images)</h3>
+<p><strong>Pricing:</strong> $0.15/M input tokens, $0.60/M output tokens</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Prompt Tokens</th>
+<th style="text-align: right;">Completion Tokens</th>
+<th style="text-align: right;">Total Tokens</th>
+<th style="text-align: right;"><strong>Estimated Cost</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">1,309,600</td>
+<td style="text-align: right;">332,512</td>
+<td style="text-align: right;">1,642,112</td>
+<td style="text-align: right;"><strong>$0.40</strong></td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">40,925,000</td>
+<td style="text-align: right;">10,391,000</td>
+<td style="text-align: right;">51,316,000</td>
+<td style="text-align: right;"><strong>$12.37</strong></td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">523,840,000</td>
+<td style="text-align: right;">133,004,800</td>
+<td style="text-align: right;">656,844,800</td>
+<td style="text-align: right;"><strong>$158.38</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>vs.&nbsp;Kimi K3 at 320K:</strong> $158 vs $824 — Gemini 2.5 Flash is <strong>~5.2x cheaper</strong> with higher accuracy.</p>
+<hr>
+</section>
+</section>
+<section id="experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-1" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-1">Experiment: <code>google/gemini-2.5-flash</code> — 160 Images (10 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> main-1785270444 <strong>Dataset:</strong> <code>2550x3300_10perclass_160/images/</code> (2550×3300 padded PNGs, 300 DPI) <strong>Prompt:</strong> <code>CLASSIFICATION_PROMPT</code> from <code>src/openrouter_classifier.py</code> <strong>Settings:</strong> <code>max_tokens=1024</code>, <code>temperature=0.1</code>, <code>reasoning.effort=medium</code> <strong>Image size:</strong> <code>2550×3300</code></p>
+<section id="results-2" class="level3">
+<h3 class="anchored" data-anchor-id="results-2">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>73.75%</strong> (118/160 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">3,701.00</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">418.19</td>
+</tr>
+<tr class="odd">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">4,119.19</td>
+</tr>
+<tr class="even">
+<td>Duration (avg)</td>
+<td style="text-align: right;">0.00s</td>
+</tr>
+<tr class="odd">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes-2" class="level3">
+<h3 class="anchored" data-anchor-id="notes-2">Notes</h3>
+<ul>
+<li>Switching from 1024×1024 to full-res 2550×3300 doubled prompt tokens (1,637 → 3,701) but accuracy dropped slightly (74.38% → 73.75%), suggesting higher resolution does not help and may add noise.</li>
+<li>Cost per image roughly doubled vs 1024×1024 ($0.64 vs $0.40 for 800 images) with no accuracy gain — 1024×1024 is the better cost/performance tradeoff.</li>
+</ul>
+</section>
+<section id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images" class="level3">
+<h3 class="anchored" data-anchor-id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</h3>
+<p><strong>Pricing:</strong> $0.15/M input tokens, $0.6/M output tokens</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Prompt Tokens</th>
+<th style="text-align: right;">Completion Tokens</th>
+<th style="text-align: right;">Total Tokens</th>
+<th style="text-align: right;"><strong>Estimated Cost</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">2,960,800</td>
+<td style="text-align: right;">334,555</td>
+<td style="text-align: right;">3,295,355</td>
+<td style="text-align: right;"><strong>$0.64</strong></td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">92,525,000</td>
+<td style="text-align: right;">10,454,843</td>
+<td style="text-align: right;">102,979,843</td>
+<td style="text-align: right;"><strong>$20.15</strong></td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">1,184,320,000</td>
+<td style="text-align: right;">133,822,000</td>
+<td style="text-align: right;">1,318,142,000</td>
+<td style="text-align: right;"><strong>$257.94</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="experiment-googlegemini-2.5-flash-800-images-50-per-class-16-classes" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-googlegemini-2.5-flash-800-images-50-per-class-16-classes">Experiment: <code>google/gemini-2.5-flash</code> — 800 Images (50 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> main-1785272634 <strong>Dataset:</strong> <code>2550x3300_50perclass_800/images/</code> (2550×3300 padded PNGs, 300 DPI) <strong>Prompt:</strong> <code>CLASSIFICATION_PROMPT</code> from <code>src/openrouter_classifier.py</code> (baseline, pre-disambiguation) <strong>Settings:</strong> <code>max_tokens=1024</code>, <code>temperature=0.1</code>, <code>reasoning.effort=medium</code> <strong>Image size:</strong> <code>2550×3300</code></p>
+<section id="results-3" class="level3">
+<h3 class="anchored" data-anchor-id="results-3">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>72.88%</strong> (583/800 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">3,701.00</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">417.38</td>
+</tr>
+<tr class="odd">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">4,118.38</td>
+</tr>
+<tr class="even">
+<td>Duration (avg)</td>
+<td style="text-align: right;">0.00s</td>
+</tr>
+<tr class="odd">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes-3" class="level3">
+<h3 class="anchored" data-anchor-id="notes-3">Notes</h3>
+<ul>
+<li>Scaling from 160 → 800 images held steady at ~73% accuracy, confirming the 10-per-class sample is representative.</li>
+<li><code>form</code> (30%), <code>presentation</code> (36%), and <code>specification</code> (46%) are the worst-performing classes — <code>scientific_report</code> is massively over-predicted with 64 false positives across 7 classes.</li>
+<li>Reasoning trace analysis revealed the model confuses fax cover sheets with memos, specs with scientific reports, and press releases with news articles — leading to the disambiguation prompt update.</li>
+<li>See <code>docs/50pic_cost_est_tst.md</code> for full per-class accuracy breakdown and confused pairs analysis.</li>
+<li>See <code>docs/confusion_matrix_main-1785272634.md</code> for confusion matrix.</li>
+<li>See <code>docs/misclassification_reasoning_main-1785270444.md</code> for reasoning trace analysis.</li>
+</ul>
+</section>
+<section id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-1" class="level3">
+<h3 class="anchored" data-anchor-id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-1">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</h3>
+<p><strong>Pricing:</strong> $0.15/M input tokens, $0.6/M output tokens</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Prompt Tokens</th>
+<th style="text-align: right;">Completion Tokens</th>
+<th style="text-align: right;">Total Tokens</th>
+<th style="text-align: right;"><strong>Estimated Cost</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">2,960,800</td>
+<td style="text-align: right;">333,902</td>
+<td style="text-align: right;">3,294,701</td>
+<td style="text-align: right;"><strong>$0.64</strong></td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">92,525,000</td>
+<td style="text-align: right;">10,434,437</td>
+<td style="text-align: right;">102,959,437</td>
+<td style="text-align: right;"><strong>$20.14</strong></td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">1,184,320,000</td>
+<td style="text-align: right;">133,560,800</td>
+<td style="text-align: right;">1,317,880,799</td>
+<td style="text-align: right;"><strong>$257.78</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-2" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-googlegemini-2.5-flash-160-images-10-per-class-16-classes-2">Experiment: <code>google/gemini-2.5-flash</code> — 160 Images (10 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> main-1785277280 <strong>Dataset:</strong> 2550×3300 padded PNGs, 300 DPI <strong>Prompt:</strong> <code>CLASSIFICATION_PROMPT</code> from <code>src/openrouter_classifier.py</code> <strong>Settings:</strong> <code>max_tokens=1024</code>, <code>temperature=0.1</code>, <code>reasoning.effort=medium</code> <strong>Image size:</strong> <code>2550×3300</code></p>
+<section id="results-4" class="level3">
+<h3 class="anchored" data-anchor-id="results-4">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>83.75%</strong> (134/160 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">4,368.00</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">412.39</td>
+</tr>
+<tr class="odd">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">4,780.39</td>
+</tr>
+<tr class="even">
+<td>Duration (avg)</td>
+<td style="text-align: right;">0.00s</td>
+</tr>
+<tr class="odd">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-2" class="level3">
+<h3 class="anchored" data-anchor-id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-2">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</h3>
+<p><strong>Pricing:</strong> $0.15/M input tokens, $0.6/M output tokens</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Prompt Tokens</th>
+<th style="text-align: right;">Completion Tokens</th>
+<th style="text-align: right;">Total Tokens</th>
+<th style="text-align: right;"><strong>Estimated Cost</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">3,494,400</td>
+<td style="text-align: right;">329,915</td>
+<td style="text-align: right;">3,824,315</td>
+<td style="text-align: right;"><strong>$0.72</strong></td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">109,200,000</td>
+<td style="text-align: right;">10,309,843</td>
+<td style="text-align: right;">119,509,843</td>
+<td style="text-align: right;"><strong>$22.57</strong></td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">1,397,760,000</td>
+<td style="text-align: right;">131,966,000</td>
+<td style="text-align: right;">1,529,726,000</td>
+<td style="text-align: right;"><strong>$288.84</strong></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="notes-4" class="level3">
+<h3 class="anchored" data-anchor-id="notes-4">Notes</h3>
+<ul>
+<li><strong>+10% accuracy jump</strong> (73.75% → 83.75%) from adding disambiguation rules to the prompt — largest single improvement across all experiments.</li>
+<li>Prompt tokens increased from 3,701 → 4,368 due to longer prompt with disambiguation rules, but the accuracy gain far outweighs the ~$0.08 cost increase per 800 images.</li>
+<li>Only 26 errors remain (down from 42). Top confusion is now <code>presentation → file_folder</code> (4 errors) where cover/divider pages get misclassified.</li>
+<li>See <code>docs/confusion_matrix_main-1785277280.md</code> and <code>docs/misclassification_reasoning_main-1785277280.md</code> for detailed breakdown.</li>
+</ul>
+</section>
+</section>
+<section id="v10-qwen3.7-flash-reasoning-enabled" class="level2">
+<h2 class="anchored" data-anchor-id="v10-qwen3.7-flash-reasoning-enabled">v10 (qwen3.7-flash, reasoning enabled)</h2>
+<p>Prompt v10 is the full v9 ruleset plus new disambiguation rules covering every v9 miss AND every v8.5→v9 regression: - questionnaire vs presentation (v9 misses: 2), questionnaire vs handwritten, resume vs scientific_report, scientific_report vs budget/email/form/presentation, memo vs letter, budget vs invoice, handwritten vs form, advertisement vs news_article.</p>
+<section id="v10-smoke-14-v9-miss-images" class="level3">
+<h3 class="anchored" data-anchor-id="v10-smoke-14-v9-miss-images">v10 smoke (14 v9-miss images)</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>100%</strong> (14/14 correct)</td>
+</tr>
+</tbody>
+</table>
+<p>All 13 prompt-related v9 misses now correct. The 14th case (news_article→scientific_publication, <code>test_imagesr_r_c_s_rcs96d00_...</code>) was a dataset mislabel — an American Journal of Epidemiology reprint (Vol. 119, No.&nbsp;4, 1984) — ground truth flipped to <code>scientific_publication</code>; v10 predicts it correctly.</p>
+</section>
+<section id="v10-full-run-160-image-fixed_size_sampled" class="level3">
+<h3 class="anchored" data-anchor-id="v10-full-run-160-image-fixed_size_sampled">v10 full run (160-image <code>fixed_size_sampled</code>)</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>97.5%</strong> (154/158 correct)</td>
+</tr>
+</tbody>
+</table>
+<p>Per-class (of ~10 per class; 2 rows without a stored attachment are skipped):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+<th></th>
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>advertisement</td>
+<td style="text-align: right;">9/9</td>
+<td></td>
+<td>news_article</td>
+<td style="text-align: right;">9/9</td>
+</tr>
+<tr class="even">
+<td>budget</td>
+<td style="text-align: right;">9/10</td>
+<td></td>
+<td>presentation</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="odd">
+<td>email</td>
+<td style="text-align: right;">9/9</td>
+<td></td>
+<td>questionnaire</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="even">
+<td>file_folder</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>resume</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="odd">
+<td>form</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>scientific_publication</td>
+<td style="text-align: right;">11/11</td>
+</tr>
+<tr class="even">
+<td>handwritten</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>scientific_report</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="odd">
+<td>invoice</td>
+<td style="text-align: right;">7/10</td>
+<td></td>
+<td>specification</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="even">
+<td>letter</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>memo</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+</tbody>
+</table>
+<p>Remaining 4 misses (all <code>invoice ↔︎ budget</code>): - <code>qia17d00</code> — Tobacco Institute check + detachable “INVOICE” stub (state campaign contribution): predicted invoice, expected budget. - <code>dav40c00</code>, <code>wce83f00</code>, <code>ynj47c00</code> — “ESTIMATE CHANGE ORDER” / “PRODUCTION ESTIMATE REPORT” / “NEWSPAPER ESTIMATE RECAP”: predicted budget, expected invoice.</p>
+<p>No memo↔︎invoice confusion in the final run (memo 10/10, letter 10/10). The residual error class is agency/vendor estimate-vs-bill (budget vs invoice).</p>
+</section>
+<section id="notes-5" class="level3">
+<h3 class="anchored" data-anchor-id="notes-5">Notes</h3>
+<ul>
+<li>Experiments <code>qwen3.7-flash_v10_smoke</code> and <code>qwen3.7-flash_v10_reasoning</code> on Braintrust.</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="amfam-v2-qwen3.7-flash-gemini-2.5-flash-reasoning-experiments-complete" class="level2">
+<h2 class="anchored" data-anchor-id="amfam-v2-qwen3.7-flash-gemini-2.5-flash-reasoning-experiments-complete">AMFAM v2 — qwen3.7-flash &amp; gemini-2.5-flash reasoning experiments (complete)</h2>
+<p>All runs: <code>fixed_size_sampled</code> (160-image balanced sample, ~10 per class × 16), reasoning enabled, <code>exact_match</code> tracked. 2 of 160 rows lack a stored attachment and are skipped, so the scored total is 158.</p>
+<section id="summary" class="level3">
+<h3 class="anchored" data-anchor-id="summary">Summary</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 30%">
+<col style="width: 19%">
+<col style="width: 23%">
+<col style="width: 26%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Experiment</th>
+<th>Model</th>
+<th>Prompt</th>
+<th style="text-align: right;">Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>qwen3.7-flash_v1_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v1</td>
+<td style="text-align: right;">50.0% (11/22)¹</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v1_reasoning-5718f5da</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v1</td>
+<td style="text-align: right;">80.1% (125/156)</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v2_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v2</td>
+<td style="text-align: right;">78.5% (124/158)</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v3_reasoning-14553e3a</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v3</td>
+<td style="text-align: right;">78.5% (124/158)</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v4_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v4</td>
+<td style="text-align: right;">83.5% (132/158)</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v5_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v5</td>
+<td style="text-align: right;">84.8% (134/158)</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v6_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v6</td>
+<td style="text-align: right;">83.9% (130/155)</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v7_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v7</td>
+<td style="text-align: right;">91.1% (144/158)</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v8_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v8</td>
+<td style="text-align: right;">91.8% (145/158)</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v8.5_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v8.5</td>
+<td style="text-align: right;">88.6% (140/158)</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v9_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v9</td>
+<td style="text-align: right;">91.1% (144/158)</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v10_smoke</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v10</td>
+<td style="text-align: right;">100% (14/14)²</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v10_reasoning</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v10</td>
+<td style="text-align: right;"><strong>97.5% (154/158)</strong></td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v10_reasoning_320</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v10</td>
+<td style="text-align: right;">85.3% (272/319)³</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v10_smoke_full</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v10</td>
+<td style="text-align: right;">82.9% (180/217)⁴</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v11_reasoning_160</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v11</td>
+<td style="text-align: right;"><strong>98.7% (156/158)</strong>⁵</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.7-flash_v11_reasoning_320</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v11</td>
+<td style="text-align: right;">83.9% (266/317)⁶</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.7-flash_v11_smoke_full</code></td>
+<td>qwen/qwen3.7-flash</td>
+<td>v11</td>
+<td style="text-align: right;">87.8% (209/238)⁷</td>
+</tr>
+<tr class="odd">
+<td><code>gemini-2.5-flash_v3_reasoning</code></td>
+<td>google/gemini-2.5-flash</td>
+<td>v3</td>
+<td style="text-align: right;">77.4% (123/159)</td>
+</tr>
+<tr class="even">
+<td><code>gemini-2.5-flash_v4_reasoning</code></td>
+<td>google/gemini-2.5-flash</td>
+<td>v4</td>
+<td style="text-align: right;">77.7% (122/157)</td>
+</tr>
+</tbody>
+</table>
+<p>¹ First v1 run aborted early (22 scored rows). ² Smoke test on the 14 v9-miss images. ³ 320-image fixed-size set (20/class), one row unscored. ⁴ Full v10 smoke run on the 239-row misclassification set; run aborted at 217 scored rows (82.9%). ⁵ Full v11 run on the 160-image set (2 rows lack a stored attachment). ⁶ 320-image fixed-size set (20/class), 3 rows unscored. ⁷ Full v11 smoke run on the 239-row misclassification set; 1 row unscored.</p>
+</section>
+<section id="qwen3.7-flash-v1-run-1-partial" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v1-run-1-partial">qwen3.7-flash v1 (run 1, partial)</h3>
+<p>11/22 (50.0%). Aborted early — only 22 rows scored (budget 5/9, invoice 3/9, letter 1/1, presentation 2/3).</p>
+</section>
+<section id="qwen3.7-flash-v1-run-2" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v1-run-2">qwen3.7-flash v1 (run 2)</h3>
+<p>125/156 (80.1%). Weakest classes: presentation 3/9, invoice 4/10, questionnaire 6/10, budget 6/10, form 6/10. Strong: email, file_folder, handwritten, letter, memo all 10/10.</p>
+</section>
+<section id="qwen3.7-flash-v2" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v2">qwen3.7-flash v2</h3>
+<p>124/158 (78.5%). Weakest: invoice 3/10, presentation 4/10, budget/form/ questionnaire 6/10. file_folder, email, handwritten 10/10.</p>
+</section>
+<section id="qwen3.7-flash-v3" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v3">qwen3.7-flash v3</h3>
+<p>124/158 (78.5%). Weakest: questionnaire 4/10, presentation 4/10, invoice 4/10, budget 6/10. Handwritten drops to 9/10.</p>
+</section>
+<section id="qwen3.7-flash-v4" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v4">qwen3.7-flash v4</h3>
+<p>132/158 (83.5%). +5.0 over v3. resume jumps to 10/10; questionnaire 8/10, presentation 7/9, invoice 7/10. form still 6/10, budget 6/10.</p>
+</section>
+<section id="qwen3.7-flash-v5" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v5">qwen3.7-flash v5</h3>
+<p>134/158 (84.8%). form 9/10, budget collapses to 3/10. invoice 6/10.</p>
+</section>
+<section id="qwen3.7-flash-v6" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v6">qwen3.7-flash v6</h3>
+<p>130/155 (83.9%). budget 4/10, invoice 4/10, scientific_report 7/10. form 9/10.</p>
+</section>
+<section id="qwen3.7-flash-v7" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v7">qwen3.7-flash v7</h3>
+<p>144/158 (91.1%). form 10/10, presentation 10/10, questionnaire 10/10, resume 10/10. handwritten drops to 6/10, scientific_report 7/10. (v7 added presentation cover/slide rules.)</p>
+</section>
+<section id="qwen3.7-flash-v8" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v8">qwen3.7-flash v8</h3>
+<p>145/158 (91.8%). Best qwen result before v10. memo 8/10, handwritten 8/10, scientific_report 7/10. (v8 added agency estimate change order + scratchpad deliberation.)</p>
+</section>
+<section id="qwen3.7-flash-v8.5" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v8.5">qwen3.7-flash v8.5</h3>
+<p>140/158 (88.6%). Regression on file_folder (3/10) — the v8.5 folder-tab rewrite over-corrected cover pages. memo 10/10, form 10/10.</p>
+</section>
+<section id="qwen3.7-flash-v9" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v9">qwen3.7-flash v9</h3>
+<p>144/158 (91.1%). Recovered file_folder (10/10) and invoice (10/10); regressed questionnaire (7/10) and scientific_report (6/10). (v9 added folder-tab and budget-vs-form rules.)</p>
+</section>
+<section id="qwen3.7-flash-v10-full-run" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v10-full-run">qwen3.7-flash v10 (full run)</h3>
+<p>154/158 (97.5%). See section above. Only 4 misses remain, all <code>invoice ↔︎ budget</code> agency estimate/billing ambiguities.</p>
+</section>
+<section id="qwen3.7-flash-v10-320-image-run" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v10-320-image-run">qwen3.7-flash v10 (320-image run)</h3>
+<p>272/319 (85.3%) on the <code>fixed_size_sampled_320</code> set (20 images/class; one row unscored). The 320-image set is far noisier than the curated 158 — the same v10 prompt that reaches 97.5% on the archive set lands at 85.3% here. Errors spread across 24 distinct confusion pairs; no single class dominates. The biggest buckets are <code>letter → memo</code> (5) and <code>scientific_report → form</code> (5) — mostly TO:/FROM:/SUBJECT internal memos and filled analytical/QA data sheets that the v7+ cascade deliberately routes away from letter/scientific_report — plus <code>budget → form</code> (4), <code>specification → form</code> (4), and <code>invoice → budget</code> (3). All 11 <code>budget ↔︎ invoice</code> failures are covered by the same agency estimate / money-record / form-footer patterns that v11 (and v11.5) target.</p>
+</section>
+<section id="qwen3.7-flash-v10-smoke-run-full-set" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-v10-smoke-run-full-set">qwen3.7-flash v10 (smoke run, full set)</h3>
+<p>180/217 (82.9%) on the 239-row misclassification smoke set (<code>qwen_misclassification_smoke_v1_v11</code> — one image per v1-v11 miss, annotated with the source prompt version). The run was aborted before the final ~22 rows scored. 37 errors across just 5 confusion pairs:</p>
+<ul>
+<li><strong><code>invoice → budget</code> (20):</strong> dominated by the three agency-estimate documents v11 already fixes (<code>dav40c00</code> ESTIMATE CHANGE ORDER, <code>wce83f00</code> PRODUCTION ESTIMATE REPORT, <code>ynj47c00</code> NEWSPAPER ESTIMATE RECAP — repeated across source versions) plus <code>jow70f00</code> (B&amp;W payment VOUCHER for a grant). All are agency/vendor billing documents routed to the budget “planning” branch because v10’s wording lacks the estimate-vs-bill signals.</li>
+<li><strong><code>news_article → scientific_publication</code> (9):</strong> all the same image (<code>rcs96d00</code>, an Am J Epidemiol reprint with its own running head + volume + page + copyright), which is genuinely a published reprint under check 6; the smoke annotation flags it as a miss but the reasoning is defensible.</li>
+<li><strong><code>budget → form</code> (6):</strong> a <code>POLITICAL CAMPAIGN CONTRIBUTION REQUEST</code> (<code>usa07d00</code>, repeated across versions) and a <code>PRICE VALUE ESTIMATES</code> table (<code>acy93e00</code>) — money-only records whose form-layout footer (“FORM M01A”, field/approval blocks) pulled check 10 ahead of check 7.</li>
+<li><strong><code>budget → invoice</code> (1):</strong> <code>qia17d00</code>, a check stub whose stub columns are headed “INVOICE DATE/NO/AMOUNT” — already fixed by v11’s explicit stub rule.</li>
+<li><strong><code>form → presentation</code> (1):</strong> one-off.</li>
+</ul>
+<p>The smoke set confirms the v10→v11 estimate-vs-bill gap is the dominant budget/ invoice failure mode and shows the same budget→form money-record trap the 320 run exposes.</p>
+</section>
+<section id="gemini-2.5-flash-v3" class="level3">
+<h3 class="anchored" data-anchor-id="gemini-2.5-flash-v3">gemini-2.5-flash v3</h3>
+<p>123/159 (77.4%). Weakest: invoice 3/10, questionnaire 4/10, form 5/10, presentation 6/10, budget 6/10, resume 6/10. email/file_folder/handwritten/ memo/scientific_publication 10/10.</p>
+</section>
+<section id="gemini-2.5-flash-v4" class="level3">
+<h3 class="anchored" data-anchor-id="gemini-2.5-flash-v4">gemini-2.5-flash v4</h3>
+<p>122/157 (77.7%). Weakest: form 4/10, scientific_report 5/10, news_article 6/10, advertisement 6/10, budget 6/10. file_folder/email/handwritten 10/10.</p>
+</section>
+<section id="cross-model-note" class="level3">
+<h3 class="anchored" data-anchor-id="cross-model-note">Cross-model note</h3>
+<p>qwen3.7-flash with the same prompt family outperforms gemini-2.5-flash by a wide margin once the prompt reaches v7+ (91-97% vs 77%). qwen3.7-flash’s explicit forced reasoning (<code>reasoning.enabled + effort high</code>) produces a structured scratchpad that reliably follows the v7+ step cascade; gemini’s medium-effort reasoning is less controllable and does not hit the same disambiguation rules.</p>
+</section>
+</section>
+<section id="v11-qwen3.7-flash-estimate-vs-bill-rule" class="level2">
+<h2 class="anchored" data-anchor-id="v11-qwen3.7-flash-estimate-vs-bill-rule">v11 (qwen3.7-flash) — estimate vs bill rule</h2>
+<p>v11 = v10 + an estimate-vs-bill disambiguation for check 7 (FINANCIAL DOCUMENT), restoring the agency-estimate invoice coverage that v10 narrowed away:</p>
+<ul>
+<li><strong>Root cause:</strong> v10 rewrote the invoice bullet to “billing document for COMPLETED work … listing ACTUAL billable charges” and dropped the agency-estimate-change-order worked example that v8/v8.5/v9 taught. That made the model route three agency estimate documents to budget: <code>dav40c00</code> (“ESTIMATE CHANGE ORDER”, Walt Klein), <code>wce83f00</code> (“PRODUCTION ESTIMATE REPORT AC14”, Ted Bates), <code>ynj47c00</code> (“NEWSPAPER ESTIMATE RECAP - PNO5”, Leo Burnett). All three were correct in v9 (invoice 10/10, budget 9/10).</li>
+<li><strong>Fix:</strong> invoice bullet restores the v9 wording (agency/vendor ESTIMATE documents with unit prices/amounts/totals are invoices) and adds concrete bill signals (“EST NO”, “REVISES EST”, “PRIOR ADJUSTMENTS”, “EST AMT LESS C/D”, original-vs-present estimate columns, “BILLING TYPE PROGRESSIVE”). The budget future-planning carve-out is narrowed to a pure planning recap with no billing apparatus (the <code>tqi16e00</code> “OUTDOOR ESTIMATE RECAP” bus-shelter case stays budget) and now explicitly keeps check stubs budget even when the stub columns are headed “INVOICE DATE/NO/AMOUNT” (the <code>qia17d00</code> case). A 4th worked example teaches the estimate-change-order→invoice case.</li>
+<li><strong>Expected effect:</strong> v10’s 154/158 → 157/158 (fixes the 3 invoice→budget misses) while holding the <code>tqi16e00</code> and <code>qia17d00</code> budget cases.</li>
+</ul>
+<section id="v11-full-run-results" class="level3">
+<h3 class="anchored" data-anchor-id="v11-full-run-results">v11 full-run results</h3>
+<p>Three full v11 runs (reasoning enabled, effort=high) on Braintrust: <code>qwen3.7-flash_v11_reasoning_160</code>, <code>qwen3.7-flash_v11_reasoning_320</code>, and <code>qwen3.7-flash_v11_smoke_full</code>. Full reports (report markdown, per-class chart, confusion matrix PNG/markdown, misclassification reasoning traces) live in <code>reports/</code>.</p>
+<section id="v11-on-the-160-image-fixed_size_sampled-qwen3.7-flash_v11_reasoning_160" class="level4">
+<h4 class="anchored" data-anchor-id="v11-on-the-160-image-fixed_size_sampled-qwen3.7-flash_v11_reasoning_160">v11 on the 160-image <code>fixed_size_sampled</code> — <code>qwen3.7-flash_v11_reasoning_160</code></h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>98.7%</strong> (156/158)</td>
+</tr>
+</tbody>
+</table>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+<th></th>
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>advertisement</td>
+<td style="text-align: right;">9/9</td>
+<td></td>
+<td>news_article</td>
+<td style="text-align: right;">9/9</td>
+</tr>
+<tr class="even">
+<td>budget</td>
+<td style="text-align: right;">9/10</td>
+<td></td>
+<td>presentation</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="odd">
+<td>email</td>
+<td style="text-align: right;">9/9</td>
+<td></td>
+<td>questionnaire</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="even">
+<td>file_folder</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>resume</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="odd">
+<td>form</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>scientific_publication</td>
+<td style="text-align: right;">11/11</td>
+</tr>
+<tr class="even">
+<td>handwritten</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>scientific_report</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="odd">
+<td>invoice</td>
+<td style="text-align: right;">9/10</td>
+<td></td>
+<td>specification</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+<tr class="even">
+<td>letter</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>memo</td>
+<td style="text-align: right;">10/10</td>
+</tr>
+</tbody>
+</table>
+<p>v11 improves v10’s 154/158 → 156/158 (+1.3pp) and cuts the residual <code>invoice ↔︎ budget</code> errors from 4 to 2. Only 2 misses remain, both in the agency-estimate/billing space v11 targets:</p>
+<ul>
+<li><strong><code>jow70f00</code> — invoice → budget:</strong> a “BROWN &amp; WILL FARSON TOBACCO CORPORATION VOUCHER” for a $278,000 “Final contribution for grant” to The Franklin Institute. The model routes it to budget as an internal contribution/disbursement record (“money-only records … whose whole content is an amount” → budget). This is the one voucher case v11 does NOT fix — the grant payment is genuinely ambiguous between a vendor bill and an internal disbursement.</li>
+<li><strong><code>tqi16e00</code> — budget → invoice:</strong> the “OUTDOOR ESTIMATE RECAP - ODO1(S)” bus-shelter planning recap that v11’s carve-out explicitly keeps budget. The model still triggers the invoice rule on the “EST NO: 4155” line and the GROSS AMOUNT / GROSS CHANGE columns, even though it only plans future placements. The carve-out text needs to be stronger against an estimate number + comparison columns on an otherwise planning-only recap.</li>
+</ul>
+<p>No other classes regressed — letter, memo, file_folder, presentation, questionnaire all hold at 10/10.</p>
+</section>
+<section id="v11-on-the-320-image-fixed_size_sampled_320-qwen3.7-flash_v11_reasoning_320" class="level4">
+<h4 class="anchored" data-anchor-id="v11-on-the-320-image-fixed_size_sampled_320-qwen3.7-flash_v11_reasoning_320">v11 on the 320-image <code>fixed_size_sampled_320</code> — <code>qwen3.7-flash_v11_reasoning_320</code></h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>83.9%</strong> (266/317)</td>
+</tr>
+</tbody>
+</table>
+<p>Per-class (20/class; 3 news_article rows unscored):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+<th></th>
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>advertisement</td>
+<td style="text-align: right;">18/20</td>
+<td></td>
+<td>news_article</td>
+<td style="text-align: right;">15/17</td>
+</tr>
+<tr class="even">
+<td>budget</td>
+<td style="text-align: right;">13/20</td>
+<td></td>
+<td>presentation</td>
+<td style="text-align: right;">14/20</td>
+</tr>
+<tr class="odd">
+<td>email</td>
+<td style="text-align: right;">20/20</td>
+<td></td>
+<td>questionnaire</td>
+<td style="text-align: right;">17/20</td>
+</tr>
+<tr class="even">
+<td>file_folder</td>
+<td style="text-align: right;">18/20</td>
+<td></td>
+<td>resume</td>
+<td style="text-align: right;">20/20</td>
+</tr>
+<tr class="odd">
+<td>form</td>
+<td style="text-align: right;">14/20</td>
+<td></td>
+<td>scientific_publication</td>
+<td style="text-align: right;">18/20</td>
+</tr>
+<tr class="even">
+<td>handwritten</td>
+<td style="text-align: right;">19/20</td>
+<td></td>
+<td>scientific_report</td>
+<td style="text-align: right;">16/20</td>
+</tr>
+<tr class="odd">
+<td>invoice</td>
+<td style="text-align: right;">15/20</td>
+<td></td>
+<td>specification</td>
+<td style="text-align: right;">15/20</td>
+</tr>
+<tr class="even">
+<td>letter</td>
+<td style="text-align: right;">15/20</td>
+<td></td>
+<td>memo</td>
+<td style="text-align: right;">19/20</td>
+</tr>
+</tbody>
+</table>
+<p>v11 on the noisy 320 set is 83.9% vs v10’s 85.3% (−1.4pp) — a small regression on the same set, so the estimate-vs-bill tightening helps the curated archive set but does not transfer to the noisier 320 sample. Errors spread across many confusion pairs; the largest buckets (report filters 3 errored + 2 empty-output rows, 315 analyzed):</p>
+<ul>
+<li><strong><code>letter → memo</code> (5):</strong> TO:/FROM:/SUBJECT internal memos and correspondence the v7+ cascade routes away from letter.</li>
+<li><strong><code>specification → form</code> (5), <code>scientific_report → form</code> (3), <code>budget → form</code> (4), <code>invoice → form</code> (3), <code>presentation → form</code> (3):</strong> filled analytical/QA data sheets, labeled charts/tables, and money records whose form-layout footer (fields, approval blocks) pulls check 10 ahead of checks 7/8/9/13. <code>form</code> remains the biggest over-prediction sink on this set.</li>
+<li><strong><code>invoice ↔︎ budget</code> (4 combined), <code>budget → invoice</code> (2), plus singles</strong> — the residual agency-estimate/billing ambiguities.</li>
+</ul>
+</section>
+<section id="v11-on-the-misclassification-smoke-set-qwen3.7-flash_v11_smoke_full" class="level4">
+<h4 class="anchored" data-anchor-id="v11-on-the-misclassification-smoke-set-qwen3.7-flash_v11_smoke_full">v11 on the misclassification smoke set — <code>qwen3.7-flash_v11_smoke_full</code></h4>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>87.8%</strong> (209/238)</td>
+</tr>
+</tbody>
+</table>
+<p>Per-class (one image per v1–v11 miss; 1 row unscored, email absent):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+<th></th>
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>advertisement</td>
+<td style="text-align: right;">10/10</td>
+<td></td>
+<td>news_article</td>
+<td style="text-align: right;">6/16</td>
+</tr>
+<tr class="even">
+<td>budget</td>
+<td style="text-align: right;">29/39</td>
+<td></td>
+<td>presentation</td>
+<td style="text-align: right;">25/25</td>
+</tr>
+<tr class="odd">
+<td>file_folder</td>
+<td style="text-align: right;">7/7</td>
+<td></td>
+<td>questionnaire</td>
+<td style="text-align: right;">24/24</td>
+</tr>
+<tr class="even">
+<td>form</td>
+<td style="text-align: right;">16/17</td>
+<td></td>
+<td>resume</td>
+<td style="text-align: right;">7/7</td>
+</tr>
+<tr class="odd">
+<td>handwritten</td>
+<td style="text-align: right;">13/13</td>
+<td></td>
+<td>scientific_publication</td>
+<td style="text-align: right;">6/6</td>
+</tr>
+<tr class="even">
+<td>invoice</td>
+<td style="text-align: right;">34/40</td>
+<td></td>
+<td>scientific_report</td>
+<td style="text-align: right;">22/22</td>
+</tr>
+<tr class="odd">
+<td>letter</td>
+<td style="text-align: right;">2/4</td>
+<td></td>
+<td>specification</td>
+<td style="text-align: right;">1/1</td>
+</tr>
+<tr class="even">
+<td>memo</td>
+<td style="text-align: right;">7/7</td>
+<td></td>
+<td>email</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>v11 smoke = 87.8% (209/238) vs v10 smoke 82.9% (180/217, aborted) — the estimate-vs-bill fix clears most of the invoice→budget bucket (20 → 6), the dominant v10 failure. Remaining 29 errors across 6 pairs:</p>
+<ul>
+<li><strong><code>news_article → scientific_publication</code> (10):</strong> all the <code>rcs96d00</code> Am J Epidemiol reprint (repeated across source versions). A genuine published reprint under check 6 — flagged as a miss by the smoke annotations, but the prediction is defensible.</li>
+<li><strong><code>budget → form</code> (6):</strong> money-only records (<code>usa07d00</code> POLITICAL CAMPAIGN CONTRIBUTION REQUEST, <code>acy93e00</code> PRICE VALUE ESTIMATES) whose form-layout footer pulls check 10 ahead of check 7 — the same money-record trap the 320 run exposes.</li>
+<li><strong><code>invoice → budget</code> (6):</strong> residual agency/vendor billing documents (<code>dav40c00</code>, <code>wce83f00</code>, <code>ynj47c00</code> still flip for some source versions) plus <code>jow70f00</code> (the B&amp;W grant VOUCHER, also v11’s one 160-set miss).</li>
+<li><strong><code>budget → invoice</code> (4):</strong> the <code>tqi16e00</code> OUTDOOR ESTIMATE RECAP carve-out case (also v11’s one 160-set miss), plus check-stub cases.</li>
+<li><strong><code>letter → memo</code> (2), <code>form → presentation</code> (1):</strong> one-off residuals.</li>
+</ul>
+<p>Net: v11 is the best qwen result on the curated archive set (98.7%), fixes most of the estimate-vs-bill smoke bucket, and the two remaining 160-set misses (<code>jow70f00</code>, <code>tqi16e00</code>) are precisely the edge cases the next prompt version should target.</p>
+<hr>
+</section>
+</section>
+</section>
+<section id="v11.7-qwen3.7-flash-minimal-edit-set-d-a-b" class="level2">
+<h2 class="anchored" data-anchor-id="v11.7-qwen3.7-flash-minimal-edit-set-d-a-b">v11.7 (qwen3.7-flash) — minimal edit set D + A + B</h2>
+<p>v11.7 = v11.6 + a deliberately minimal 3-edit set (D, A, B — C and E skipped to reduce regression risk):</p>
+<ul>
+<li><strong>Edit D</strong> — check 7 structural split between voucher/check-stub (budget) and vendor billing with amounts/totals (invoice).</li>
+<li><strong>Edit A</strong> — check 8 adds: a labeled product/parameter rate-data chart (rates/units per product or parameter) is a specification.</li>
+<li><strong>Edit B</strong> — check 10 adds a standalone-chart carve-out: a financial/money chart with no other document signals is budget; an unlabeled standalone chart/table is a presentation slide.</li>
+</ul>
+<section id="v11.7-full-run-results" class="level3">
+<h3 class="anchored" data-anchor-id="v11.7-full-run-results">v11.7 full-run results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Run</th>
+<th style="text-align: right;">Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>160-image <code>qwen3.7-flash_v11_7_reasoning_160</code></td>
+<td style="text-align: right;"><strong>98.1%</strong> (156/159)</td>
+</tr>
+<tr class="even">
+<td>56-row eval <code>qwen3.7-flash_v11_7_eval</code></td>
+<td style="text-align: right;"><strong>35.7%</strong> (20/56)</td>
+</tr>
+</tbody>
+</table>
+<p>v11.7 is the first 16-class prompt to exceed 35% on the eval set (v11.5 = 16/56, v11.6 = 17/56). Its 3 misses on the 160 set:</p>
+<ul>
+<li><strong><code>yvp54d00</code> — form → budget:</strong> a “MILWAUKEE ADVERTISING CLUB” document requesting authorization of $690,000; the budget money-only rule catches the bare figure.</li>
+<li><strong><code>cpt85d00</code> — letter → memo:</strong> correspondence to “Mr.&nbsp;T. E. Sandefur”; the by-name + no-TO:/FROM: pattern routes it to memo.</li>
+<li><strong><code>tqi16e00</code> — budget → invoice:</strong> the OUTDOOR ESTIMATE RECAP bus-shelter planning recap (also a v11 miss).</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="v11.8-qwen3.7-flash-fix-1-form-vs-budget-authorization-fix-2-memo-vs-letter" class="level2">
+<h2 class="anchored" data-anchor-id="v11.8-qwen3.7-flash-fix-1-form-vs-budget-authorization-fix-2-memo-vs-letter">v11.8 (qwen3.7-flash) — Fix 1 (form-vs-budget authorization) + Fix 2 (memo-vs-letter)</h2>
+<p>v11.8 = v11.7 + two targeted fixes for the 160-set’s remaining misses:</p>
+<ul>
+<li><strong>Fix 1</strong> — budget money-only clause narrowed to <em>bare amount-only requests</em> only; a document carrying an explicit “AUTHORIZATION REQUEST” for funds is a form (fixes <code>yvp54d00</code>).</li>
+<li><strong>Fix 2</strong> — memo-vs-letter: a by-name memo requires an explicit INTERNAL TITLE/DIVISION; a bare honorific + name external addressee is a letter (fixes <code>cpt85d00</code>).</li>
+</ul>
+<section id="v11.8-highlights-best-result-on-the-curated-archive-set" class="level3">
+<h3 class="anchored" data-anchor-id="v11.8-highlights-best-result-on-the-curated-archive-set">v11.8 highlights — best result on the curated archive set</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Run</th>
+<th style="text-align: right;">Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>160-image <code>qwen3.7-flash_v11_8_reasoning_160</code></td>
+<td style="text-align: right;"><strong>99.4%</strong> (157/158)</td>
+</tr>
+<tr class="even">
+<td>56-row eval <code>qwen3.7-flash_v11_8_eval</code></td>
+<td style="text-align: right;"><strong>32.1%</strong> (18/56)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>160-set: 157/158 (99.4%) — best ever.</strong> All three v11.7 misses fixed:</p>
+<ul>
+<li><code>yvp54d00</code> form→budget → <strong>form</strong> ✓ (AUTHORIZATION REQUEST $690,000)</li>
+<li><code>cpt85d00</code> letter→memo → <strong>letter</strong> ✓ (“Mr.&nbsp;T. E. Sandefur”)</li>
+<li><code>tqi16e00</code> budget→invoice → <strong>budget</strong> ✓ (OUTDOOR ESTIMATE RECAP)</li>
+</ul>
+<p>Invoice held at 10/10. The only remaining miss is <code>jed71e00</code> (form → presentation).</p>
+<p><strong>56-row eval: 18/56 — regression vs v11.7’s 20/56</strong>, but the two recovered rows confirm both fixes transfer:</p>
+<ul>
+<li>✓ <code>rvl_cdip__form__0005.png</code> — form → invoice → <strong>form</strong> (Fix 1)</li>
+<li>✓ <code>rvl_cdip__specification__0019.png</code> — spec → form → <strong>spec</strong></li>
+</ul>
+<p>The four eval regressions (all downstream of Edit B’s carve-out and Fix 1):</p>
+<ul>
+<li>✗ <code>rvl_cdip__presentation__0001.png</code>, <code>rvl_cdip__presentation__0011.png</code> — presentation → budget: titled, designed deck charts routed to budget by Edit B’s “financial/money chart is budget” rule (check 10) ahead of check 9.</li>
+<li>✗ <code>rvl_cdip__specification__0017.png</code> — spec → form.</li>
+<li>✗ <code>jed71e00</code> — form → presentation (the same image that is the 160-set’s one miss).</li>
+</ul>
+<p>5 <code>letter → memo</code> eval misses are unchanged (gold-labeled literal TO:/FROM: memo-header letters; pre-existing since v11.5 — Fix 2 only targeted bare-name external addressees).</p>
+<hr>
+</section>
+</section>
+<section id="v11.9-qwen3.7-flash-narrow-edit-bs-financial-chartbudget-carve-out" class="level2">
+<h2 class="anchored" data-anchor-id="v11.9-qwen3.7-flash-narrow-edit-bs-financial-chartbudget-carve-out">v11.9 (qwen3.7-flash) — narrow Edit B’s financial-chart→budget carve-out</h2>
+<p>v11.9 = v11.8 + three edits that narrow Edit B so titled/designed deck charts no longer fall into budget:</p>
+<ul>
+<li><strong>Edit 1</strong> — check 10 carve-out narrowed: a product/parameter rate-data chart → specification; a research/measurement chart → scientific_report; a financial/money chart → budget <strong>only when it is a standalone data table used for money planning or tracking</strong>; a titled, designed deck chart stays presentation (check 9).</li>
+<li><strong>Edit 2</strong> — check 9 hardened: a titled/designed deck chart IS a presentation slide; don’t route it to budget.</li>
+<li><strong>Edit 3</strong> — calibration line: deck charts → presentation, product/parameter charts → specification.</li>
+</ul>
+<section id="v11.9-full-run-results" class="level3">
+<h3 class="anchored" data-anchor-id="v11.9-full-run-results">v11.9 full-run results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Run</th>
+<th style="text-align: right;">Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>56-row eval <code>qwen3.7-flash_v11_9_eval</code></td>
+<td style="text-align: right;"><strong>35.7%</strong> (20/56)</td>
+</tr>
+</tbody>
+</table>
+<p>Ties v11.7’s best eval score and is +2 over v11.8’s 18/56. The two presentation→budget regressions introduced by Edit B in v11.8 are recovered, plus two bonus fixes:</p>
+<ul>
+<li>✓ <code>rvl_cdip__presentation__0001.png</code> — presentation → budget → <strong>presentation</strong></li>
+<li>✓ <code>rvl_cdip__presentation__0011.png</code> — presentation → budget → <strong>presentation</strong></li>
+<li>✓ <code>test_imagesj_j_e_d_jed71e00...</code> — form → presentation → <strong>form</strong> (this is also the one remaining 160-set miss in v11.8)</li>
+<li>✓ <code>rvl_cdip__questionnaire__0016.png</code> — questionnaire → handwritten → <strong>questionnaire</strong></li>
+</ul>
+<p>Two rows regressed against v11.8:</p>
+<ul>
+<li>✗ <code>rvl_cdip__form__0005.png</code> — form → invoice (a Fix-1 success in v11.8, lost in v11.9)</li>
+<li>✗ <code>rvl_cdip__news_article__0008.png</code> — news_article → memo (new miss; was correct in v11.7 and v11.8)</li>
+</ul>
+<p>Three rows remain misses but shifted prediction: <code>advertisement__0015</code> (form→handwritten), <code>presentation__0013</code> (memo→letter), <code>scientific_report__0016</code> (specification→form). The 5 <code>letter → memo</code> eval misses are unchanged. <strong>v11.9 recovers the Edit B presentation regression while holding v11.8’s 160-set fix, so the next eval benchmark is the 480-image run (queued) to confirm the generalization holds.</strong></p>
+</section>
+<section id="v11.8-on-the-320-image-set-qwen3.7-flash_v11_8_reasoning_320" class="level3">
+<h3 class="anchored" data-anchor-id="v11.8-on-the-320-image-set-qwen3.7-flash_v11_8_reasoning_320">v11.8 on the 320-image set — <code>qwen3.7-flash_v11_8_reasoning_320</code></h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>87.2%</strong> (279/320)</td>
+</tr>
+</tbody>
+</table>
+<p>Per-class (20/class):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+<th></th>
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>advertisement</td>
+<td style="text-align: right;">18/20</td>
+<td></td>
+<td>news_article</td>
+<td style="text-align: right;">18/20</td>
+</tr>
+<tr class="even">
+<td>budget</td>
+<td style="text-align: right;">16/20</td>
+<td></td>
+<td>presentation</td>
+<td style="text-align: right;">16/20</td>
+</tr>
+<tr class="odd">
+<td>email</td>
+<td style="text-align: right;">20/20</td>
+<td></td>
+<td>questionnaire</td>
+<td style="text-align: right;">17/20</td>
+</tr>
+<tr class="even">
+<td>file_folder</td>
+<td style="text-align: right;">17/20</td>
+<td></td>
+<td>resume</td>
+<td style="text-align: right;">20/20</td>
+</tr>
+<tr class="odd">
+<td>form</td>
+<td style="text-align: right;">17/20</td>
+<td></td>
+<td>scientific_publication</td>
+<td style="text-align: right;">17/20</td>
+</tr>
+<tr class="even">
+<td>handwritten</td>
+<td style="text-align: right;">18/20</td>
+<td></td>
+<td>scientific_report</td>
+<td style="text-align: right;">16/20</td>
+</tr>
+<tr class="odd">
+<td>invoice</td>
+<td style="text-align: right;">16/20</td>
+<td></td>
+<td>specification</td>
+<td style="text-align: right;">18/20</td>
+</tr>
+<tr class="even">
+<td>letter</td>
+<td style="text-align: right;">15/20</td>
+<td></td>
+<td>memo</td>
+<td style="text-align: right;">20/20</td>
+</tr>
+</tbody>
+</table>
+<p>v11.8 on the noisy 320 set is 87.2% vs v11’s 83.9% (+3.3pp) — strong generalization of the 160-set improvement. Biggest per-class gains:</p>
+<ul>
+<li><strong>budget</strong> 13/20 → 16/20 (+3)</li>
+<li><strong>form</strong> 14/20 → 17/20 (+3)</li>
+<li><strong>specification</strong> 15/20 → 18/20 (+3)</li>
+<li><strong>presentation</strong> 14/20 → 16/20 (+2)</li>
+<li><strong>invoice</strong> 15/20 → 16/20 (+1), <strong>memo</strong> 19/20 → 20/20 (+1)</li>
+</ul>
+<p>Small losses: <strong>file_folder</strong> 18/20 → 17/20 (−1), <strong>handwritten</strong> 19/20 → 18/20 (−1), <strong>scientific_publication</strong> 18/20 → 17/20 (−1).</p>
+</section>
+<section id="v11.8-on-the-480-image-set-qwen3.7-flash_v11_8_reasoning_480" class="level3">
+<h3 class="anchored" data-anchor-id="v11.8-on-the-480-image-set-qwen3.7-flash_v11_8_reasoning_480">v11.8 on the 480-image set — <code>qwen3.7-flash_v11_8_reasoning_480</code></h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>89.1%</strong> (424/476)</td>
+</tr>
+</tbody>
+</table>
+<p>Per-class (30/class; 4 rows unscored):</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+<th></th>
+<th>Class</th>
+<th style="text-align: right;">Correct/Total</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>advertisement</td>
+<td style="text-align: right;">26/29</td>
+<td></td>
+<td>news_article</td>
+<td style="text-align: right;">27/29</td>
+</tr>
+<tr class="even">
+<td>budget</td>
+<td style="text-align: right;">27/30</td>
+<td></td>
+<td>presentation</td>
+<td style="text-align: right;">25/30</td>
+</tr>
+<tr class="odd">
+<td>email</td>
+<td style="text-align: right;">28/29</td>
+<td></td>
+<td>questionnaire</td>
+<td style="text-align: right;">28/30</td>
+</tr>
+<tr class="even">
+<td>file_folder</td>
+<td style="text-align: right;">26/30</td>
+<td></td>
+<td>resume</td>
+<td style="text-align: right;">29/32</td>
+</tr>
+<tr class="odd">
+<td>form</td>
+<td style="text-align: right;">27/30</td>
+<td></td>
+<td>scientific_publication</td>
+<td style="text-align: right;">27/30</td>
+</tr>
+<tr class="even">
+<td>handwritten</td>
+<td style="text-align: right;">27/30</td>
+<td></td>
+<td>scientific_report</td>
+<td style="text-align: right;">24/30</td>
+</tr>
+<tr class="odd">
+<td>invoice</td>
+<td style="text-align: right;">24/30</td>
+<td></td>
+<td>specification</td>
+<td style="text-align: right;">27/30</td>
+</tr>
+<tr class="even">
+<td>letter</td>
+<td style="text-align: right;">23/30</td>
+<td></td>
+<td>memo</td>
+<td style="text-align: right;">29/30</td>
+</tr>
+</tbody>
+</table>
+<p>This is the first run on the 480 set (no v11 baseline). The 89.1% score holds up well given the larger, noisier sample. Biggest miss buckets:</p>
+<ul>
+<li><strong>letter → memo (7):</strong> the persistent v11.5+ TO:/FROM: memo-header issue</li>
+<li><strong>invoice → form (4), scientific_report → form (3):</strong> form-layout pull</li>
+<li><strong>budget → invoice (3), invoice → budget (2):</strong> residual estimate/billing</li>
+<li><strong>advertisement → presentation (3):</strong> labeled chart routing</li>
+<li><strong>presentation → scientific_report (2), presentation → file_folder (2):</strong> deck-chart misrouting</li>
+</ul>
+<hr>
+</section>
+</section>
+<section id="new-evaluation-assets-and-v13" class="level2">
+<h2 class="anchored" data-anchor-id="new-evaluation-assets-and-v13">New Evaluation Assets and v13</h2>
+<ul>
+<li>Built <code>fixed_size_sampled_v2</code>: a fresh balanced 160-image slice from <code>jordyvl/rvl_cdip_100_examples_per_class</code>, sampled with seed <code>1738</code> (10 images per class, 1024x1024 padded grayscale PNGs at 300 DPI). The slice has 160 unique filenames and zero pixel-hash overlap with both <code>fixed_size_sampled</code> and <code>fixed_size_sampled_480</code>.</li>
+<li>Built and uploaded <code>qwen_v115_v12_eval</code>: the deduplicated union of failed rows from the v11.5, v11.6, v11.7, v11.7 reasoning, v12, and v12 reasoning evaluations. It contains 52 unique rows; each row retains the expected class, prior predictions, source versions, and capped reasoning traces.</li>
+<li>Standing prompt requirement: future prompt changes must address the recurring <code>scientific_publication</code> / <code>scientific_report</code> confusions, especially specialist periodical pages misread as <code>news_article</code> and research-lab records misread as <code>form</code>, while preserving v11.9’s financial-chart and correspondence safeguards.</li>
+<li>Added <code>PROMPT_V13</code> as a focused derivative of v11.9. It broadens <code>scientific_publication</code> to specialist science/medical/technical periodicals, routes identifiable research-lab records to <code>scientific_report</code> rather than generic <code>form</code>, and keeps product documentation in <code>specification</code>. It also narrows future-spend budget handling and preserves the explicit internal title/division requirement for by-name memos.</li>
+<li>Queued <code>qwen3.7-flash_v11_9_reasoning_160_v2</code> on <code>fixed_size_sampled_v2</code>, serialized behind the in-flight v11.8 320-image run. After it completes, the queue runs <code>qwen3.7-flash_v13_reasoning_160</code> on <code>fixed_size_sampled</code> and <code>qwen3.7-flash_v13_hard_eval</code> on <code>qwen_v115_v12_eval</code>; result logs are <code>reports/eval_160_v2_v11_9.log</code>, <code>reports/eval_160_v13.log</code>, and <code>reports/eval_hard_v13.log</code>.</li>
+</ul>
+<hr>
+</section>
+<section id="cross-model-v11.8-runs-temperaturereasoning-sweep-on-fixed_size_sampled-v1" class="level2">
+<h2 class="anchored" data-anchor-id="cross-model-v11.8-runs-temperaturereasoning-sweep-on-fixed_size_sampled-v1">Cross-model v11.8 runs — temperature/reasoning sweep on <code>fixed_size_sampled</code> (v1)</h2>
+<p>Three additional v11.8 runs on the original 160-image <code>fixed_size_sampled</code> slice plus one retroactive run on the 52-row <code>qwen_v12_retroactive_eval</code> slice. All runs use the v11.8 prompt; reasoning is set to each model family’s maximum effort (qwen <code>high</code>, kimi <code>xhigh</code>, gemini <code>max</code>).</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 24%">
+<col style="width: 16%">
+<col style="width: 18%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Run</th>
+<th>Dataset</th>
+<th style="text-align: right;">Temp</th>
+<th>Model</th>
+<th style="text-align: right;">Accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>qwen3.7-flash_v11_8_reasoning_160_t0_3</code></td>
+<td>fixed_size_sampled</td>
+<td style="text-align: right;">0.3</td>
+<td>qwen3.7-flash</td>
+<td style="text-align: right;"><strong>98.7%</strong> (157/159)</td>
+</tr>
+<tr class="even">
+<td><code>qwen3.5-35b-a3b_v11_8_reasoning_160</code></td>
+<td>fixed_size_sampled</td>
+<td style="text-align: right;">0.1</td>
+<td>qwen3.5-35b-a3b</td>
+<td style="text-align: right;"><strong>98.7%</strong> (155/157)</td>
+</tr>
+<tr class="odd">
+<td><code>qwen3.5-35b-a3b_v11_8_reasoning_v12retro</code></td>
+<td>qwen_v12_retroactive_eval</td>
+<td style="text-align: right;">0.1</td>
+<td>qwen3.5-35b-a3b</td>
+<td style="text-align: right;">30.8% (16/52)</td>
+</tr>
+<tr class="even">
+<td><code>kimi-k2.6_v11_8_reasoning_160</code></td>
+<td>fixed_size_sampled</td>
+<td style="text-align: right;">0.1</td>
+<td>kimi-k2.6</td>
+<td style="text-align: right;">aborted (network outage)</td>
+</tr>
+<tr class="odd">
+<td><code>gemini-2.5-flash-lite_v11_8_reasoning_160</code></td>
+<td>fixed_size_sampled</td>
+<td style="text-align: right;">0.2</td>
+<td>gemini-2.5-flash-lite</td>
+<td style="text-align: right;"><strong>86.9%</strong> (139/160)</td>
+</tr>
+</tbody>
+</table>
+<section id="qwen3.7-flash-at-temperature-0.3-qwen3.7-flash_v11_8_reasoning_160_t0_3" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.7-flash-at-temperature-0.3-qwen3.7-flash_v11_8_reasoning_160_t0_3">qwen3.7-flash at temperature 0.3 — <code>qwen3.7-flash_v11_8_reasoning_160_t0_3</code></h3>
+<p>Baseline comparison: v11.8 at temp 0.1 scored 157/158 (99.4%) on this slice. At temp 0.3 the run scores <strong>157/159 (98.7%)</strong> with one row failing to produce content (<code>wat19d00</code>, no usable output after retries). Both remaining misses are pre-existing v11.7-era rows:</p>
+<ul>
+<li>✗ <code>jed71e00</code> — form → presentation (the long-standing deck-chart miss; also v11.8’s only 160-set miss at temp 0.1)</li>
+<li>✗ <code>tqi16e00</code> — budget → invoice (OUTDOOR ESTIMATE RECAP; was fixed by v11.7/v11.8 at temp 0.1, regressed back at 0.3)</li>
+</ul>
+<p>So temperature 0.3 costs one regression on the budget/invoice boundary without recovering <code>jed71e00</code>; net −0.7pp vs temp 0.1 on scored rows.</p>
+</section>
+<section id="qwen3.5-35b-a3b-max-reasoning-qwen3.5-35b-a3b_v11_8_reasoning_160" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.5-35b-a3b-max-reasoning-qwen3.5-35b-a3b_v11_8_reasoning_160">qwen3.5-35b-a3b (max reasoning) — <code>qwen3.5-35b-a3b_v11_8_reasoning_160</code></h3>
+<p>First run of the hybrid-reasoning Qwen3.5-35B-A3B on this slice: <strong>155/157 (98.7%)</strong>, three rows failed to produce usable content (<code>mvr50f00</code>, <code>iby31c00</code>, <code>umv76d00</code> — Qwen3.5 burns long reasoning traces; retries grew max_tokens to 16k but still capped). Misses:</p>
+<ul>
+<li>✗ <code>jed71e00</code> — form → presentation (same recurring miss)</li>
+<li>✗ <code>noz90d00</code> — form → advertisement (new single error for this model)</li>
+</ul>
+</section>
+<section id="qwen3.5-35b-a3b-on-the-v12-retroactive-slice-qwen3.5-35b-a3b_v11_8_reasoning_v12retro" class="level3">
+<h3 class="anchored" data-anchor-id="qwen3.5-35b-a3b-on-the-v12-retroactive-slice-qwen3.5-35b-a3b_v11_8_reasoning_v12retro">qwen3.5-35b-a3b on the v12 retroactive slice — <code>qwen3.5-35b-a3b_v11_8_reasoning_v12retro</code></h3>
+<p>On the 52-row <code>qwen_v12_retroactive_eval</code> slice (all rows previously misclassified by v12), qwen3.5-35b-a3b with v11.8 scores <strong>16/52 (30.8%)</strong>. Five rows errored with <code>finish_reason=length</code> (<code>rvl_cdip__form__0005.png</code>, <code>rvl_cdip__invoice__0006.png</code>, <code>rvl_cdip__presentation__0011.png</code>, <code>rvl_cdip__questionnaire__0005.png</code>, <code>rvl_cdip__scientific_report__0016.png</code>). Notable: this slice is hard by construction (every row is a known v12 miss), so the low absolute score is expected; the top confusion buckets are letter → memo (5), scientific_report → form (4), budget/invoice and file_folder/presentation pairs (2 each).</p>
+<p>Full per-run artifacts: <code>reports/report_*_v11_8_*.md</code>, <code>reports/confusion_matrix_*_v11_8_*.{md,png}</code>, <code>reports/misclassification_reasoning_*_v11_8_*.md</code>, <code>reports/per_class_accuracy_*_v11_8_*.png</code>.</p>
+</section>
+<section id="gemini-2.5-flash-lite-max-reasoning-gemini-2.5-flash-lite_v11_8_reasoning_160" class="level3">
+<h3 class="anchored" data-anchor-id="gemini-2.5-flash-lite-max-reasoning-gemini-2.5-flash-lite_v11_8_reasoning_160">gemini-2.5-flash-lite (max reasoning) — <code>gemini-2.5-flash-lite_v11_8_reasoning_160</code></h3>
+<p>Completed at <strong>139/160 (86.9%)</strong>, temperature 0.2, <code>reasoning.effort=max</code>. Notable: it is the only one of the v11.8 runs with zero failed/empty rows. The miss profile is different from the qwen family — heavy <code>→ specification</code> pull (memo 3, form 2, handwritten/letter/scientific_report 1 each) plus <code>scientific_publication → scientific_report</code> (2) and <code>budget → invoice</code> (2). The <code>jed71e00</code> (form → presentation) miss that every qwen run made was NOT missed by gemini.</p>
+</section>
+<section id="kimi-k2.6-xhigh-reasoning-kimi-k2.6_v11_8_reasoning_160-aborted" class="level3">
+<h3 class="anchored" data-anchor-id="kimi-k2.6-xhigh-reasoning-kimi-k2.6_v11_8_reasoning_160-aborted">kimi-k2.6 (xhigh reasoning) — <code>kimi-k2.6_v11_8_reasoning_160</code> (aborted)</h3>
+<p>Run was aborted mid-flight (~109/160 completed) due to a transient DNS/network outage against <code>api.braintrust.dev</code> that crashed the Braintrust logging thread (no usable result row). The manifest (<code>reports/manifests/eval_v11_8_kimi.jsonl</code>) preserves the completed rows if a rerun is wanted; the experiment in Braintrust is partial and should not be used for comparisons.</p>
+<hr>
+</section>
+</section>
+<section id="experiment-googlegemini-2.5-flash-480-images-30-per-class-16-classes" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-googlegemini-2.5-flash-480-images-30-per-class-16-classes">Experiment: <code>google/gemini-2.5-flash</code> — 480 Images (30 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> qwen3.7-flash_v0_reasoning_480-d4c97ff0 <strong>Dataset:</strong> 2550×3300 padded PNGs, 300 DPI <strong>Prompt:</strong> <code>CLASSIFICATION_PROMPT</code> from <code>src/openrouter_classifier.py</code> <strong>Settings:</strong> <code>max_tokens=1024</code>, <code>temperature=0.1</code>, <code>reasoning.effort=medium</code> <strong>Image size:</strong> <code>2550×3300</code></p>
+<section id="results-5" class="level3">
+<h3 class="anchored" data-anchor-id="results-5">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>69.17%</strong> (332/480 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">1,262.68</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">3,027.66</td>
+</tr>
+<tr class="odd">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">4,290.33</td>
+</tr>
+<tr class="even">
+<td>Duration (avg)</td>
+<td style="text-align: right;">0.00s</td>
+</tr>
+<tr class="odd">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-3" class="level3">
+<h3 class="anchored" data-anchor-id="cost-projections-gemini-2.5-flash-max_tokens1024-25503300-images-3">Cost Projections (Gemini 2.5 Flash, <code>max_tokens=1024</code>, 2550×3300 images)</h3>
+<p><strong>Pricing:</strong> $0.15/M input tokens, $0.6/M output tokens</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+<col style="width: 16%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Prompt Tokens</th>
+<th style="text-align: right;">Completion Tokens</th>
+<th style="text-align: right;">Total Tokens</th>
+<th style="text-align: right;"><strong>Estimated Cost</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">1,010,140</td>
+<td style="text-align: right;">2,422,125</td>
+<td style="text-align: right;">3,432,266</td>
+<td style="text-align: right;"><strong>$1.60</strong></td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">31,566,898</td>
+<td style="text-align: right;">75,691,435</td>
+<td style="text-align: right;">107,258,333</td>
+<td style="text-align: right;"><strong>$50.15</strong></td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">404,056,296</td>
+<td style="text-align: right;">968,850,370</td>
+<td style="text-align: right;">1,372,906,666</td>
+<td style="text-align: right;"><strong>$641.92</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes">Experiment: <code>qwen/qwen3.7-flash</code> — 800 Images (50 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> qwen3.7-flash_v0_reasoning_800-f0b6b2e4 <strong>Dataset:</strong> rvl_cdip_800, 1024×1024 grayscale padded PNGs <strong>Prompt:</strong> <code>v0</code> from <code>src/prompts.py</code> <strong>Settings:</strong> <code>max_tokens=8192</code>, <code>temperature=0.1</code>, <code>reasoning.effort=high</code></p>
+<section id="results-6" class="level3">
+<h3 class="anchored" data-anchor-id="results-6">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>66.12%</strong> (529/800 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">741.1</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">0.0</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">1,552.1</td>
+</tr>
+<tr class="odd">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">2,293.1</td>
+</tr>
+<tr class="even">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cost-expected-vs-actual" class="level3">
+<h3 class="anchored" data-anchor-id="cost-expected-vs-actual">Cost — Expected vs Actual</h3>
+<p><strong>Pricing:</strong> $0.03/M input, $0.13/M output. Expected $0.1792 (list price × measured tokens); actual billed $0.1773 (+1.1%).</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Expected Cost</th>
+<th style="text-align: right;">Estimated Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">$0.18</td>
+<td style="text-align: right;">$0.18</td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">$5.60</td>
+<td style="text-align: right;">$5.54</td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">$71.68</td>
+<td style="text-align: right;">$70.92</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes-1" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-qwenqwen3.7-flash-800-images-50-per-class-16-classes-1">Experiment: <code>qwen/qwen3.7-flash</code> — 800 Images (50 per class × 16 classes)</h2>
+<p><strong>Experiment ID:</strong> qwen3.7-flash_v11.8_reasoning_800-f6f4648b <strong>Dataset:</strong> rvl_cdip_800, 1024×1024 grayscale padded PNGs <strong>Prompt:</strong> <code>v11.8</code> from <code>src/prompts.py</code> <strong>Settings:</strong> <code>max_tokens=8192</code>, <code>temperature=0.1</code>, <code>reasoning.effort=high</code></p>
+<section id="results-7" class="level3">
+<h3 class="anchored" data-anchor-id="results-7">Results</h3>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>Accuracy (exact_match)</strong></td>
+<td style="text-align: right;"><strong>83.12%</strong> (665/800 correct)</td>
+</tr>
+<tr class="even">
+<td>Prompt tokens (avg)</td>
+<td style="text-align: right;">11,986.0</td>
+</tr>
+<tr class="odd">
+<td>Prompt cached tokens (avg)</td>
+<td style="text-align: right;">7,325.6</td>
+</tr>
+<tr class="even">
+<td>Completion tokens (avg)</td>
+<td style="text-align: right;">1,906.5</td>
+</tr>
+<tr class="odd">
+<td>Total tokens (avg)</td>
+<td style="text-align: right;">13,892.5</td>
+</tr>
+<tr class="even">
+<td>Errors</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cost-expected-vs-actual-1" class="level3">
+<h3 class="anchored" data-anchor-id="cost-expected-vs-actual-1">Cost — Expected vs Actual</h3>
+<p><strong>Pricing:</strong> $0.03/M input ($0.003/M cached), $0.13/M output. Heavy prompt caching (~61% of prompt tokens cached). Expected $0.3276 (cache-adjusted); actual billed $0.3427 (+4.6%).</p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Images</th>
+<th style="text-align: right;">Expected Cost</th>
+<th style="text-align: right;">Estimated Actual</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>800</td>
+<td style="text-align: right;">$0.33</td>
+<td style="text-align: right;">$0.34</td>
+</tr>
+<tr class="even">
+<td>25,000</td>
+<td style="text-align: right;">$10.24</td>
+<td style="text-align: right;">$10.71</td>
+</tr>
+<tr class="odd">
+<td>320,000</td>
+<td style="text-align: right;">$131.04</td>
+<td style="text-align: right;">$137.08</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+</section>
+<section id="experiment-qwen3.7-flash_v11.8_reasoning_1600_balanced_1120-1120-images-70-per-class-16-classes" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-qwen3.7-flash_v11.8_reasoning_1600_balanced_1120-1120-images-70-per-class-16-classes">Experiment: <code>qwen3.7-flash_v11.8_reasoning_1600_balanced_1120</code> — 1120 images (70 per class × 16 classes)</h2>
+<p><strong>Model:</strong> <code>qwen/qwen3.7-flash</code><br>
+<strong>Prompt:</strong> <code>v11.8</code><br>
+<strong>Dataset:</strong> <code>rvl_cdip_1600</code></p>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Metric</th>
+<th style="text-align: right;">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>exact_match</strong></td>
+<td style="text-align: right;"><strong>925/1120 (82.6%)</strong></td>
+</tr>
+<tr class="even">
+<td>Failure rate</td>
+<td style="text-align: right;">0.0%</td>
+</tr>
+<tr class="odd">
+<td>Near-miss</td>
+<td style="text-align: right;">72 (36.9% of misses)</td>
+</tr>
+<tr class="even">
+<td>Expected cost</td>
+<td style="text-align: right;">$0.6815</td>
+</tr>
+<tr class="odd">
+<td>Actual cost</td>
+<td style="text-align: right;">$0.4937</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            // default icon
+            link.classList.add("external");
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>RVL-CDIP Document Classifier — AMFAM capstone project</p>
+</div>   
+    <div class="nav-footer-center">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/Exios66/AMFAM_capstone">
+<p>GitHub</p>
+</a>
+  </li>  
+</ul>
+    </div>
+    <div class="nav-footer-right">
+<p>Built with Quarto</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>

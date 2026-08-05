@@ -299,26 +299,33 @@ def inline_md(seg: str) -> str:
     return seg
 
 
-def trace_lines_to_html(lines: list[str]) -> str:
+def trace_lines_to_md(lines: list[str]) -> str:
+    """Convert one trace's reasoning lines to plain markdown.
+
+    Emits markdown paragraphs/bullets (NOT <p>-wrapped HTML) separated by blank
+    lines — pandoc's HTML reader recurses pathologically when <p> blocks share
+    a line with no blank separator.
+    """
     out: list[str] = []
     bullets: list[str] = []
     for line in lines:
         stripped = line[2:] if line.startswith("> ") else line[1:] if line.startswith(">") else line
+        stripped = stripped.replace("<", "&lt;").replace(">", "&gt;")
         if stripped.strip() == "":
             if bullets:
-                out.append("<ul>" + "".join(f"<li>{inline_md(b)}</li>" for b in bullets) + "</ul>")
+                out.append("\n".join(f"- {b}" for b in bullets))
                 bullets = []
             continue
         if stripped.startswith("- ") or stripped.startswith("* "):
             bullets.append(stripped[2:])
             continue
         if bullets:
-            out.append("<ul>" + "".join(f"<li>{inline_md(b)}</li>" for b in bullets) + "</ul>")
+            out.append("\n".join(f"- {b}" for b in bullets))
             bullets = []
-        out.append(f"<p>{inline_md(stripped)}</p>")
+        out.append(stripped)
     if bullets:
-        out.append("<ul>" + "".join(f"<li>{inline_md(b)}</li>" for b in bullets) + "</ul>")
-    return "\n".join(out)
+        out.append("\n".join(f"- {b}" for b in bullets))
+    return "\n\n".join(out)
 
 
 def build_misclassifications() -> None:
@@ -350,29 +357,28 @@ def build_misclassifications() -> None:
         pair_sections.append(current_pair)
 
     parts = []
-    parts.append("<p>Full reasoning traces for all 195 misclassifications (70 confusion pairs) from the "
-                 "1,120-image v11.8 run — every trace's 14-check scratchpad, runner-up line, and final label. "
-                 "Collapse each pair to browse, or expand to read the model's reasoning.</p>\n")
+    parts.append(
+        "Full reasoning traces for all 195 misclassifications (70 confusion pairs) from the "
+        "1,120-image v11.8 run — every trace's 14-check scratchpad, runner-up line, and final label. "
+        "Collapse each pair to browse, or expand to read the model's reasoning."
+    )
 
     # summary table
-    parts.append("## All confusion pairs\n")
-    rows = "".join(
+    parts.append("## All confusion pairs")
+    rows = "\n".join(
         f"| {exp} | {pred} | {n} |" for exp, pred, n, _ in sorted(pair_sections, key=lambda t: -t[2])
     )
-    parts.append("| Expected | Predicted | Errors |\n|----------|-----------|-------:|\n" + rows + "\n")
+    parts.append("| Expected | Predicted | Errors |\n|----------|-----------|-------:|\n" + rows)
     parts.append(
         "For each pair below, the trace shows the model walking the check-1→14 cascade, naming its "
-        "runner-up, and committing to a (wrong) final label.\n"
+        "runner-up, and committing to a (wrong) final label."
     )
 
     for exp, pred, n, body in sorted(pair_sections, key=lambda t: -t[2]):
-        parts.append(f"## {exp} → {pred}\n")
+        parts.append(f"## {exp} → {pred}")
         largest = n == max(p[2] for p in pair_sections)
-        parts.append(
-            f'<details class="trace-group"{" open" if largest else ""}>\n'
-            f"<summary>{n} reasoning traces</summary>\n"
-            '<div class="traces">\n'
-        )
+        parts.append(f'<details class="trace-group"{" open" if largest else ""}>')
+        parts.append(f"<summary>{n} reasoning traces</summary>")
         current_file = None
         trace_lines: list[str] = []
         meta_seen = False
@@ -380,7 +386,7 @@ def build_misclassifications() -> None:
             fm = TRACE_FILE_RE.match(bl)
             if fm:
                 if current_file:
-                    parts.append(trace_lines_to_html(trace_lines))
+                    parts.append(trace_lines_to_md(trace_lines))
                 current_file = fm.group(1)
                 parts.append(f'<h3 class="trace-file"><code>{current_file}</code></h3>')
                 trace_lines = []
@@ -396,10 +402,10 @@ def build_misclassifications() -> None:
             if current_file:
                 trace_lines.append(bl)
         if current_file:
-            parts.append(trace_lines_to_html(trace_lines))
-        parts.append("</div>\n</details>\n")
+            parts.append(trace_lines_to_md(trace_lines))
+        parts.append("</details>")
 
-    body = "\n".join(header[:6]) + "\n\n" + "\n".join(parts)
+    body = "\n".join(header[:6]) + "\n\n" + "\n\n".join(parts)
     body = body.replace("**Overall Accuracy:**", "<strong>Overall accuracy:</strong>")
     write_page(
         WEBSITE / "appendix/misclassifications.qmd",

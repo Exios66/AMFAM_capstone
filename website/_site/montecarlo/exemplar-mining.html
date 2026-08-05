@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.38">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Correct near-miss reasoning traces mined as exemplars for the top confusion pairs.">
+
+<title>Few-Shot Exemplar Mining – RVL-CDIP Document Classifier</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-df5af9fadd5181f8cda5c5b9e347827e.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<style>html{ scroll-behavior: smooth; }</style>
+
+
+</head>
+
+<body class="floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">RVL-CDIP Document Classifier</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../index.html"> 
+<span class="menu-text">Overview</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-methods--reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Methods &amp; Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-methods--reference">    
+        <li>
+    <a class="dropdown-item" href="../methods/overview.html">
+ <span class="dropdown-text">Pipeline &amp; Architecture</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/document-processor.html">
+ <span class="dropdown-text">Document Processor Module</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/cli-commands.html">
+ <span class="dropdown-text">CLI Commands Reference</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/classes.html">
+ <span class="dropdown-text">Document Classes</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../methods/prompt-rules-provenance.html">
+ <span class="dropdown-text">Prompt Rules Provenance</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-results" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Results</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-results">    
+        <li>
+    <a class="dropdown-item" href="../results/headline-results.html">
+ <span class="dropdown-text">Headline Results</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/experiment-log.html">
+ <span class="dropdown-text">Braintrust Experiment Log</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/experiment-reports.html">
+ <span class="dropdown-text">Experiment Reports</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/confusion-matrices.html">
+ <span class="dropdown-text">Confusion Matrices</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/gemini-800-notes.html">
+ <span class="dropdown-text">Gemini 2.5 Flash — 800 Images</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../results/gemini-160-notes.html">
+ <span class="dropdown-text">Gemini 2.5 Flash — 160 Images</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-prompt-evolution" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Prompt Evolution</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-prompt-evolution">    
+        <li>
+    <a class="dropdown-item" href="../prompts/prompt-changelog.html">
+ <span class="dropdown-text">Prompt Version Changelog</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../prompts/enhancements.html">
+ <span class="dropdown-text">Data-Backed Enhancement List</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-cost-analysis" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Cost Analysis</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-cost-analysis">    
+        <li>
+    <a class="dropdown-item" href="../cost/cost-estimation.html">
+ <span class="dropdown-text">OpenRouter Cost Estimation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../cost/cost-projections.html">
+ <span class="dropdown-text">Cost Projections</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-monte-carlo" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Monte Carlo</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-monte-carlo">    
+        <li>
+    <a class="dropdown-item" href="../montecarlo/overview.html">
+ <span class="dropdown-text">Monte Carlo Simulation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/prompt-ablation.html">
+ <span class="dropdown-text">Prompt Ablation — Paired Bootstrap</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/ensemble-voting.html">
+ <span class="dropdown-text">Ensemble Voting — Accuracy vs K</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/routing-abstention.html">
+ <span class="dropdown-text">Confidence-Gated Escalation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/failure-pipeline.html">
+ <span class="dropdown-text">Failure Pipeline Simulation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/exemplar-mining.html">
+ <span class="dropdown-text">Few-Shot Exemplar Mining</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/ale-stopword.html">
+ <span class="dropdown-text">ALE + Stop-Word Analysis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/verification.html">
+ <span class="dropdown-text">Verification Evals — Measured vs Simulated</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../montecarlo/corpus-summary.html">
+ <span class="dropdown-text">Monte Carlo Corpus Summary</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-appendix" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Appendix</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-appendix">    
+        <li>
+    <a class="dropdown-item" href="../appendix/misclassifications.html">
+ <span class="dropdown-text">Misclassification Reasoning — 1,120-Image v11.8 Run</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/Exios66/AMFAM_capstone"> <i class="bi bi-github" role="img" aria-label="GitHub repository">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#simulated-gain" id="toc-simulated-gain" class="nav-link active" data-scroll-target="#simulated-gain">Simulated gain</a></li>
+  <li><a href="#confusion-pairs-targeted" id="toc-confusion-pairs-targeted" class="nav-link" data-scroll-target="#confusion-pairs-targeted">Confusion pairs targeted</a></li>
+  <li><a href="#selected-exemplars" id="toc-selected-exemplars" class="nav-link" data-scroll-target="#selected-exemplars">Selected exemplars</a>
+  <ul class="collapse">
+  <li><a href="#rvl_cdip__letter__0029.png-qwen3.7-flash-v11.8" id="toc-rvl_cdip__letter__0029.png-qwen3.7-flash-v11.8" class="nav-link" data-scroll-target="#rvl_cdip__letter__0029.png-qwen3.7-flash-v11.8">1. <code>rvl_cdip__letter__0029.png</code> (qwen3.7-flash, v11.8)</a></li>
+  <li><a href="#rvl_cdip__specification__0075.png-qwen3.7-flash-v11.8" id="toc-rvl_cdip__specification__0075.png-qwen3.7-flash-v11.8" class="nav-link" data-scroll-target="#rvl_cdip__specification__0075.png-qwen3.7-flash-v11.8">2. <code>rvl_cdip__specification__0075.png</code> (qwen3.7-flash, v11.8)</a></li>
+  <li><a href="#rvl_cdip__resume__0049.png-qwen3.7-flash-v11.8" id="toc-rvl_cdip__resume__0049.png-qwen3.7-flash-v11.8" class="nav-link" data-scroll-target="#rvl_cdip__resume__0049.png-qwen3.7-flash-v11.8">3. <code>rvl_cdip__resume__0049.png</code> (qwen3.7-flash, v11.8)</a></li>
+  <li><a href="#rvl_cdip__questionnaire__0071.png-qwen3.7-flash-v11.8" id="toc-rvl_cdip__questionnaire__0071.png-qwen3.7-flash-v11.8" class="nav-link" data-scroll-target="#rvl_cdip__questionnaire__0071.png-qwen3.7-flash-v11.8">4. <code>rvl_cdip__questionnaire__0071.png</code> (qwen3.7-flash, v11.8)</a></li>
+  </ul></li>
+  <li><a href="#proposed-exemplar-appendix-copy-into-the-next-prompt-version" id="toc-proposed-exemplar-appendix-copy-into-the-next-prompt-version" class="nav-link" data-scroll-target="#proposed-exemplar-appendix-copy-into-the-next-prompt-version">Proposed exemplar appendix (copy into the next prompt version)</a></li>
+  </ul>
+</nav>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Few-Shot Exemplar Mining</h1>
+</div>
+
+<div>
+  <div class="description">
+    Correct near-miss reasoning traces mined as exemplars for the top confusion pairs.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<ul>
+<li><strong>Corpus</strong>: /Users/luciusjmorningstar/Downloads/AMFAM_capstone/reports/monte_carlo/corpus.jsonl</li>
+<li><strong>Targeted pairs</strong>: 12 (from 110 total)</li>
+<li><strong>Surrogate</strong>: efficacy=0.25, second-exemplar multiplier=1.5</li>
+</ul>
+<section id="simulated-gain" class="level2">
+<h2 class="anchored" data-anchor-id="simulated-gain">Simulated gain</h2>
+<ul>
+<li><strong>Expected errors flipped</strong>: 32.8 of 767 corpus errors (4.27% of the error pool)</li>
+<li><strong>Exemplars selected</strong>: 4 (token cost 11383/12000 chars)</li>
+</ul>
+</section>
+<section id="confusion-pairs-targeted" class="level2">
+<h2 class="anchored" data-anchor-id="confusion-pairs-targeted">Confusion pairs targeted</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>expected</th>
+<th style="text-align: right;">predicted-as</th>
+<th style="text-align: right;">errors</th>
+<th style="text-align: right;">exemplars available</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>letter</td>
+<td style="text-align: right;">memo</td>
+<td style="text-align: right;">53</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td>budget</td>
+<td style="text-align: right;">invoice</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td>invoice</td>
+<td style="text-align: right;">form</td>
+<td style="text-align: right;">41</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td>specification</td>
+<td style="text-align: right;">form</td>
+<td style="text-align: right;">41</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td>budget</td>
+<td style="text-align: right;">form</td>
+<td style="text-align: right;">33</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td>scientific_report</td>
+<td style="text-align: right;">form</td>
+<td style="text-align: right;">23</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td>invoice</td>
+<td style="text-align: right;">budget</td>
+<td style="text-align: right;">22</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td>resume</td>
+<td style="text-align: right;">form</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td>handwritten</td>
+<td style="text-align: right;">letter</td>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td>questionnaire</td>
+<td style="text-align: right;">form</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="odd">
+<td>presentation</td>
+<td style="text-align: right;">file_folder</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">8</td>
+</tr>
+<tr class="even">
+<td>presentation</td>
+<td style="text-align: right;">scientific_report</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">8</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="selected-exemplars" class="level2">
+<h2 class="anchored" data-anchor-id="selected-exemplars">Selected exemplars</h2>
+<section id="rvl_cdip__letter__0029.png-qwen3.7-flash-v11.8" class="level3">
+<h3 class="anchored" data-anchor-id="rvl_cdip__letter__0029.png-qwen3.7-flash-v11.8">1. <code>rvl_cdip__letter__0029.png</code> (qwen3.7-flash, v11.8)</h3>
+<p><strong>expected</strong>: <code>letter</code> | <strong>decoy</strong>: <code>memo</code> | <strong>runner_up</strong>: <code>memo</code> | <strong>clarity</strong>: 1.00</p>
+<pre><code>The user wants me to classify a scanned business document into one of 16 categories.
+I will follow the scratchpad procedure, checking 1-14 in order.
+
+**Pre-scan:**
+- Mail-client header block: None.
+- Masthead/running head: "OGILVY &amp; MATHER INC." at the top, which is a letterhead, not a newspaper/magazine masthead or journal running head.
+
+**Check 1: file_folder**
+- Evidence: The page has a full letter with body content, letterhead, date, salutation, signature, and handwritten notes. Not just an identifier/stamp.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Most content is typed letter. Handwritten notes at the bottom ("3/30/78 note Reminder", etc.) are just margin notes.
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No "FACSIMILE" or fax header.
+- Result: not this check.
+
+**Check 4: questionnaire**
+- Evidence: No survey instrument or transmittal.
+- Result: not this check.
+
+**Check 5: resume**
+- Evidence: Not a career history.
+- Result: not this check.
+
+**Check 6: scientific_publication**
+- Evidence: No journal running head, volume, issue, page range.
+- Result: not this check.
+
+**Check 7: financial document (invoice/budget)**
+- Evidence: Mentions "coupon", "redemption", but no line-item table, ledger, or financial structure. It's a letter requesting information about a coupon campaign.
+- Result: not this check.
+
+**Check 8: specification**
+- Evidence: No material safety data, product formulation, or "shall/must" language.
+- Result: not this check.
+
+**Check 9: presentation**
+- Evidence: Not a slide deck, cover, or statement.
+- Result: not this check.
+
+**Check 10: administrative form**
+- Evidence: Not a form with fields/boxes.
+- Result: not this check.
+
+**Check 11: correspondence (email, memo, letter)**
+- Evidence:
+  - Letterhead: "OGILVY &amp; MATHER INC."
+  - Date: "February 13, 1978"
+  - External recipient address: "Mr. John Casey / Cosmopolitan Magazine / 224 West 57 St. / New York, N. Y. 10019"
+  - Salutation: "Dear John:"
+  - Prose body: "As you know our client..."
+  - Closing: "Yours truly, [signature] Douglas E. Pfaffler"
+  - This perfectly matches the definition of a letter.
+- Result: letter.
+
+**Check 12: news_article**
+- Evidence: Not a newspaper/magazine masthead or editorial content.
+- Result: not this check.
+
+**Check 13: scientific_report**
+- Evidence: Not a research write-up.
+- Result: not this check.
+
+**Check 14: advertisement**
+- Evidence: Not a promotional layout.
+- Result: not this check.
+
+Final label: letter.
+Runner-up: memo, ruled out because it has an external recipient address, "Dear John:" salutation, and closing signature, which makes it a letter, not a memo.</code></pre>
+</section>
+<section id="rvl_cdip__specification__0075.png-qwen3.7-flash-v11.8" class="level3">
+<h3 class="anchored" data-anchor-id="rvl_cdip__specification__0075.png-qwen3.7-flash-v11.8">2. <code>rvl_cdip__specification__0075.png</code> (qwen3.7-flash, v11.8)</h3>
+<p><strong>expected</strong>: <code>specification</code> | <strong>decoy</strong>: <code>form</code> | <strong>runner_up</strong>: <code>form</code> | <strong>clarity</strong>: 1.00</p>
+<pre><code>The user wants me to classify a scanned document into one of 16 categories.
+I will follow the scratchpad procedure, checking 1-14 in order.
+
+**Pre-scan:**
+- Mail-client header block: None.
+- Masthead/running head: None. Just a Bates number "005724" and "2051530832".
+
+**Check 1: file_folder**
+- Evidence: The page has a lot of content (sections, tables, text). Not just an identifier.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Mostly typed text, some handwritten entries in fields (e.g., "212°F", "18", "45", "7.0 to 8.5", "PASTE" circled). But it's a filled form/template. Not majority freeform handwriting.
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No "FACSIMILE" or fax cover sheet header.
+- Result: not this check.
+
+**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -&gt; questionnaire**
+- Evidence: No survey questions.
+- Result: not this check.
+
+**Check 5: PERSON'S CAREER HISTORY -&gt; resume**
+- Evidence: No career history.
+- Result: not this check.
+
+**Check 6: PUBLISHED EVIDENCE -&gt; scientific_publication**
+- Evidence: No journal name, volume, issue, page range on the page itself.
+- Result: not this check.
+
+**Check 7: FINANCIAL DOCUMENT -&gt; invoice or budget**
+- Evidence: No financial line items, invoices, or budgets.
+- Result: not this check.
+
+**Check 8: PRODUCT OR MATERIAL DOCUMENTATION -&gt; specification**
+- Evidence: The page is titled "MATERIAL SAFETY DATA SHEET". It contains sections for "INGREDIENTS", "PHYSICAL DATA", "FIRE AND EXPLOSION HAZARD DATA". It lists chemical names, CAS registry numbers, physical properties (boiling point, vapor pressure, etc.). This matches the definition: "Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data)... is a specification".
+- Result: YES. This is a specification.
+
+Let's double check.
+Check 8: "Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data), product formulation or preparation/mixing instructions... is a specification".
+The page clearly says "MATERIAL SAFETY DATA SHEET" at the top.
+It has Section I (Product info), Section II (Ingredients), Section III (Physical Data), Section IV (Fire and Explosion Hazard Data).
+This is a perfect match for specification.
+
+Runner-up: form. A MSDS is a form with fields, but check 8 explicitly says "Material Safety Data Sheet ... is a specification". Check 8 precedes Check 10 (form).
+
+Let's quickly review the checks order:
+1. file_folder (no)
+2. handwritten (no)
+3. fax (no)
+4. questionnaire (no)
+5. resume (no)
+6. scientific_publication (no)
+7. invoice/budget (no)
+8. specification (yes)
+
+Evidence for check 8: "MATERIAL SAFETY DATA SHEET" header, sections for ingredients, physical data, fire and explosion hazard data, chemical names, CAS registry numbers.
+
+Final label: specification.</code></pre>
+</section>
+<section id="rvl_cdip__resume__0049.png-qwen3.7-flash-v11.8" class="level3">
+<h3 class="anchored" data-anchor-id="rvl_cdip__resume__0049.png-qwen3.7-flash-v11.8">3. <code>rvl_cdip__resume__0049.png</code> (qwen3.7-flash, v11.8)</h3>
+<p><strong>expected</strong>: <code>resume</code> | <strong>decoy</strong>: <code>form</code> | <strong>runner_up</strong>: <code>form</code> | <strong>clarity</strong>: 1.00</p>
+<pre><code>The user wants me to classify a scanned document into one of 16 categories.
+I need to follow the scratchpad procedure, checking 1-14 in order.
+
+**Document Analysis:**
+- Title: "BIOGRAPHICAL SKETCH"
+- Top right: "GRANT NUMBER: Kadin, MF" (handwritten)
+- Text: "Give the following information for the key personnel and consultants and collaborators. Begin with the principal investigator/program director. Photocopy this page for each person."
+- Fields: NAME (Harvey F. Lodish), POSITION TITLE (Member, Whitehead Institute for Biomedical Research, Professor of Biology, M.I.T.)
+- Education table: INSTITUTION AND LOCATION, DEGREE, YEAR CONFERRED, FIELD OF STUDY.
+- Sections: RESEARCH AND/OR PROFESSIONAL EXPERIENCE, Professional Experience, Honors and Awards, Recent Endowed Lectureships, Recent Editorial Boards, Recent Grant Review Panels, Recent Outside Advisory Committees.
+- Bottom: "PHS 398 (Rev. 9/91) Page 2" (handwritten)
+
+**Pre-scan:**
+- Mail-client header: None.
+- Masthead/running head: None. "PHS 398 (Rev. 9/91)" is a form number, not a journal running head.
+
+**Check 1: file_folder**
+- Evidence: Has lots of body content (biographical sketch, education, experience, awards). Not just an ID/stamp.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Mostly typed text. Handwriting is just "Kadin, MF" and "2".
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No fax header.
+- Result: not this check.
+
+**Check 4: questionnaire**
+- Evidence: Not a survey instrument.
+- Result: not this check.
+
+**Check 5: resume**
+- Evidence: Title is "BIOGRAPHICAL SKETCH". Text says "Give the following information for the key personnel...". Lists education, positions, honors, publications (lectureships, editorial boards, advisory committees). Bottom says "PHS 398 (Rev. 9/91)".
+- Check 5 rule: "CV, resume, professional profile, or biographical sketch listing education, positions, honors, and publications — including standardized templates such as PHS 398 "BIOGRAPHICAL SKETCH" pages, even when they carry a "Form Page" notation — the biographical content decides this, not the form-page label."
+- Result: YES. This is a resume/biographical sketch.
+
+Let's double check.
+Is there any other check that matches?
+Check 10: form. It is a form (PHS 398), but Check 5 explicitly says "including standardized templates such as PHS 398 'BIOGRAPHICAL SKETCH' pages... the biographical content decides this, not the form-page label." So Check 5 overrides Check 10.
+
+Let's verify the text: "PHS 398 (Rev. 9/91)" is at the bottom left. "BIOGRAPHICAL SKETCH" is at the top. Content is Harvey F. Lodish's career history.
+
+So the label is resume.
+
+Scratchpad construction:
+- file_folder: no — page has extensive biographical content (education, experience, awards), not just an identifier.
+- handwritten: no — mostly typed text, only minor handwritten annotations ("Kadin, MF", "2").
+- fax: no — no fax transmission header.
+- questionnaire: no — not a survey instrument.
+- resume: yes — titled "BIOGRAPHICAL SKETCH", lists education, professional experience, honors, lectureships, editorial boards, and advisory committees for Harvey F. Lodish; explicitly mentions "PHS 398 (Rev. 9/91)" which is a standardized template for a biographical sketch/CV. Check 5 covers this explicitly.
+- Runner-up: form, ruled out because Check 5 explicitly states that PHS 398 "BIOGRAPHICAL SKETCH" pages are classified as resume based on biographical content, overriding the form layout.
+
+Final label: resume.</code></pre>
+</section>
+<section id="rvl_cdip__questionnaire__0071.png-qwen3.7-flash-v11.8" class="level3">
+<h3 class="anchored" data-anchor-id="rvl_cdip__questionnaire__0071.png-qwen3.7-flash-v11.8">4. <code>rvl_cdip__questionnaire__0071.png</code> (qwen3.7-flash, v11.8)</h3>
+<p><strong>expected</strong>: <code>questionnaire</code> | <strong>decoy</strong>: <code>form</code> | <strong>runner_up</strong>: <code>form</code> | <strong>clarity</strong>: 1.00</p>
+<pre><code>The user wants me to classify a scanned document into one of 16 categories.
+I will follow the scratchpad procedure, checking each condition in order.
+
+**Pre-scan:**
+- Mail-client header block: None.
+- Masthead or running head: None. There's a title "INTERNATIONAL SYMPOSIUM ON EPIDEMIOLOGY AND PREVENTION OF Atherosclerotic Disease." and "Anacapri, 24- 26 June 1981". No journal running head.
+
+**Check 1: file_folder**
+- Evidence: The page has a title, questions, and options. Not just an identifier/stamp.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Typed text throughout. No significant handwriting.
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No "FACSIMILE" or "FAX COVER SHEET" header.
+- Result: not this check.
+
+**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -&gt; questionnaire**
+- Evidence: The page is titled "INTERNATIONAL SYMPOSIUM ON EPIDEMIOLOGY AND PREVENTION OF Atherosclerotic Disease." and "Anacapri, 24- 26 June 1981". It contains questions like "SEX", "AGE", "DO YOU NOW SMOKE? YES NO", "IF YES, CIGARETTE? YES NO", "IF YES, NUMBER/DAY", "IF NOT NOW A SMOKER, Former smoker YES NO, Never smoked YES NO", "DO YOU KNOW YOUR BLOOD PRESSURE? YES NO", "IF YES, WHAT IS IT?", "DO YOU KNOW YOUR SERUM CHOLESTEROL? YES NO", "IF YES, WHAT IS IT?". This is clearly a survey instrument or questionnaire asking respondents to answer questions about smoking, blood pressure, and cholesterol.
+- Result: questionnaire.
+
+Let's double check.
+Is it a scientific_report? No running prose, just questions.
+Is it a form? It's a survey instrument. Check 4 (questionnaire) precedes Check 10 (form).
+"A page asks the reader to answer, rate, choose, or commit: opinion items, rating scales, multiple choice, open-response lines... is questionnaire."
+This page asks "DO YOU NOW SMOKE? YES NO", etc. It's a questionnaire.
+
+Let's review the checks:
+1. file_folder: no
+2. handwritten: no
+3. FAX: no
+4. questionnaire: yes. The page contains a series of questions (SEX, AGE, DO YOU NOW SMOKE?, etc.) with YES/NO options and open-response lines ("WHAT IS IT?"). This is a survey instrument.
+
+Runner-up: form. Ruled out because check 4 (questionnaire) specifically covers survey instruments asking the reader to answer questions, which takes precedence over the generic administrative form check.
+
+Final label: questionnaire.</code></pre>
+</section>
+</section>
+<section id="proposed-exemplar-appendix-copy-into-the-next-prompt-version" class="level2">
+<h2 class="anchored" data-anchor-id="proposed-exemplar-appendix-copy-into-the-next-prompt-version">Proposed exemplar appendix (copy into the next prompt version)</h2>
+<pre><code>### Worked example 1 — letter vs memo
+
+The user wants me to classify a scanned business document into one of 16 categories.
+I will follow the scratchpad procedure, checking 1-14 in order.
+
+**Pre-scan:**
+- Mail-client header block: None.
+- Masthead/running head: "OGILVY &amp; MATHER INC." at the top, which is a letterhead, not a newspaper/magazine masthead or journal running head.
+
+**Check 1: file_folder**
+- Evidence: The page has a full letter with body content, letterhead, date, salutation, signature, and handwritten notes. Not just an identifier/stamp.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Most content is typed letter. Handwritten notes at the bottom ("3/30/78 note Reminder", etc.) are just margin notes.
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No "FACSIMILE" or fax header.
+- Result: not this check.
+
+**Check 4: questionnaire**
+- Evidence: No survey instrument or transmittal.
+- Result: not this check.
+
+**Check 5: resume**
+- Evidence: Not a career history.
+- Result: not this check.
+
+**Check 6: scientific_publication**
+- Evidence: No journal running head, volume, issue, page range.
+- Result: not this check.
+
+**Check 7: financial document (invoice/budget)**
+- Evidence: Mentions "coupon", "redemption", but no line-item table, ledger, or financial structure. It's a letter requesting information about a coupon campaign.
+- Result: not this check.
+
+**Check 8: specification**
+- Evidence: No material safety data, product formulation, or "shall/must" language.
+- Result: not this check.
+
+**Check 9: presentation**
+- Evidence: Not a slide deck, cover, or statement.
+- Result: not this check.
+
+**Check 10: administrative form**
+- Evidence: Not a form with fields/boxes.
+- Result: not this check.
+
+**Check 11: correspondence (email, memo, letter)**
+- Evidence:
+  - Letterhead: "OGILVY &amp; MATHER INC."
+  - Date: "February 13, 1978"
+  - External recipient address: "Mr. John Casey / Cosmopolitan Magazine / 224 West 57 St. / New York, N. Y. 10019"
+  - Salutation: "Dear John:"
+  - Prose body: "As you know our client..."
+  - Closing: "Yours truly, [signature] Douglas E. Pfaffler"
+  - This perfectly matches the definition of a letter.
+- Result: letter.
+
+**Check 12: news_article**
+- Evidence: Not a newspaper/magazine masthead or editorial content.
+- Result: not this check.
+
+**Check 13: scientific_report**
+- Evidence: Not a research write-up.
+- Result: not this check.
+
+**Check 14: advertisement**
+- Evidence: Not a promotional layout.
+- Result: not this check.
+
+Final label: letter.
+Runner-up: memo, ruled out because it has an external recipient address, "Dear John:" salutation, and closing signature, which makes it a letter, not a memo.
+
+### Worked example 2 — specification vs form
+
+The user wants me to classify a scanned document into one of 16 categories.
+I will follow the scratchpad procedure, checking 1-14 in order.
+
+**Pre-scan:**
+- Mail-client header block: None.
+- Masthead/running head: None. Just a Bates number "005724" and "2051530832".
+
+**Check 1: file_folder**
+- Evidence: The page has a lot of content (sections, tables, text). Not just an identifier.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Mostly typed text, some handwritten entries in fields (e.g., "212°F", "18", "45", "7.0 to 8.5", "PASTE" circled). But it's a filled form/template. Not majority freeform handwriting.
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No "FACSIMILE" or fax cover sheet header.
+- Result: not this check.
+
+**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -&gt; questionnaire**
+- Evidence: No survey questions.
+- Result: not this check.
+
+**Check 5: PERSON'S CAREER HISTORY -&gt; resume**
+- Evidence: No career history.
+- Result: not this check.
+
+**Check 6: PUBLISHED EVIDENCE -&gt; scientific_publication**
+- Evidence: No journal name, volume, issue, page range on the page itself.
+- Result: not this check.
+
+**Check 7: FINANCIAL DOCUMENT -&gt; invoice or budget**
+- Evidence: No financial line items, invoices, or budgets.
+- Result: not this check.
+
+**Check 8: PRODUCT OR MATERIAL DOCUMENTATION -&gt; specification**
+- Evidence: The page is titled "MATERIAL SAFETY DATA SHEET". It contains sections for "INGREDIENTS", "PHYSICAL DATA", "FIRE AND EXPLOSION HAZARD DATA". It lists chemical names, CAS registry numbers, physical properties (boiling point, vapor pressure, etc.). This matches the definition: "Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data)... is a specification".
+- Result: YES. This is a specification.
+
+Let's double check.
+Check 8: "Material Safety Data Sheet ("MATERIAL SAFETY DATA SHEET", hazardous ingredients, physical/fire data), product formulation or preparation/mixing instructions... is a specification".
+The page clearly says "MATERIAL SAFETY DATA SHEET" at the top.
+It has Section I (Product info), Section II (Ingredients), Section III (Physical Data), Section IV (Fire and Explosion Hazard Data).
+This is a perfect match for specification.
+
+Runner-up: form. A MSDS is a form with fields, but check 8 explicitly says "Material Safety Data Sheet ... is a specification". Check 8 precedes Check 10 (form).
+
+Let's quickly review the checks order:
+1. file_folder (no)
+2. handwritten (no)
+3. fax (no)
+4. questionnaire (no)
+5. resume (no)
+6. scientific_publication (no)
+7. invoice/budget (no)
+8. specification (yes)
+
+Evidence for check 8: "MATERIAL SAFETY DATA SHEET" header, sections for ingredients, physical data, fire and explosion hazard data, chemical names, CAS registry numbers.
+
+Final label: specification.
+
+### Worked example 3 — resume vs form
+
+The user wants me to classify a scanned document into one of 16 categories.
+I need to follow the scratchpad procedure, checking 1-14 in order.
+
+**Document Analysis:**
+- Title: "BIOGRAPHICAL SKETCH"
+- Top right: "GRANT NUMBER: Kadin, MF" (handwritten)
+- Text: "Give the following information for the key personnel and consultants and collaborators. Begin with the principal investigator/program director. Photocopy this page for each person."
+- Fields: NAME (Harvey F. Lodish), POSITION TITLE (Member, Whitehead Institute for Biomedical Research, Professor of Biology, M.I.T.)
+- Education table: INSTITUTION AND LOCATION, DEGREE, YEAR CONFERRED, FIELD OF STUDY.
+- Sections: RESEARCH AND/OR PROFESSIONAL EXPERIENCE, Professional Experience, Honors and Awards, Recent Endowed Lectureships, Recent Editorial Boards, Recent Grant Review Panels, Recent Outside Advisory Committees.
+- Bottom: "PHS 398 (Rev. 9/91) Page 2" (handwritten)
+
+**Pre-scan:**
+- Mail-client header: None.
+- Masthead/running head: None. "PHS 398 (Rev. 9/91)" is a form number, not a journal running head.
+
+**Check 1: file_folder**
+- Evidence: Has lots of body content (biographical sketch, education, experience, awards). Not just an ID/stamp.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Mostly typed text. Handwriting is just "Kadin, MF" and "2".
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No fax header.
+- Result: not this check.
+
+**Check 4: questionnaire**
+- Evidence: Not a survey instrument.
+- Result: not this check.
+
+**Check 5: resume**
+- Evidence: Title is "BIOGRAPHICAL SKETCH". Text says "Give the following information for the key personnel...". Lists education, positions, honors, publications (lectureships, editorial boards, advisory committees). Bottom says "PHS 398 (Rev. 9/91)".
+- Check 5 rule: "CV, resume, professional profile, or biographical sketch listing education, positions, honors, and publications — including standardized templates such as PHS 398 "BIOGRAPHICAL SKETCH" pages, even when they carry a "Form Page" notation — the biographical content decides this, not the form-page label."
+- Result: YES. This is a resume/biographical sketch.
+
+Let's double check.
+Is there any other check that matches?
+Check 10: form. It is a form (PHS 398), but Check 5 explicitly says "including standardized templates such as PHS 398 'BIOGRAPHICAL SKETCH' pages... the biographical content decides this, not the form-page label." So Check 5 overrides Check 10.
+
+Let's verify the text: "PHS 398 (Rev. 9/91)" is at the bottom left. "BIOGRAPHICAL SKETCH" is at the top. Content is Harvey F. Lodish's career history.
+
+So the label is resume.
+
+Scratchpad construction:
+- file_folder: no — page has extensive biographical content (education, experience, awards), not just an identifier.
+- handwritten: no — mostly typed text, only minor handwritten annotations ("Kadin, MF", "2").
+- fax: no — no fax transmission header.
+- questionnaire: no — not a survey instrument.
+- resume: yes — titled "BIOGRAPHICAL SKETCH", lists education, professional experience, honors, lectureships, editorial boards, and advisory committees for Harvey F. Lodish; explicitly mentions "PHS 398 (Rev. 9/91)" which is a standardized template for a biographical sketch/CV. Check 5 covers this explicitly.
+- Runner-up: form, ruled out because Check 5 explicitly states that PHS 398 "BIOGRAPHICAL SKETCH" pages are classified as resume based on biographical content, overriding the form layout.
+
+Final label: resume.
+
+### Worked example 4 — questionnaire vs form
+
+The user wants me to classify a scanned document into one of 16 categories.
+I will follow the scratchpad procedure, checking each condition in order.
+
+**Pre-scan:**
+- Mail-client header block: None.
+- Masthead or running head: None. There's a title "INTERNATIONAL SYMPOSIUM ON EPIDEMIOLOGY AND PREVENTION OF Atherosclerotic Disease." and "Anacapri, 24- 26 June 1981". No journal running head.
+
+**Check 1: file_folder**
+- Evidence: The page has a title, questions, and options. Not just an identifier/stamp.
+- Result: not this check.
+
+**Check 2: handwritten**
+- Evidence: Typed text throughout. No significant handwriting.
+- Result: not this check.
+
+**Check 3: FAX TRANSMISSION SHEET**
+- Evidence: No "FACSIMILE" or "FAX COVER SHEET" header.
+- Result: not this check.
+
+**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -&gt; questionnaire**
+- Evidence: The page is titled "INTERNATIONAL SYMPOSIUM ON EPIDEMIOLOGY AND PREVENTION OF Atherosclerotic Disease." and "Anacapri, 24- 26 June 1981". It contains questions like "SEX", "AGE", "DO YOU NOW SMOKE? YES NO", "IF YES, CIGARETTE? YES NO", "IF YES, NUMBER/DAY", "IF NOT NOW A SMOKER, Former smoker YES NO, Never smoked YES NO", "DO YOU KNOW YOUR BLOOD PRESSURE? YES NO", "IF YES, WHAT IS IT?", "DO YOU KNOW YOUR SERUM CHOLESTEROL? YES NO", "IF YES, WHAT IS IT?". This is clearly a survey instrument or questionnaire asking respondents to answer questions about smoking, blood pressure, and cholesterol.
+- Result: questionnaire.
+
+Let's double check.
+Is it a scientific_report? No running prose, just questions.
+Is it a form? It's a survey instrument. Check 4 (questionnaire) precedes Check 10 (form).
+"A page asks the reader to answer, rate, choose, or commit: opinion items, rating scales, multiple choice, open-response lines... is questionnaire."
+This page asks "DO YOU NOW SMOKE? YES NO", etc. It's a questionnaire.
+
+Let's review the checks:
+1. file_folder: no
+2. handwritten: no
+3. FAX: no
+4. questionnaire: yes. The page contains a series of questions (SEX, AGE, DO YOU NOW SMOKE?, etc.) with YES/NO options and open-response lines ("WHAT IS IT?"). This is a survey instrument.
+
+Runner-up: form. Ruled out because check 4 (questionnaire) specifically covers survey instruments asking the reader to answer questions, which takes precedence over the generic administrative form check.
+
+Final label: questionnaire.
+</code></pre>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+            // target, if specified
+            link.setAttribute("target", "_blank");
+            if (link.getAttribute("rel") === null) {
+              link.setAttribute("rel", "noopener");
+            }
+            // default icon
+            link.classList.add("external");
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>RVL-CDIP Document Classifier — AMFAM capstone project</p>
+</div>   
+    <div class="nav-footer-center">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item">
+    <a class="nav-link" href="https://github.com/Exios66/AMFAM_capstone">
+<p>GitHub</p>
+</a>
+  </li>  
+</ul>
+    </div>
+    <div class="nav-footer-right">
+<p>Built with Quarto</p>
+</div>
+  </div>
+</footer>
+
+
+
+
+<script src="../site_libs/quarto-html/zenscroll-min.js"></script>
+</body></html>
