@@ -19,10 +19,11 @@ Usage:
 
 import argparse
 import os
+import random
 import re
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -95,6 +96,27 @@ def extract_class_from_filename(filename: str) -> str:
     if len(parts) >= 2:
         return parts[1]
     return "unknown"
+
+
+def sample_balanced(dataset: list[dict], samples_per_class: int, seed: int = 42) -> list[dict]:
+    """Deterministically subsample ``samples_per_class`` rows per class.
+
+    Returns a class-balanced subset of the dataset (each class contributes the
+    same number of rows). Preserves unique filenames so ``validate_dataset``
+    still passes.
+    """
+    by_class: dict[str, list[dict]] = defaultdict(list)
+    for row in dataset:
+        by_class[row["expected"]].append(row)
+
+    rng = random.Random(seed)
+    sampled: list[dict] = []
+    for cls in sorted(by_class):
+        available = by_class[cls]
+        n = min(samples_per_class, len(available))
+        sampled.extend(rng.sample(available, n))
+    rng.shuffle(sampled)
+    return sampled
 
 
 def load_dataset_images(dataset_dir: Path) -> list[dict]:
@@ -457,6 +479,10 @@ def main() -> None:
                         help="Classify local PNGs instead of a Braintrust dataset")
     parser.add_argument("--limit", type=int, default=None,
                         help="Classify only the first N images")
+    parser.add_argument("--samples-per-class", type=int, default=None,
+                        help="Deterministically subsample N images per class (class-balanced subset)")
+    parser.add_argument("--sample-seed", type=int, default=42,
+                        help="Random seed for --samples-per-class subsampling (default: 42)")
     parser.add_argument("--model", default=DEFAULT_MODEL,
                         help=f"Model to use for classification (default: {DEFAULT_MODEL})")
     parser.add_argument("--prompt-version", default=DEFAULT_PROMPT_VERSION,
@@ -485,6 +511,11 @@ def main() -> None:
         dataset = load_braintrust_dataset(
             args.dataset_project, args.dataset, source_key, org_id=ORG_ID, api_base=BRAINTRUST_API_BASE
         )
+
+    if args.samples_per_class:
+        dataset = sample_balanced(dataset, args.samples_per_class, args.sample_seed)
+        per_class = Counter(d["expected"] for d in dataset)
+        print(f"Balanced subsample: {len(dataset)} images ({args.samples_per_class} per class x {len(per_class)} classes)")
 
     if args.limit:
         dataset = dataset[:args.limit]
