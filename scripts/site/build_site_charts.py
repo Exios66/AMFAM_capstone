@@ -241,12 +241,11 @@ def parse_cost_projections(md_text: str) -> list[dict]:
         if cur is None or not line.strip().startswith("|"):
             continue
         cells = [_norm(c) for c in line.strip().strip("|").split("|")]
-        if len(cells) >= 3 and cells[0].isdigit():
-            scale = {"800": 800, "25,000": 25000, "320,000": 320000}
-            key = cells[0]
-            cost_m = re.search(r"\$([\d,]+\.?\d*)", cells[-1])
-            if key in scale and cost_m:
-                cur["costs"][scale[key]] = float(cost_m.group(1).replace(",", ""))
+        scale = {"800": 800, "25,000": 25000, "320,000": 320000}
+        key = cells[0] if cells else ""
+        cost_m = re.search(r"\$([\d,]+\.?\d*)", cells[-1]) if cells else None
+        if key in scale and cost_m:
+            cur["costs"][scale[key]] = float(cost_m.group(1).replace(",", ""))
     return [m for m in models if len(m["costs"]) == 3]
 
 
@@ -396,6 +395,13 @@ def main() -> None:
     for md in report_sources:
         exp = md.name.removeprefix("report_").removesuffix(".md")
         chart_per_class(md, f"per_class_accuracy_{exp}.svg", f"Per-class accuracy — {exp}")
+    final_1120 = ROOT / "reports" / "experiment_reports" / "qwen3.7-flash_v11.8_1600_balanced_1120_final.md"
+    if final_1120.exists():
+        chart_per_class(
+            final_1120,
+            "per_class_accuracy_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.svg",
+            "Per-class accuracy — qwen3.7-flash v11.8 · 1,120-image slice",
+        )
     chart_per_class(
         ROOT / "docs" / "experiments" / "800pic_tst_notes.md",
         "per_class_accuracy_gemini-2.5-flash_800_notes.svg",

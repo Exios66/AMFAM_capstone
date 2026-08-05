@@ -40,6 +40,7 @@ EXP_LOG_FIXES = [
 
 IMG_RE = re.compile(r"!\[([^\]]*)\]\(([^)]*\.(?:png|jpg|jpeg))\)")
 LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]*\.md)\)")
+PNG_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]*\.png)\)")
 
 
 def _img_replacement(match: re.Match) -> str:
@@ -55,6 +56,21 @@ def _img_replacement(match: re.Match) -> str:
     if any(k in stem for k in ("ale_correctness", "stop_word_scatter")):
         return f"*{alt} — chart not reproduced on the site; see `reports/monte_carlo/` in the repository.*"
     return f"*{alt} — chart not reproduced on the site; see the repository's `reports/`.*"
+
+
+def _png_link_replacement(match: re.Match) -> str:
+    text, path = match.group(1), match.group(2)
+    base = path.rsplit("/", 1)[-1]
+    stem = base.rsplit(".", 1)[0]
+    if "confusion_matrix" in stem:
+        return f"[{text}](../charts/{stem}.svg)"
+    if "per_class_accuracy" in stem:
+        return f"[{text}](../charts/{stem}.svg)"
+    if "stop_word_hasty" in stem:
+        return f"[{text}](../charts/hasty_stop_words.svg)"
+    if any(k in stem for k in ("ale_correctness", "stop_word_scatter")):
+        return f"{text} (chart not reproduced on the site; see the repository's `reports/monte_carlo/`)"
+    return f"[{text}]({GITHUB_BLOB}{path.replace('../../', '')})"
 
 
 def _link_replacement(match: re.Match) -> str:
@@ -96,6 +112,7 @@ def rewrite_assets(text: str, *, exp_log: bool = False) -> str:
         text = fix_experiment_log(text)
     text = IMG_RE.sub(_img_replacement, text)
     text = LINK_RE.sub(_link_replacement, text)
+    text = PNG_LINK_RE.sub(_png_link_replacement, text)
     return text
 
 
@@ -140,7 +157,6 @@ DOC_PAGES = [
         WEBSITE / "results/experiment-log.qmd",
         "Braintrust Experiment Log",
         "Every Braintrust eval: accuracy, tokens, errors, cost projections, and prompt-version notes.",
-        "experiment_log",
     ),
     (
         ROOT / "docs/experiments/800pic_tst_notes.md",
@@ -341,7 +357,7 @@ def build_misclassifications() -> None:
     # summary table
     parts.append("## All confusion pairs\n")
     rows = "".join(
-        f"| {exp} | {pred} | {n} |" for exp, pred, n in sorted(pair_sections, key=lambda t: -t[2])
+        f"| {exp} | {pred} | {n} |" for exp, pred, n, _ in sorted(pair_sections, key=lambda t: -t[2])
     )
     parts.append("| Expected | Predicted | Errors |\n|----------|-----------|-------:|\n" + rows + "\n")
     parts.append(
@@ -351,8 +367,9 @@ def build_misclassifications() -> None:
 
     for exp, pred, n, body in sorted(pair_sections, key=lambda t: -t[2]):
         parts.append(f"## {exp} → {pred}\n")
+        largest = n == max(p[2] for p in pair_sections)
         parts.append(
-            f'<details class="trace-group" open={n == max((p[2] for p in pair_sections)) and "true" or "false"}>\n'
+            f'<details class="trace-group"{" open" if largest else ""}>\n'
             f"<summary>{n} reasoning traces</summary>\n"
             '<div class="traces">\n'
         )
