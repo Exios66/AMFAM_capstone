@@ -21,6 +21,7 @@ from src.constants import DOCUMENT_CLASSES
 VALID_CLASSES = DOCUMENT_CLASSES
 DEFAULT_ATTACHMENT_WORKERS = 8
 EXPERIMENT_FETCH_RETRIES = 6
+EXPERIMENT_FETCH_LIMIT = 1000  # events per paginated fetch (API supports up to 1000)
 
 
 # ---------------------------------------------------------------------------
@@ -90,7 +91,7 @@ def fetch_experiment_rows(
     rows: list[dict] = []
     cursor = None
     while True:
-        body = {"limit": 100}
+        body = {"limit": EXPERIMENT_FETCH_LIMIT}
         if cursor:
             body["cursor"] = cursor
         for attempt in range(max_retries):

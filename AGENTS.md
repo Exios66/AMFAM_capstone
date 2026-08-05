@@ -86,9 +86,17 @@ python scripts/braintrust/braintrust_metrics_visual.py \
   qwen3.7-flash_v17_reasoning
 ```
 
+Manifest-backed runs (no `--experiment` needed; also matches Braintrust's resume-loop version suffixes like `-06b91b68`):
+```bash
+# Full report suite directly from a manifest + Braintrust trace merge
+python scripts/braintrust/braintrust_report_manifest.py \
+  --manifest reports/manifests/qwen3.7-flash_v11.8_1600_balanced_1120.jsonl \
+  --input-price 0.03 --output-price 0.13
+```
+
 Artifacts produced in `reports/`: `report_<experiment>.md`, `confusion_matrix_<experiment>.{png,md}`, `per_class_accuracy_<experiment>.png`, `misclassification_reasoning_<experiment>.md`.
 
-`braintrust_metrics_visual.py` also appends to `docs/experiments/experiment_log.md` (skips experiments already recorded).
+`braintrust_metrics_visual.py` and `braintrust_report_manifest.py` also append to `docs/experiments/experiment_log.md` (skips experiments already recorded).
 
 ## Dataset Slices
 
@@ -114,7 +122,7 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 
 ## Cost & Accuracy Metrics
 
-**Accuracy** is `exact_match`: `output.strip().lower() == expected_class`. Scored as 1.0 or 0.0 per row. Failed/errored rows (output starts with `ERROR: `) count as misses and are tracked by a separate `failed` scorer.
+**Accuracy** is `exact_match`: `output.strip().lower() == expected_class`. Scored as 1.0 or 0.0 per row. Failed/errored rows (output starts with `ERROR: `) count as misses and are tracked by a separate `failure` scorer. A third scorer, `cost`, records each row's actual billed USD from OpenRouter's `usage.cost`. These are the only three scorers registered on the Braintrust eval (`exact_match`, `failure`, `cost`); near-miss (runner-up) is computed locally by `score_manifest.py` from the runner-up line the manifest records.
 
 **Cost calculation** (`braintrust_report.py:compute_cost`):
 - **Expected cost** = `(sum(prompt_tokens) * input_price + sum(completion_tokens) * output_price) / 1e6` — list-price projection from measured token counts
@@ -130,9 +138,9 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 
 **Key Braintrust concepts used**:
 - **Datasets** — rows with `input` (image base64 + filename), `expected` (ground-truth class). Stored in a Braintrust project. Multiple named datasets coexist (`fixed_size_sampled`, `fixed_size_sampled_v2`, `_v3`, `_v4`, `_480`, smoke sets).
-- **Experiments** — a named run of a prompt+model against a dataset. Each row produces `output` (predicted class), `scores` (exact_match, failed), and `metadata` (reasoning trace, model, prompt_version). Experiment names follow: `{model}_{prompt_version}_reasoning`.
+- **Experiments** — a named run of a prompt+model against a dataset. Each row produces `output` (predicted class), `scores` (exact_match, failure, cost), and `metadata` (reasoning trace, model, prompt_version, runner_up, cost). Experiment names follow: `{model}_{prompt_version}_reasoning`. Near-miss (runner_up == expected while predicted != expected) is computed locally by `score_manifest.py` from the runner-up line, not by a Braintrust scorer.
 - **Projects** — the container for experiments and datasets. Current: `AMFAM v2`.
-- **Manifests** — JSONL checkpoint files in `reports/manifests/` enable resumable eval runs after interruption. `ManifestStore` (`src/evaluation.py`) tracks per-row status; `--manifest` flag on `braintrust_openrouter_input.py`.
+- **Manifests** — JSONL checkpoint files in `reports/manifests/` enable resumable eval runs after interruption. `ManifestStore` (`src/evaluation.py`) tracks per-row status; `--manifest` flag on `braintrust_openrouter_input.py`. Each completed record carries a `tag` (`OK`/`MISS!`/`ERROR!`) plus `runner_up` and `cost`; `score_manifest.load_manifest()` derives the tag in-memory when absent.
 
 **Eval runner** (`braintrust_openrouter_input.py`): wraps an OpenAI client pointed at OpenRouter with `braintrust.wrap_openai()`. Uses `braintrust.Eval()` to run the classification task with `max_concurrency=8`. Retries transient provider failures (502s, token caps, empty responses) up to `MAX_TRIES=3`; grows `max_tokens` on `finish_reason=length` up to `MAX_TOKENS_CAP=32768`.
 
@@ -149,7 +157,7 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 | Symptom | Where it appears | Likely cause |
 |---|---|---|
 | `ERROR: <filename>: ...` on stderr | Eval runner stdout | All 3 retries exhausted — check stderr for the exception text |
-| `FAIL` rows in per-image listing | Eval runner stdout | Row produced an `ERROR: ` sentinel output (scored as miss + `failed` metric) |
+| `FAIL` rows in per-image listing | Eval runner stdout | Row produced an `ERROR: ` sentinel output (scored as miss + `failure` metric) |
 | `SKIP <class> <filename>: ...` on stderr | Dataset loading | Attachment download failed for one row — eval continues with remaining rows |
 | `WARNING: skipped N rows with unreadable attachments` | Dataset loading | Multiple attachment fetches failed — check network/API key |
 | `Rate limited, waiting Ns` | Report/visual scripts | Braintrust 429 — exponential backoff up to 30s, 6 retries max |

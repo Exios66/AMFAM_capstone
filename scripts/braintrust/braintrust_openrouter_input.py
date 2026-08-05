@@ -301,6 +301,23 @@ def near_miss_score(output: str, expected: str, runner_up: str) -> float:
     return 1.0 if runner_up == expected else 0.0
 
 
+def _response_cost(response) -> float:
+    """Actual billed USD cost for a completion, from OpenRouter's usage.cost.
+
+    Falls back to the standard OpenAI Usage fields when ``cost`` is absent.
+    """
+    usage = getattr(response, "usage", None)
+    if usage is None:
+        return 0.0
+    cost = getattr(usage, "cost", None)
+    if cost is None and hasattr(usage, "model_extra"):
+        cost = (usage.model_extra or {}).get("cost")
+    try:
+        return float(cost or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 # ---------------------------------------------------------------------------
 # Braintrust Eval
 # ---------------------------------------------------------------------------
@@ -382,11 +399,11 @@ def run_eval(
     images_by_index = {i: d["image_b64"] for i, d in enumerate(dataset)}
     expected_by_index = {i: d["expected"] for i, d in enumerate(dataset)}
 
-    # Near-miss tracking: {index: runner-up label from the reasoning trace}.
-    # Written by classify_document after a successful prediction, read by the
-    # near_miss scorer. Single writer per key; the eval awaits each task before
-    # running its scorers, so reads always see the completed write.
-    runner_up_by_index: dict[int, str] = {}
+    # Per-row actual cost: {index: billed USD from OpenRouter's usage.cost}.
+    # Written by classify_document after the successful completion; read by the
+    # cost Braintrust scorer. Single writer per key; the eval awaits each task
+    # before running its scorers, so reads always see the completed write.
+    cost_by_index: dict[int, float] = {}
 
     @braintrust.traced
     def classify_document(input_data: dict) -> str:
@@ -501,12 +518,15 @@ def run_eval(
                 print(f"WARNING: fallback model failed for {filename}: {e}", file=sys.stderr)
 
         # Near-miss tracking: capture the label the model named as its runner-up
-        # in the reasoning trace (its second choice). The near_miss scorer reads
-        # this to flag rows where the correct answer was the runner-up.
+        # in the reasoning trace (its second choice). Local scoring reads this
+        # to flag rows where the correct answer was the runner-up.
         runner_up = ""
+        row_cost = 0.0
         if predicted:
             runner_up = extract_runner_up(reasoning_text or raw)
-            runner_up_by_index[input_data["index"]] = runner_up
+            last_response = fallback_response if used_fallback else response
+            row_cost = _response_cost(last_response)
+            cost_by_index[input_data["index"]] = row_cost
 
         if not predicted:
             status = "error" if last_error is not None or raw.strip() == "" else "empty"
@@ -516,6 +536,7 @@ def run_eval(
                     "filename": filename,
                     "expected": expected,
                     "status": status,
+                    "tag": "ERROR!",
                     "predicted": "",
                     "attempts": attempts,
                     "error": error_msg,
@@ -533,15 +554,18 @@ def run_eval(
             return msg
 
         if manifest:
+            tag = "OK" if predicted.strip().lower() == expected.strip().lower() else "MISS!"
             manifest.append({
                 "filename": filename,
                 "expected": expected,
                 "status": "completed",
+                "tag": tag,
                 "predicted": predicted,
                 "attempts": attempts,
                 "error": "",
                 "fallback": used_fallback,
                 "runner_up": runner_up,
+                "cost": row_cost,
             })
 
         # Log metadata for Braintrust UI — includes reasoning trace and prompt.
@@ -559,6 +583,7 @@ def run_eval(
                 "fallback": used_fallback,
                 "key_switched": key_switched,
                 "runner_up": runner_up,
+                "cost": row_cost,
             }
         )
 
@@ -568,20 +593,18 @@ def run_eval(
         """Score 1.0 if prediction matches expected class, else 0.0."""
         return 1.0 if output == expected else 0.0
 
-    def failed(output: str, expected: str) -> float:
+    def failure(output: str, expected: str) -> float:
         """Score 1.0 for rows the model failed to classify (error sentinel output)."""
         return 1.0 if output.startswith(ERROR_PREFIX) else 0.0
 
-    def near_miss(output: str, expected: str, input: dict) -> float:
-        """Score 1.0 when the model misclassified but the correct answer was its
-        runner-up (the second-choice label it named in the reasoning trace).
+    def cost(input: dict) -> float:
+        """Actual billed USD cost OpenRouter reported for this row's completion.
 
-        This is a code scorer (regex parse of the already-logged reasoning text)
-        — it makes no LLM calls, so it costs nothing to run on every eval row.
-        Rows whose reasoning trace lacks a ``Runner-up:`` line or whose cached
-        manifest entry predates runner-up tracking score 0.0.
+        Cost is captured from ``usage.cost`` on the successful response by
+        classify_document. Cached rows (replayed from the manifest without an
+        API call) score 0.0 for this run.
         """
-        return near_miss_score(output, expected, runner_up_by_index.get(input.get("index"), ""))
+        return cost_by_index.get(input.get("index"), 0.0)
 
     result = braintrust.Eval(
         PROJECT_NAME,
@@ -597,7 +620,7 @@ def run_eval(
             for i, d in enumerate(dataset)
         ],
         task=classify_document,
-        scores=[exact_match, failed, near_miss],
+        scores=[exact_match, failure, cost],
         max_concurrency=max_concurrency,
         reporter=quiet_reporter(),
         project_id=project_id,
@@ -612,7 +635,7 @@ def run_eval(
             "dataset": f"{DEFAULT_DATASET_PROJECT}/{dataset_name}",
             "manifest": str(manifest_path) if manifest_path else None,
         },
-        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} | temperature {temperature} | exact_match + near_miss tracked",
+        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} | temperature {temperature} | Braintrust scorers: exact_match, failure, cost (near-miss scored locally via score_manifest)",
     )
 
     failed_count = print_classifications(result)
@@ -641,9 +664,9 @@ def print_classifications(result) -> int:
     rows.sort(key=lambda row: (row[1], row[0]))
 
     for filename, expected, predicted, correct in rows:
-        print(f"{'OK ' if correct else 'MISS'}  {expected:<24} {predicted:<24} {filename}")
+        print(f"{'OK ' if correct else 'MISS!'}  {expected:<24} {predicted:<24} {filename}")
     for r in failed_rows:
-        print(f"FAIL {r.expected:<24} {'':<24} {r.input['filename']}")
+        print(f"ERROR! {r.expected:<24} {'':<24} {r.input['filename']}")
 
     per_class = Counter()
     per_class_correct = Counter()
@@ -663,7 +686,7 @@ def print_classifications(result) -> int:
     correct = sum(1 for row in rows if row[3])
     print()
     if failed_rows:
-        print(f"{len(failed_rows)} failed rows counted as misses (tracked as `failed` metric)")
+        print(f"{len(failed_rows)} failed rows counted as misses (tracked as `failure` metric)")
     print(f"exact_match {correct}/{total} ({correct / total:.1%})" if total else "no results")
     return len(failed_rows)
 

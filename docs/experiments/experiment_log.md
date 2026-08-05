@@ -943,3 +943,19 @@ wanted; the experiment in Braintrust is partial and should not be used for compa
 | 800 | /bin/zsh.33 | /bin/zsh.34 |
 | 25,000 | .24 | .71 |
 | 320,000 | .04 | .08 |
+---
+
+## Experiment: `qwen3.7-flash_v11.8_reasoning_1600_balanced_1120` — 1120 images (70 per class × 16 classes)
+
+**Model:** `qwen/qwen3.7-flash`  
+**Prompt:** `v11.8`  
+**Dataset:** `rvl_cdip_1600`  
+
+| Metric | Value |
+|---|---:|
+| **exact_match** | **925/1120 (82.6%)** |
+| Failure rate | 0.0% |
+| Near-miss | 72 (36.9% of misses) |
+| Expected cost | $0.6815 |
+| Actual cost | $0.4937 |
+
