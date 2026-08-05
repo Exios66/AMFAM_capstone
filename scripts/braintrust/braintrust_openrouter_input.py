@@ -38,7 +38,7 @@ from src.env_utils import require_env
 from src.evaluation import ManifestStore, dataset_fingerprint, validate_dataset
 from src.image_utils import encode_image_base64
 from src.notify import play_failure, play_success
-from src.openrouter_classifier import VALID_CLASSES, clean_prediction
+from src.openrouter_classifier import VALID_CLASSES, clean_prediction, extract_runner_up
 from src.openrouter_utils import OPENROUTER_BASE_URL, build_vision_messages
 from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
 
@@ -293,6 +293,14 @@ def extract_prediction(text: str) -> str:
     return clean_prediction(text)
 
 
+def near_miss_score(output: str, expected: str, runner_up: str) -> float:
+    """Score 1.0 if the model's prediction was wrong AND its runner-up label
+    (second choice) was the correct answer — a near miss. Else 0.0."""
+    if output == expected:
+        return 0.0
+    return 1.0 if runner_up == expected else 0.0
+
+
 # ---------------------------------------------------------------------------
 # Braintrust Eval
 # ---------------------------------------------------------------------------
@@ -373,6 +381,12 @@ def run_eval(
 
     images_by_index = {i: d["image_b64"] for i, d in enumerate(dataset)}
     expected_by_index = {i: d["expected"] for i, d in enumerate(dataset)}
+
+    # Near-miss tracking: {index: runner-up label from the reasoning trace}.
+    # Written by classify_document after a successful prediction, read by the
+    # near_miss scorer. Single writer per key; the eval awaits each task before
+    # running its scorers, so reads always see the completed write.
+    runner_up_by_index: dict[int, str] = {}
 
     @braintrust.traced
     def classify_document(input_data: dict) -> str:
@@ -486,6 +500,14 @@ def run_eval(
             except Exception as e:  # noqa: BLE001 - fallback must never raise
                 print(f"WARNING: fallback model failed for {filename}: {e}", file=sys.stderr)
 
+        # Near-miss tracking: capture the label the model named as its runner-up
+        # in the reasoning trace (its second choice). The near_miss scorer reads
+        # this to flag rows where the correct answer was the runner-up.
+        runner_up = ""
+        if predicted:
+            runner_up = extract_runner_up(reasoning_text or raw)
+            runner_up_by_index[input_data["index"]] = runner_up
+
         if not predicted:
             status = "error" if last_error is not None or raw.strip() == "" else "empty"
             error_msg = str(last_error) if last_error is not None else "response contained no valid class"
@@ -519,6 +541,7 @@ def run_eval(
                 "attempts": attempts,
                 "error": "",
                 "fallback": used_fallback,
+                "runner_up": runner_up,
             })
 
         # Log metadata for Braintrust UI — includes reasoning trace and prompt.
@@ -535,6 +558,7 @@ def run_eval(
                 "finish_reason": finish_reason,
                 "fallback": used_fallback,
                 "key_switched": key_switched,
+                "runner_up": runner_up,
             }
         )
 
@@ -547,6 +571,17 @@ def run_eval(
     def failed(output: str, expected: str) -> float:
         """Score 1.0 for rows the model failed to classify (error sentinel output)."""
         return 1.0 if output.startswith(ERROR_PREFIX) else 0.0
+
+    def near_miss(output: str, expected: str, input: dict) -> float:
+        """Score 1.0 when the model misclassified but the correct answer was its
+        runner-up (the second-choice label it named in the reasoning trace).
+
+        This is a code scorer (regex parse of the already-logged reasoning text)
+        — it makes no LLM calls, so it costs nothing to run on every eval row.
+        Rows whose reasoning trace lacks a ``Runner-up:`` line or whose cached
+        manifest entry predates runner-up tracking score 0.0.
+        """
+        return near_miss_score(output, expected, runner_up_by_index.get(input.get("index"), ""))
 
     result = braintrust.Eval(
         PROJECT_NAME,
@@ -562,7 +597,7 @@ def run_eval(
             for i, d in enumerate(dataset)
         ],
         task=classify_document,
-        scores=[exact_match, failed],
+        scores=[exact_match, failed, near_miss],
         max_concurrency=max_concurrency,
         reporter=quiet_reporter(),
         project_id=project_id,
@@ -577,7 +612,7 @@ def run_eval(
             "dataset": f"{DEFAULT_DATASET_PROJECT}/{dataset_name}",
             "manifest": str(manifest_path) if manifest_path else None,
         },
-        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} | temperature {temperature} | exact_match tracked",
+        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} | temperature {temperature} | exact_match + near_miss tracked",
     )
 
     failed_count = print_classifications(result)

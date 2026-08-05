@@ -1,10 +1,16 @@
 """Score a completed evaluation from its local manifest and save the final numbers.
 
-Computes exact_match, per-class accuracy, and failure counts directly from the
-manifest JSONL checkpoint (``reports/manifests/*.jsonl``) — no Braintrust calls.
-The manifest records every row the moment the model returns, so the final result
-numbers are always available and savable locally, even if Braintrust score/credit
-limits cap out. Errors count as misses (matching ``braintrust_report.py``).
+Computes exact_match, per-class accuracy, near-miss (runner-up) accuracy, and
+failure counts directly from the manifest JSONL checkpoint
+(``reports/manifests/*.jsonl``) — no Braintrust scorer credits. The manifest
+records every row the moment the model returns, so the final result numbers are
+always available and savable locally, even if Braintrust score/credit limits cap
+out. Errors count as misses (matching ``braintrust_report.py``).
+
+Near-miss tracking: rows recorded with a ``runner_up`` field (eval runs on the
+resilient runner) contribute directly. Rows that predate runner-up tracking are
+backfilled by parsing their reasoning traces from Braintrust experiment metadata
+(read-only data fetch, no scorer credits); pass ``--no-backfill`` to skip.
 
 Writes ``<manifest-stem>_final.json`` and ``<manifest-stem>_final.md`` into
 ``--output-dir`` (default ``reports/experiment_reports/``).
@@ -23,8 +29,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from src.constants import DOCUMENT_CLASSES  # noqa: E402
+from src.braintrust_config import load_braintrust_config  # noqa: E402
+from src.braintrust_utils import fetch_experiment_rows, list_experiments  # noqa: E402
+from src.openrouter_classifier import extract_runner_up  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
+
+REASONING_PLACEHOLDER = "(reasoning not exposed by model)"
 
 
 def load_manifest(path: Path) -> tuple[dict, dict[str, dict]]:
@@ -39,6 +50,77 @@ def load_manifest(path: Path) -> tuple[dict, dict[str, dict]]:
     return header.get("metadata", {}), final
 
 
+def fetch_reasoning_by_filename(
+    experiment_name: str,
+    project_id: str,
+    api_key: str,
+    api_base: str = "https://api.braintrust.dev",
+) -> dict[str, str]:
+    """Fetch reasoning traces for every experiment version matching a name.
+
+    The resume loop relaunches the eval under the SAME experiment name, so the
+    reasoning for a row lives only in the cycle where it was first completed
+    (cached rows in later cycles log no reasoning). Merges all matching
+    experiments, preferring the first non-empty reasoning per filename. Returns
+    ``{filename: reasoning}``. Read-only data fetch — uses no scorer credits.
+    """
+    reasoning_by_filename: dict[str, str] = {}
+    try:
+        experiments = list_experiments(api_key, project_id, api_base)
+    except Exception as exc:  # noqa: BLE001 - backfill must never abort scoring
+        print(f"WARNING: could not list experiments for runner-up backfill: {exc}", file=sys.stderr)
+        return reasoning_by_filename
+    matching = [e for e in experiments if e.get("name") == experiment_name]
+    if not matching:
+        print(f"WARNING: no experiments named '{experiment_name}' found for runner-up backfill",
+              file=sys.stderr)
+        return reasoning_by_filename
+    for exp in matching:
+        try:
+            events = fetch_experiment_rows(api_key, exp["id"], api_base)
+        except Exception as exc:  # noqa: BLE001 - skip one broken experiment
+            print(f"WARNING: could not fetch experiment {exp['id']} for backfill: {exc}",
+                  file=sys.stderr)
+            continue
+        for event in events:
+            meta = event.get("metadata") or {}
+            reasoning = meta.get("reasoning")
+            if not reasoning or reasoning == REASONING_PLACEHOLDER:
+                continue
+            filename = meta.get("filename") or (event.get("input") or {}).get("filename")
+            if filename and filename not in reasoning_by_filename:
+                reasoning_by_filename[filename] = reasoning
+    return reasoning_by_filename
+
+
+def backfill_runner_up(final: dict[str, dict], metadata: dict) -> tuple[int, int]:
+    """Fill missing ``runner_up`` fields from reasoning fetched from Braintrust.
+
+    Rows completed before runner-up tracking shipped have no ``runner_up`` in the
+    manifest, but their reasoning traces (which contain the ``Runner-up:`` line)
+    were already logged to Braintrust span metadata. Mutates ``final`` in place;
+    returns ``(backfilled, still_missing)``.
+    """
+    missing = [r for r in final.values()
+               if r.get("status") == "completed" and not (r.get("runner_up") or "").strip()]
+    if not missing:
+        return 0, 0
+    experiment_name = metadata.get("experiment_name")
+    if not experiment_name:
+        return 0, len(missing)
+    config = load_braintrust_config()
+    reasoning_map = fetch_reasoning_by_filename(
+        experiment_name, config.project_id, config.api_key or "", config.api_base
+    )
+    backfilled = 0
+    for r in missing:
+        reasoning = reasoning_map.get(r["filename"])
+        if reasoning:
+            r["runner_up"] = extract_runner_up(reasoning)
+            backfilled += 1
+    return backfilled, len(missing) - backfilled
+
+
 def score(metadata: dict, final: dict[str, dict]) -> dict:
     rows = sorted(final.values(), key=lambda r: (r.get("expected", ""), r.get("filename", "")))
     total = len(rows)
@@ -47,6 +129,10 @@ def score(metadata: dict, final: dict[str, dict]) -> dict:
     empty = [r for r in rows if r.get("status") == "empty"]
     exact = [r for r in completed if (r.get("predicted") or "").strip().lower() == (r.get("expected") or "").strip().lower()]
     misses = [r for r in completed if (r.get("predicted") or "").strip().lower() != (r.get("expected") or "").strip().lower()]
+    near_miss = [
+        r for r in misses
+        if (r.get("runner_up") or "").strip().lower() == (r.get("expected") or "").strip().lower()
+    ]
 
     per_class: dict[str, dict] = {}
     for cls in DOCUMENT_CLASSES:
@@ -76,6 +162,11 @@ def score(metadata: dict, final: dict[str, dict]) -> dict:
         "failed_rows": len(errored) + len(empty),
         "exact_match": len(exact),
         "exact_match_accuracy": len(exact) / total if total else 0.0,
+        "near_miss": len(near_miss),
+        "near_miss_accuracy": len(near_miss) / total if total else 0.0,
+        "near_miss_share_of_misses": len(near_miss) / len(misses) if misses else 0.0,
+        "near_miss_filenames": [r.get("filename") for r in near_miss],
+        "runner_up_coverage": sum(1 for r in completed if (r.get("runner_up") or "").strip()),
         "per_class": per_class,
         "error_filenames": [r.get("filename") for r in errored],
         "miss_filenames": [r.get("filename") for r in misses],
@@ -98,6 +189,8 @@ def to_markdown(result: dict) -> str:
         f"- **Errors**: {result['error']}",
         f"- **Empty**: {result['empty']}",
         f"- **exact_match**: {result['exact_match']}/{result['total_rows']} ({result['exact_match_accuracy']:.1%})",
+        f"- **near_miss** (correct answer was the model's runner-up): {result['near_miss']}/{result['total_rows']} ({result['near_miss_accuracy']:.1%} of rows; {result['near_miss_share_of_misses']:.1%} of all misses)",
+        f"- **runner_up coverage**: {result['runner_up_coverage']}/{result['completed']} completed rows had a parsable runner-up",
         "",
         "## Per-class accuracy",
         "",
@@ -114,6 +207,16 @@ def to_markdown(result: dict) -> str:
     if result["error_filenames"]:
         lines += ["", "## Failed (error) rows", ""]
         lines += [f"- `{name}`" for name in result["error_filenames"]]
+    if result["near_miss_filenames"]:
+        lines += [
+            "",
+            "## Near-miss rows (correct answer was the model's runner-up)",
+            "",
+            "These rows were misclassified but the model named the correct class as its",
+            "second choice in the reasoning trace — the closest possible misses.",
+            "",
+        ]
+        lines += [f"- `{name}`" for name in result["near_miss_filenames"]]
     return "\n".join(lines) + "\n"
 
 
@@ -124,9 +227,18 @@ def main() -> None:
     parser.add_argument("--output-dir", type=Path,
                         default=ROOT / "reports" / "experiment_reports",
                         help="Directory for the saved result files (default: reports/experiment_reports)")
+    parser.add_argument("--no-backfill", action="store_true",
+                        help="Skip fetching reasoning from Braintrust for rows that "
+                             "predate runner-up tracking (near-miss then only counts "
+                             "rows recorded with a runner_up)")
     args = parser.parse_args()
 
     metadata, final = load_manifest(args.manifest)
+    backfilled = still_missing = 0
+    if not args.no_backfill:
+        backfilled, still_missing = backfill_runner_up(final, metadata)
+        if backfilled:
+            print(f"Backfilled runner_up for {backfilled} pre-tracking rows from Braintrust reasoning")
     result = score(metadata, final)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -141,6 +253,12 @@ def main() -> None:
     )
     print()
     print(f"exact_match {result['exact_match']}/{result['total_rows']} ({result['exact_match_accuracy']:.1%})")
+    print(f"near_miss {result['near_miss']}/{result['total_rows']} "
+          f"({result['near_miss_accuracy']:.1%} of rows; {result['near_miss_share_of_misses']:.1%} of misses)")
+    print(f"runner_up coverage {result['runner_up_coverage']}/{result['completed']} completed rows")
+    if still_missing:
+        print(f"WARNING: {still_missing} completed rows still lack a runner_up "
+              f"(pre-tracking rows with no Braintrust reasoning available)", file=sys.stderr)
     print(f"completed={result['completed']} error={result['error']} empty={result['empty']}")
 
 
