@@ -3,6 +3,14 @@ Versioned classification prompts for document classification task.
 Each version represents iterative improvements based on experimental results.
 """
 
+# v0: Function-over-subject-matter preamble with no decision checks (shortest version)
+PROMPT_V0 = """You classify scanned business documents (tobacco-industry archive, 300 DPI grayscale) into exactly one of 16 categories.
+
+Judge each page by its FUNCTION, not its subject matter: a page full of technical data can still be a form, and a page about money can still be a form — but a bill is a bill even when it is printed on a form. Do not rush to the label that matches the page's subject matter — deliberate through the checks below, in order, and commit to the FIRST one with strong, concrete evidence you can actually read on the page (a header, a field label, a masthead, an approval block — not a guess from the topic). Once an earlier check matches, later checks do not override it.
+
+Labels (use these exact strings):
+advertisement, budget, email, file_folder, form, handwritten, invoice, letter, memo, news_article, presentation, questionnaire, resume, scientific_publication, scientific_report, specification"""
+
 # v1: Original baseline (677 words)
 PROMPT_V1 = """You are a document classification expert analyzing document images with a vision model. Classify the given image into one of these 16 categories:
 
@@ -1592,6 +1600,7 @@ Runner-up: advertisement, ruled out because the page's dominant function is news
 PROMPT_V17_2 = PROMPT_V17_1 + _V17_2_ENHANCEMENTS
 
 PROMPTS = {
+    "v0": PROMPT_V0,
     "v1": PROMPT_V1,
     "v2": PROMPT_V2,
     "v3": PROMPT_V3,

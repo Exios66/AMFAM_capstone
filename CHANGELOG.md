@@ -17,6 +17,7 @@
 
 ### Added
 
+- `run_v11_8_800_after_480.py` — eval queue script that waits for an in-flight 480-image run to complete, then runs the v11.8 prompt with qwen3.7-flash (high reasoning, 8192 max_tokens) on the 800-image `rvl_cdip_800` dataset using the `RESEARCH_FUNDING_API_KEY` OpenRouter key.
 - Classification prompt `v16` (v11.9 + 2 worked examples for budget↔invoice and handwritten↔letter). Deprecated in favor of v17.
 - `v16_multislice_evaluation_report.md` in `reports/` — full three-slice analysis identifying the three root causes of the drop from ~99% to ~80% exact_match.
 - `eval_160_v16_v1.log`, `eval_160_v2_v16.log`, `eval_160_v3_v16.log` — raw v16 evaluation logs.
