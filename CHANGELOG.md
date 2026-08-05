@@ -20,8 +20,17 @@
 
 ### Added
 
+- `src/notify.py` — local completion sounds (macOS): a Mario-style rising C-major power-up jingle for success and a descending game-over motif for failures, synthesized with numpy and played via `afplay` (no audio assets or external packages). `play_success()` and `play_failure()` are safe to call anywhere and never raise.
+- `resume_until_complete.py` — re-invokes the eval runner from its manifest checkpoint until every dataset row has a final status, so a run persists to full completion even if the Braintrust side crashes or caps out. Alerts with the failure motif on eval-process crashes and on abandonment after `--max-cycles`.
+- `score_manifest.py` — computes final numbers (exact_match, per-class accuracy, error/empty counts) directly from the local manifest JSONL with **no Braintrust calls**, saving `_final.json` + `_final.md` into `reports/experiment_reports/`. Guarantees result numbers are always available even if Braintrust score/credit limits cap out.
 - `run_v11_8_800_after_480.py` — eval queue script that waits for an in-flight 480-image run to complete, then runs the v11.8 prompt with qwen3.7-flash (high reasoning, 8192 max_tokens) on the 800-image `rvl_cdip_800` dataset using the `RESEARCH_FUNDING_API_KEY` OpenRouter key.
 - Classification prompt `v16` (v11.9 + 2 worked examples for budget↔invoice and handwritten↔letter). Deprecated in favor of v17.
 - `v16_multislice_evaluation_report.md` in `reports/` — full three-slice analysis identifying the three root causes of the drop from ~99% to ~80% exact_match.
 - `eval_160_v16_v1.log`, `eval_160_v2_v16.log`, `eval_160_v3_v16.log` — raw v16 evaluation logs.
 - `eval_v16_v{1,2,3}.jsonl` manifests in `reports/manifests/` for all v16 runs.
+
+### Changed
+
+- **Resilient eval retry loop** — `braintrust_openrouter_input.py` now: (1) fails over to the alternate OpenRouter key (`RESEARCH_FUNDING_API_KEY`) when the primary hits a quota/credit 403, (2) throttles adaptively on upstream 429s (records recent rate-limits, sleeps per `Retry-After` or an escalating 5/15/45s backoff), (3) sleeps 2s/4s for other transient errors, (4) salvages rows that fail all primary retries with one attempt through `--fallback-model` (e.g. `google/gemini-2.5-flash-lite`) — designed for content-filtered images, and (5) logs span metadata safely (never raises on Braintrust logging failure). Per-error-type backoffs are module-level constants.
+- **`--fallback-model` wired through `resume_until_complete.py`** — the resume watcher passes the salvage model through to each relaunched eval cycle, and `--no-score` disables its new default auto-scoring of the manifest on completion (via `score_manifest.py`, zero Braintrust credits).
+- **Completion alert sounds** — the eval runner (`braintrust_openrouter_input.py`) now plays the success jingle at the end of a run with zero failed rows and the failure motif if any row errored (catchall for failures/errors in a Braintrust run). Mute with `--no-sound`.
