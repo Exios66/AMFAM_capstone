@@ -1599,6 +1599,67 @@ Runner-up: advertisement, ruled out because the page's dominant function is news
 
 PROMPT_V17_2 = PROMPT_V17_1 + _V17_2_ENHANCEMENTS
 
+# v18: v17.2 + four high-value worked examples mined by the Monte Carlo exemplar
+# miner (monte_carlo_exemplars.py). Each exemplar is a REAL correct trace whose
+# runner-up line names the decoy label for one of the top confusion pairs
+# (letter->memo, specification->form, resume->form, questionnaire->form). These
+# pairs account for 131 of the 767 corpus errors (17%). EXPERIMENTAL — NOT the
+# default. Verify on the exemplar slice (monte_carlo_verify.py) before promoting.
+_V18_EXEMPLAR_APPENDIX = """
+
+### Worked example — letter vs memo (letter)
+
+<scratchpad>
+pre-scan: mail-client header none; "OGILVY & MATHER INC." is a letterhead, not a masthead.
+file_folder: no — a full letter with body, date, salutation, signature.
+handwritten: no — typed throughout; handwritten notes at the bottom are margin notes only.
+fax sheet: no. questionnaire: no. resume: no. scientific_publication: no.
+financial: no — "coupon"/"redemption" are mentioned but there is no line-item table, ledger, or payment demand.
+specification: no. presentation: no. form: no — not a page of fill-in fields.
+correspondence: yes — letterhead, external recipient address ("Mr. John Casey / Cosmopolitan Magazine / 224 West 57 St. / New York, N.Y. 10019"), "Dear John:" salutation, prose body, "Yours truly," closing with signature.
+letter: yes — external addressee + salutation + closing signature.
+Runner-up: memo, ruled out because the external recipient address and "Dear John:" salutation plus closing signature make it a letter, not a memo.
+</scratchpad>
+<label>letter</label>
+
+### Worked example — MSDS (specification, not form)
+
+<scratchpad>
+file_folder: no — sections, tables, real content.
+handwritten: no — typed on a printed template; handwriting fills fields ("212F", "18", "45", "7.0 to 8.5"), which is not the handwritten class.
+fax sheet: no. questionnaire: no. resume: no. scientific_publication: no.
+financial: no — no line items or payment.
+specification: yes — "MATERIAL SAFETY DATA SHEET" header with Section II INGREDIENTS (chemical names, CAS numbers), Section III PHYSICAL DATA (boiling point, vapor pressure), Section IV FIRE AND EXPLOSION HAZARD DATA. Check 8 explicitly lists MSDS as specification.
+form: no — check 8 precedes check 10; a page titled MSDS is specification even though it has fields.
+Runner-up: form, ruled out because check 8 states "MATERIAL SAFETY DATA SHEET ... is a specification" and fires before the form check.
+</scratchpad>
+<label>specification</label>
+
+### Worked example — PHS 398 biographical sketch (resume, not form)
+
+<scratchpad>
+file_folder: no — extensive biographical content.
+handwritten: no — mostly typed; only "Kadin, MF" and a page number are handwritten.
+fax sheet: no. questionnaire: no.
+resume: yes — "BIOGRAPHICAL SKETCH" (PHS 398) listing education (INSTITUTION AND LOCATION / DEGREE / YEAR CONFERRED / FIELD OF STUDY), professional experience, honors and awards, lectureships, editorial boards, and grant review panels for a named person. Check 5 explicitly covers PHS 398 "BIOGRAPHICAL SKETCH" templates — the biographical content decides the label, not the form-page notation.
+form: no — check 5 overrides the form layout.
+Runner-up: form, ruled out because check 5 states PHS 398 biographical-sketch pages are resume based on their biographical content.
+</scratchpad>
+<label>resume</label>
+
+### Worked example — survey instrument (questionnaire, not form)
+
+<scratchpad>
+file_folder: no — title and questions present.
+handwritten: no. fax sheet: no.
+questionnaire: yes — a symposium survey asking the respondent to answer: "DO YOU NOW SMOKE? YES NO", "IF YES, CIGARETTE? YES NO", "DO YOU KNOW YOUR BLOOD PRESSURE? YES NO", plus open-response lines ("IF YES, WHAT IS IT?"). The page asks the reader to answer/rate/commit, which is check 4.
+form: no — check 4 (questionnaire) precedes check 10; a survey instrument is questionnaire, not an administrative form, even though it has questions on a page.
+Runner-up: form, ruled out because check 4 specifically covers survey instruments asking the reader to answer questions.
+</scratchpad>
+<label>questionnaire</label>"""
+
+PROMPT_V18 = PROMPT_V17_2 + _V18_EXEMPLAR_APPENDIX
+
 PROMPTS = {
     "v0": PROMPT_V0,
     "v1": PROMPT_V1,
@@ -1626,6 +1687,7 @@ PROMPTS = {
     "v17": PROMPT_V17,
     "v17.1": PROMPT_V17_1,
     "v17.2": PROMPT_V17_2,
+    "v18": PROMPT_V18,
 }
 
 DEFAULT_PROMPT_VERSION = "v17.2"

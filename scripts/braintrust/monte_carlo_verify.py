@@ -231,11 +231,11 @@ def run() -> None:
         commands.append(eval_command(
             ds, f"mc_verify_exemplar_{args.top_pairs}_base",
             f"mc_verify_exemplar_{args.top_pairs}_base.jsonl",
-            "--prompt-version v11.8"))
+            "--prompt-version v17.2"))
         commands.append(eval_command(
             ds, f"mc_verify_exemplar_{args.top_pairs}_exemplar",
             f"mc_verify_exemplar_{args.top_pairs}_exemplar.jsonl",
-            "--prompt-version v18  # after copying the exemplar appendix into src/prompts.py"))
+            "--prompt-version v18"))
 
     print("\n" + "=" * 70)
     print("Verification eval commands (run to spend a small, targeted eval)")
