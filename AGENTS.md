@@ -116,19 +116,41 @@ Datasets are balanced (N images per class x 16 classes) and uploaded to Braintru
 # 160-image slice (10/class) — from HF parquet mirror, no full RVL-CDIP download needed
 python scripts/braintrust/create_braintrust_800_dataset.py --dataset fixed_size_sampled --images-per-class 10
 
+# Disjoint 160-image slice (seed 1738) — fresh test images, pixel-deduped vs fixed_size_sampled + _480
+python scripts/braintrust/create_braintrust_160_v2_dataset.py
+
+# Two mutually-disjoint 160-image validation slices (v3/v4, seeds 2303/9413) from HF test shards
+python scripts/braintrust/create_braintrust_160_v3_v4_datasets.py
+
 # 480-image superset (30/class) — CONTAINS the original 160, topped up with fresh images
 python scripts/braintrust/create_braintrust_480_dataset.py
 
-# Two disjoint 160-image validation slices (v3 and v4) from HF test shards
-python scripts/braintrust/create_braintrust_160_v3_v4_datasets.py
+# 800-image slice (50/class) — train split of the 100/class HF mirror
+python scripts/braintrust/create_braintrust_800_dataset.py --dataset rvl_cdip_800 --images-per-class 50
 
-# Smoke-test dataset from all misclassifications across prompt versions v1-v11
-python scripts/braintrust/create_misclassification_smoke_dataset.py --dry-run  # preview first
+# 1600-image slice (100/class) — train + test + validation splits combined
+python scripts/braintrust/create_braintrust_1600_dataset.py --exclude-dataset rvl_cdip_800
+
+# Smoke / eval-union datasets from every misclassification across prompt versions (preview first)
+python scripts/braintrust/create_misclassification_smoke_dataset.py --dry-run
+python scripts/braintrust/create_v11_v17_eval_dataset.py --dry-run            # v11-v17 union
 ```
 
 Local preprocessing (before upload): `create_balanced_dataset.py` samples from RVL-CDIP dirs; `create_fixed_size_dataset.py` resizes to a target square with aspect-ratio-preserving padding via `src/image_utils.resize_with_padding()`.
 
-Images are always converted to grayscale PNG at 1024x1024 (with white padding preserving aspect ratio) before upload.
+Images are always converted to grayscale PNG at 1024x1024 (with white padding preserving aspect ratio) before upload. Every builder also logs a `create-<dataset>` experiment carrying provenance (source_url, split, seed, target_size, images), so each slice has a traceable build record in Braintrust.
+
+### Slice generation insights
+
+- **Source capacity** — the mirror `jordyvl/rvl_cdip_100_examples_per_class` holds exactly **100 images/class**: train 50 (800), test 25 (400), validation 25 (400). The 800 script draws from train only (`--images-per-class 50` max); the 1600 script combines all three splits (`--images-per-class 100` max). The v3/v4 script reads `chainyo/rvl-cdip` test shards in RAM and falls back to Kaggle `pdavpoojan/the-rvlcdip-dataset-test` when HF cannot satisfy a class quota. Beyond 100/class, point at a different parquet mirror or the full Kaggle RVL-CDIP download.
+- **Determinism** — every sampler seeds `random.Random(seed)` (default 42; v2 uses 1738; v3/v4 use 2303/9413). The same seed + source always reproduces the same slice.
+- **Disjointness is enforced in rendered-pixel space** — a candidate is converted to the normalized PNG *first*, hashed (`md5`/`sha256` of `image.convert("L").tobytes()`), and accepted only if that hash is not already in the exclusion set. Build exclusion hashes the same way (render → hash), never from raw source bytes; otherwise identical images evade dedup. Accepted images are added to `used_hashes` as sampling proceeds, so a slice is also internally duplicate-free (the 480/1600 scripts print "skipped N pixel duplicates").
+- **Building the exclusion set** — load existing slices via `load_braintrust_dataset()` (it honors `DATA_BRAINTRUST_KEY` for cross-account reads), hash every stored attachment, and pass the set into the sampler (e.g. `--exclude-dataset`, `--exclude-dataset-project`). The v3/v4 script aggregates several datasets (v1, v2, _320, _480) plus its own slices before sampling.
+- **Rebuild idempotently** — most builders call `delete_dataset_by_name()` before `init_dataset()` so re-runs are safe; eval-union/smoke builders also pass a deterministic `id=<md5(filename)>` to `dataset.insert()`. No builder needs a manual wipe.
+- **Upload reliability** — the SDK's background attachment uploader silently drops objects on bulk copies. `copy_datasets_to_new_env.py` uploads synchronously with 8 retries, inserts a row only after its object upload is confirmed, then re-downloads every row to verify. `create_v11_v17_eval_dataset.py` wraps uploads in `upload_rows_with_retry()` (3 tries, 60s wait, dataset rebuilt per attempt so a failure leaves nothing half-written).
+- **Eval-union datasets** — `find_misses()` across target experiments, deduped by filename (prefer non-empty/longest reasoning), then the actual PNG is pulled from the slice datasets and re-attached with metadata: `versions`, `predictions`, `misclassification` (`expected -> predicted`), and reasoning capped at 4000 chars. `--cache <path>` persists the deduped records as JSON so re-runs skip experiment fetching; `--skip-experiment` prunes noisy runs.
+- **Filename convention** — `rvl_cdip__{class}__{NNNN}.png` embeds the ground-truth class so `extract_class_from_filename()` recovers it; keep this pattern for any new slice so the whole eval/report toolchain keeps working.
+- **After porting accounts** — slice builders resolve the project through `load_braintrust_config()`, so once `braintrust.env` points at the new account they create/read datasets there automatically. For slices that must still read source datasets from the previous account, set `DATA_BRAINTRUST_KEY` to a read-only key for that account.
 
 ## Cost & Accuracy Metrics
 
@@ -250,15 +272,16 @@ HF Parquet URL → requests.get(stream) → io.BytesIO / temp file
 ### Key patterns
 
 - **`to_png_bytes(tiff_bytes, target_size)`** — converts raw TIFF bytes to 1024x1024 grayscale PNG with white padding, entirely in RAM via `io.BytesIO`
-- **Pixel-hash dedup** — `hashlib.sha256(image.convert("L").tobytes()).hexdigest()` ensures no duplicate images across slices
-- **Exclusion sets** — new slices load existing Braintrust datasets, hash their images, and skip any matching pixels
+- **Pixel-hash dedup** — hash the *normalized rendered* PNG (`hashlib.md5`/`sha256` of `image.convert("L").tobytes()`), never raw source bytes. Hash output must match what a later slice would render, so dedup stays effective across slices; the 480/1600 builders render first, then hash.
+- **Exclusion sets** — new slices load existing Braintrust datasets via `load_braintrust_dataset()`, hash their stored attachments, and skip any matching pixels (see "Slice generation insights" in Dataset Slices for the full rules)
 - **`--output-dir` is optional** — omit it to skip disk writes entirely; only the Braintrust upload runs
-- **Temp parquet** — the 800/480 scripts stream the HF parquet to `/tmp/` and delete it in a `finally` block; the v3/v4 script holds all shards in RAM (no temp file)
+- **Temp parquet** — the 800/480/1600 scripts stream the HF parquet to `/tmp/` (atomically via a `.part` file) and delete it in a `finally` block; the v3/v4 script holds all shards in RAM (no temp file)
+- **Provenance experiment** — every builder logs a `create-<dataset>` experiment with source_url/split/seed/target_size so each slice is reproducible and attributable
 - **`dataset.flush()` + `dataset.close()`** — must be called after all inserts to ensure writes complete
 
 ### Scaling up
 
-To create a larger slice (e.g., 800 images at 50/class), use the existing `create_braintrust_800_dataset.py` with `--images-per-class 50`. To go beyond 50/class, point at a different HF parquet URL or the full Kaggle RVL-CDIP download. The in-memory pipeline handles thousands of images without disk pressure.
+To create a larger slice (e.g., 800 images at 50/class), use the existing `create_braintrust_800_dataset.py` with `--images-per-class 50`. To go beyond 50/class, point at a different HF parquet URL or the full Kaggle RVL-CDIP download. The in-memory pipeline handles thousands of images without disk pressure. Remember the source ceiling: the 100/class mirror tops out at 800 (train) / 1600 (all three splits combined).
 
 ### Upload API pattern
 
