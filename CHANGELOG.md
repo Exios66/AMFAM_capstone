@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Added
+
+- **Monte Carlo simulation over the eval corpus** — new `monte_carlo_*` toolchain that treats every completed eval row as a sample from a per-image label distribution and answers "what if" questions with zero API spend:
+  - `monte_carlo_corpus.py` — builds the joint corpus (`reports/monte_carlo/corpus.jsonl`, 4,641 rows / 1,512 images) from all manifests, backfilling reasoning traces + `finish_reason`/`fallback` from Braintrust spans (read-only, no scorer credits).
+  - `monte_carlo_ensemble.py` — committee-vote simulation (accuracy vs K with bootstrap CIs), per-image confidence heuristic, and confidence-gated escalation Pareto curve with a ±5pp sensitivity band + `escalation_candidates.txt`.
+  - `monte_carlo_prompt_ablation.py` — paired-bootstrap prompt comparison on shared images: mean delta, 95% CI, `P(A wins)`, per-class deltas. Statistical gate for prompt promotion.
+  - `monte_carlo_failures.py` — event-simulates the retry/failover/fallback pipeline from fitted probabilities; extrapolated failures + tail risk at 800/25K/320K and a `max_tries`×fallback sweep.
+  - `monte_carlo_exemplars.py` — mines correct near-miss reasoning traces (runner-up names the decoy) as few-shot exemplars; MC random search selects a token-budgeted subset and emits a ready-to-paste exemplar appendix.
+  - `monte_carlo_verify.py` — spend-minimal verification: builds the low-confidence escalation slice and a top-confusion-pair slice, prints the exact eval commands (dry-run default; `--run-eval` to spend).
+  - `src/monte_carlo.py` — shared bootstrap / entropy / vote / confidence utilities; unit-tested in `tests/test_monte_carlo.py`.
+  - Findings documented in `docs/experiments/monte_carlo_simulation.md`; artifacts in `reports/monte_carlo/`.
+- **Key early results**: committee voting gains ≤4pp even at K=25 (variance budget is low); escalating the lowest-confidence ~10-15% to a ~90%-accurate model buys +4-6pp at +20-30% cost; the fallback-model pass cuts simulated failure rate ~25x (2.9% → 0.11%); v0→v17 is +28.4pp but v16 vs v17 is statistically inconclusive on shared images (P=0.57), and v11.8 still edges v17 (P=0.94).
+
 ### Changed
 
 - **800-image `rvl_cdip_800` evaluation (new env)** — qwen3.7-flash on 800 images (50/class × 16): **v0 529/800 (66.1%)**, **v11.8 665/800 (83.1%)**. v11.8 gains +17.0pp over the v0 baseline on the same 800-image slice. v0 cost $0.1792 expected / $0.1773 actual (+1.1%); v11.8 $0.3276 expected / $0.3427 actual (+4.6%, heavy prompt caching — ~61% of prompt tokens cached at 10%). v11.8 top confused pairs: budget→invoice (13), letter→memo (10), invoice→budget (7). Reports + confusion matrices in `reports/` (`experiment_reports/`, `confusion_matrices/`, `failed_reasoning_traces/`).
