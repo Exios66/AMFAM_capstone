@@ -7,6 +7,8 @@ Braintrust wire protocol (experiment fetch, attachment downloads, dataset
 loading) lives in one place.
 """
 
+from __future__ import annotations
+
 import base64
 import os
 import re

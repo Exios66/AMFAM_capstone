@@ -17,6 +17,8 @@ Usage:
     python scripts/braintrust/braintrust_openrouter_input.py --experiment-name qwen3.7-flash_v4_reasoning
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import random

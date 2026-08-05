@@ -5,6 +5,9 @@ project:
     - charts/
     - assets/
 
+execute:
+  enabled: false
+
 website:
   title: "RVL-CDIP Document Classifier"
   description: "16-class document intelligence on RVL-CDIP — OpenRouter vision models, 27 prompt versions, Braintrust evals, and Monte Carlo analysis."
@@ -50,6 +53,11 @@ website:
           - montecarlo/ale-stopword.qmd
           - montecarlo/verification.qmd
           - montecarlo/corpus-summary.qmd
+      - text: Notebooks
+        menu:
+          - notebooks/01_env_setup_and_single_image.ipynb
+          - notebooks/02_balanced_sampling_and_braintrust_upload.ipynb
+          - notebooks/03_watchers_evaluators_full_experiment.ipynb
       - text: Appendix
         menu:
           - appendix/misclassifications.qmd

@@ -23,6 +23,8 @@ Usage:
     python scripts/braintrust/create_braintrust_800_dataset.py --output-dir ./fixed_size_sampled
 """
 
+from __future__ import annotations
+
 import argparse
 import io
 import os

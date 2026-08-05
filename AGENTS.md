@@ -108,6 +108,33 @@ Artifacts produced in `reports/`: `report_<experiment>.md`, `confusion_matrix_<e
 
 `braintrust_metrics_visual.py` and `braintrust_report_manifest.py` also append to `docs/experiments/experiment_log.md` (skips experiments already recorded).
 
+## Quarto Site & Notebooks
+
+The shareable documentation site lives in `website/` and is published from there (e.g. `quarto publish posit-connect-cloud` from `website/`). It renders offline with **no API/network spend**.
+
+```bash
+# 1. Regenerate charts (SVGs) from committed markdown reports
+python scripts/site/build_site_charts.py
+
+# 2. Regenerate the documentation pages (methods, results, prompt evolution,
+#    cost, monte carlo, appendix) from docs/reports/ into website/**/*.qmd
+python scripts/site/build_site.py
+
+# 3. Regenerate the three walkthrough notebooks (repo + website copies)
+python scripts/site/build_notebooks.py
+
+# 4. Render the site (execution is disabled via `execute: {enabled: false}`)
+quarto render website/
+```
+
+- `scripts/site/build_site_charts.py` — 34 SVG charts from `reports/` + `docs/experiments/` (accuracy arcs, per-class, confusion heatmaps, cost, Monte Carlo ALE/stop-word).
+- `scripts/site/build_site.py` — wraps docs/reports into `website/**/*.qmd`; fixes `$` costs corrupted by `/bin/zsh.`; rewrites asset paths; builds the misclassification appendix (markdown traces inside `<details>`, one open per class) and the classes page from `src/constants.py`.
+- `scripts/site/build_notebooks.py` — emits the three nbformat v4 walkthrough notebooks to `notebooks/` and mirrors them into `website/notebooks/`. Regenerate after any prompt/runner change that the notebooks reference.
+- `website/_quarto.yml` — `cosmo` theme + `assets/css/custom.scss`; navbar groups (Methods & Reference, Results, Prompt Evolution, Cost Analysis, Monte Carlo, Notebooks, Appendix); `execute: {enabled: false}` so notebook pages render statically.
+- `website/_site/` is gitignored (render output).
+
+The three notebooks are the end-to-end onboarding path: **01** env setup + single-image classification, **02** deterministic balanced sampling + idempotent Braintrust upload + queuing a run, **03** preflight, the three registered evaluators, manifest watchers, crash-proof resume, and the post-run scoring/reporting chain.
+
 ## Dataset Slices
 
 Datasets are balanced (N images per class x 16 classes) and uploaded to Braintrust as row attachments (base64 PNGs with ground-truth labels). All scripts de-duplicate against existing datasets.
