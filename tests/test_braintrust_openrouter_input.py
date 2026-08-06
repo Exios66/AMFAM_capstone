@@ -75,3 +75,51 @@ class TestGetApiKeys:
         with mock.patch("src.env_utils.load_dotenv_if_available"):
             with pytest.raises(SystemExit):
                 bi.get_api_keys()
+
+    def test_agent_uses_agent_key(self, monkeypatch):
+        import pytest
+        from unittest import mock
+
+        monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+        monkeypatch.setenv("AGENT_BRAINTRUST_API_KEY", "agent-key")
+        monkeypatch.delenv("BRAINTRUST_API_KEY", raising=False)
+        with mock.patch("src.env_utils.load_dotenv_if_available"):
+            assert bi.get_api_keys(agent=True) == ("or-key", "agent-key")
+
+    def test_agent_exits_without_agent_key(self, monkeypatch):
+        import pytest
+        from unittest import mock
+
+        monkeypatch.setenv("OPENROUTER_API_KEY", "or-key")
+        monkeypatch.delenv("AGENT_BRAINTRUST_API_KEY", raising=False)
+        monkeypatch.setenv("BRAINTRUST_API_KEY", "bt-key")
+        with mock.patch("src.env_utils.load_dotenv_if_available"):
+            with pytest.raises(SystemExit):
+                bi.get_api_keys(agent=True)
+
+
+class TestParseScorers:
+    def test_none_defaults_to_caller_choice(self):
+        assert bi.parse_scorers(None) is None
+
+    def test_parses_csv(self):
+        assert bi.parse_scorers("exact_match,failure") == ["exact_match", "failure"]
+
+    def test_single(self):
+        assert bi.parse_scorers("exact_match") == ["exact_match"]
+
+    def test_none_keyword_means_no_scorers(self):
+        assert bi.parse_scorers("none") == []
+        assert bi.parse_scorers("none") is not None
+
+    def test_empty_means_no_scorers(self):
+        assert bi.parse_scorers("") == []
+
+    def test_whitespace_tolerated(self):
+        assert bi.parse_scorers(" exact_match , cost ") == ["exact_match", "cost"]
+
+    def test_unknown_scorer_rejected(self):
+        import pytest
+
+        with pytest.raises(SystemExit):
+            bi.parse_scorers("exact_match,bogus")

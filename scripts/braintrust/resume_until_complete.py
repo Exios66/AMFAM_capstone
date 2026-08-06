@@ -124,6 +124,8 @@ def build_command(args: argparse.Namespace) -> list[str]:
         cmd += ["--samples-per-class", str(args.samples_per_class), "--sample-seed", str(args.sample_seed)]
     if args.fallback_model:
         cmd += ["--fallback-model", args.fallback_model]
+    if args.no_scorers:
+        cmd += ["--no-scorers"]
     return cmd
 
 
@@ -155,6 +157,9 @@ def main() -> int:
     parser.add_argument("--fallback-model", default=None,
                         help="Salvage model passed through to the eval runner "
                              "(salvages content-filtered rows that fail primary retries)")
+    parser.add_argument("--no-scorers", action="store_true",
+                        help="Pass --no-scorers to the eval runner (no Braintrust score spans; "
+                             "score the manifest locally with score_manifest.py)")
     args = parser.parse_args()
 
     global EXPECTED_ROWS

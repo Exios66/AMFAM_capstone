@@ -34,7 +34,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import braintrust
 from openai import OpenAI
 
-from src.braintrust_config import load_braintrust_config
+from src.braintrust_config import load_agent_config, load_braintrust_config
 from src.braintrust_utils import load_braintrust_dataset
 from src.env_utils import require_env
 from src.evaluation import ManifestStore, dataset_fingerprint, validate_dataset
@@ -228,9 +228,36 @@ def quiet_reporter() -> braintrust.Reporter:
     )
 
 
-def get_api_keys() -> tuple[str, str]:
-    """Load required API keys from environment."""
-    return require_env("OPENROUTER_API_KEY", "BRAINTRUST_API_KEY")
+SCORER_NAMES = ("exact_match", "failure", "cost")
+
+
+def get_api_keys(agent: bool = False) -> tuple[str, str]:
+    """Load required API keys from environment.
+
+    ``agent=True`` uses the brand-new agent account's Braintrust key
+    (``AGENT_BRAINTRUST_API_KEY``) instead of the main account key.
+    """
+    bt_key = "AGENT_BRAINTRUST_API_KEY" if agent else "BRAINTRUST_API_KEY"
+    return require_env("OPENROUTER_API_KEY", bt_key)
+
+
+def parse_scorers(value: str | None) -> list[str] | None:
+    """Parse the ``--scorers`` argument into a validated scorer-name list.
+
+    ``None`` means "the caller's default"; ``"none"``/empty selects no
+    Braintrust scorers (rows still logged, scored locally by score_manifest).
+    """
+    if value is None:
+        return None
+    names = [v.strip() for v in value.split(",") if v.strip()]
+    if not names or value.strip().lower() == "none":
+        return []
+    unknown = set(names) - set(SCORER_NAMES)
+    if unknown:
+        raise SystemExit(
+            f"unknown scorers: {sorted(unknown)} (allowed: {list(SCORER_NAMES)}, 'none')"
+        )
+    return names
 
 
 def extract_class_from_filename(filename: str) -> str:
@@ -338,13 +365,18 @@ def run_eval(
     max_concurrency: int = 8,
     sound: bool = True,
     fallback_model: str | None = None,
+    no_scorers: bool = False,
+    braintrust_key: str | None = None,
+    scorers: list[str] | None = None,
 ) -> None:
     """Run the classification prompt against the dataset and log to Braintrust."""
     validate_dataset(dataset)
     if max_tokens <= 0:
         raise ValueError("max_tokens must be positive")
     openrouter_key = os.environ.get("OPENROUTER_API_KEY")
-    braintrust_key = os.environ.get("BRAINTRUST_API_KEY")
+    braintrust_key = braintrust_key or os.environ.get("BRAINTRUST_API_KEY")
+    if not braintrust_key:
+        sys.exit("Error: BRAINTRUST_API_KEY (or AGENT_BRAINTRUST_API_KEY with --agent) must be set")
     
     # Initialize braintrust with proper login and project using eval API key
     braintrust.login(api_key=braintrust_key)
@@ -608,6 +640,22 @@ def run_eval(
         """
         return cost_by_index.get(input.get("index"), 0.0)
 
+    # Braintrust scorer selection. --agent runs register only exact_match to
+    # avoid extra Braintrust scorer work; --no-scorers / --scorers none run none
+    # (scored locally via score_manifest). failure and cost remain derivable
+    # from the manifest regardless (ERROR: sentinel output + usage.cost).
+    scorer_registry = {
+        "exact_match": exact_match,
+        "failure": failure,
+        "cost": cost,
+    }
+    if no_scorers:
+        scores = []
+    elif scorers is not None:
+        scores = [scorer_registry[name] for name in scorers]
+    else:
+        scores = [exact_match, failure, cost]
+
     result = braintrust.Eval(
         PROJECT_NAME,
         data=lambda: [
@@ -622,7 +670,7 @@ def run_eval(
             for i, d in enumerate(dataset)
         ],
         task=classify_document,
-        scores=[exact_match, failure, cost],
+        scores=scores,
         max_concurrency=max_concurrency,
         reporter=quiet_reporter(),
         project_id=project_id,
@@ -637,7 +685,13 @@ def run_eval(
             "dataset": f"{DEFAULT_DATASET_PROJECT}/{dataset_name}",
             "manifest": str(manifest_path) if manifest_path else None,
         },
-        description=f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} | temperature {temperature} | Braintrust scorers: exact_match, failure, cost (near-miss scored locally via score_manifest)",
+        description=(
+            f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} "
+            f"| temperature {temperature} | "
+            + (f"Braintrust scorers: {', '.join(s.__name__ for s in scores)}"
+               if scores else
+               "no Braintrust scorers (scored locally via score_manifest)")
+        ),
     )
 
     failed_count = print_classifications(result)
@@ -694,10 +748,13 @@ def print_classifications(result) -> int:
 
 
 def main() -> None:
-    # Loads .env and validates both keys are present before anything else.
-    get_api_keys()
-
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--agent", action="store_true",
+                        help="Run under the agent Braintrust account (AGENT_BRAINTRUST_API_KEY); "
+                             "registers only the exact_match scorer")
+    parser.add_argument("--scorers", default=None,
+                        help="Comma-separated Braintrust scorers to register: exact_match,failure,cost "
+                             "(default all three; 'none' for none). --agent defaults to exact_match")
     parser.add_argument("--project", default=PROJECT_NAME,
                         help="Braintrust project for evaluation (where results are logged)")
     parser.add_argument("--project-id", default=PROJECT_ID,
@@ -736,7 +793,37 @@ def main() -> None:
     parser.add_argument("--fallback-model", default=None,
                         help="Salvage model for rows that fail all primary retries "
                              "(e.g. content-filtered images); tried once per failed row")
+    parser.add_argument("--no-scorers", action="store_true",
+                        help="Skip Braintrust scoring: log rows without exact_match/failure/cost "
+                             "score spans. The local manifest still records tag, runner_up and "
+                             "cost; score post-hoc with score_manifest.py --no-backfill")
     args = parser.parse_args()
+
+    # Resolve the account profile. --agent uses the brand-new agent account
+    # (AGENT_BRAINTRUST_API_KEY, optional AGENT_BRAINTRUST_* org/project
+    # overrides); everything else uses the main account config.
+    if args.agent:
+        agent_cfg = load_agent_config()
+        braintrust_key = agent_cfg.api_key
+        project = args.project if args.project != PROJECT_NAME else agent_cfg.project_name
+        project_id = agent_cfg.project_id
+        dataset_project = agent_cfg.dataset_project
+        dataset_name = args.dataset if args.dataset != DEFAULT_DATASET else agent_cfg.dataset
+        org_id = agent_cfg.org_id
+        api_base = agent_cfg.api_base.rstrip("/")
+        scorers = parse_scorers(args.scorers) if args.scorers is not None else ["exact_match"]
+    else:
+        braintrust_key = os.environ.get("BRAINTRUST_API_KEY")
+        project = args.project
+        project_id = args.project_id
+        dataset_project = args.dataset_project
+        dataset_name = args.dataset
+        org_id = ORG_ID
+        api_base = BRAINTRUST_API_BASE
+        scorers = parse_scorers(args.scorers)
+
+    # Loads .env and validates the required keys are present.
+    get_api_keys(agent=args.agent)
 
     if args.images_dir:
         dataset = load_dataset_images(args.images_dir)
@@ -745,7 +832,7 @@ def main() -> None:
         # source-account key (DATA_BRAINTRUST_KEY) is configured, use it instead.
         source_key = os.environ.get("DATA_BRAINTRUST_KEY")
         dataset = load_braintrust_dataset(
-            args.dataset_project, args.dataset, source_key, org_id=ORG_ID, api_base=BRAINTRUST_API_BASE
+            dataset_project, dataset_name, source_key, org_id=org_id, api_base=api_base
         )
 
     if args.samples_per_class:
@@ -761,7 +848,7 @@ def main() -> None:
 
     validate_dataset(dataset)
     print(f"Running evaluation with {args.model} using prompt {args.prompt_version} on {len(dataset)} images")
-    print(f"Evaluation project: {args.project} ({args.project_id}), Dataset from: {args.dataset_project}/{args.dataset}")
+    print(f"Evaluation project: {project} ({project_id}), Dataset from: {dataset_project}/{dataset_name}")
     run_eval(
         dataset,
         model=args.model,
@@ -769,13 +856,16 @@ def main() -> None:
         max_tokens=args.max_tokens,
         temperature=args.temperature,
         reasoning_effort=args.reasoning_effort,
-        project_id=args.project_id,
+        project_id=project_id,
         experiment_name=args.experiment_name,
-        dataset_name=args.dataset,
+        dataset_name=dataset_name,
         manifest_path=args.manifest,
         max_concurrency=args.max_concurrency,
         sound=not args.no_sound,
         fallback_model=args.fallback_model,
+        no_scorers=args.no_scorers,
+        braintrust_key=braintrust_key,
+        scorers=scorers,
     )
 
 

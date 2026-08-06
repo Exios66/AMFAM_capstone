@@ -195,6 +195,10 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 
 **Config hierarchy**: `braintrust.env` (gitignored, single source of truth) → loaded by `src/braintrust_config.py` → falls back to `.env` for unset variables. `BraintrustConfig` dataclass exposes: `org_id`, `project_id`, `project_name`, `dataset`, `dataset_project`, `smoke_dataset`, `model`, `qwen_experiments`, `api_key`, `data_api_key`. CLI flags override config per run.
 
+### Agent account (`AGENT_BRAINTRUST_API_KEY`)
+
+A brand-new Braintrust account (saved in `.env` as `AGENT_BRAINTRUST_API_KEY`) that can run scorers. `src/braintrust_config.py:load_agent_config()` resolves it — `AGENT_BRAINTRUST_ORG_ID` / `_PROJECT_ID` / `_PROJECT_NAME` / `_DATASET_PROJECT` / `_DATASET` / `_API_BASE` override the main account, everything unset falls back to the main config, so saving just the key runs the agent against the same org/project. The eval runner uses it via `--agent`, which registers **only the `exact_match` scorer** to minimize Braintrust scorer work (`failure` + `cost` remain derivable from the manifest: `ERROR:` sentinel output + `usage.cost`). `--scorers exact_match,failure,cost` (or `--scorers none`) overrides the scorer set on any run; `--no-scorers` still skips all Braintrust scoring.
+
 ### Using `braintrust.env`
 
 `braintrust.env` is the **single source of truth** for Braintrust configuration. `src/braintrust_config.py:load_braintrust_config()` loads it first (highest precedence) and only falls back to `.env` for variables it does not set. Today `braintrust.env` carries the **new** account's credentials (`AMFAMv2` org/project plus the new `BRAINTRUST_API_KEY`) while `.env` may still hold the **previous** account's key. Because `braintrust.env` loads first, `config.api_key` from `load_braintrust_config()` resolves to the **new** key — but scripts that read `os.environ["BRAINTRUST_API_KEY"]` directly will silently pick up the stale `.env` value. **Always resolve Braintrust keys/ids via `config.api_key` / `config.project_id` from `load_braintrust_config()`.** OpenRouter keys (`OPENROUTER_API_KEY`, `RESEARCH_FUNDING_API_KEY`) normally live in `.env`.

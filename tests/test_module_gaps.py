@@ -77,6 +77,10 @@ class TestBraintrustConfig:
             "BRAINTRUST_DATASET_PROJECT", "BRAINTRUST_DATASET", "BRAINTRUST_SMOKE_DATASET",
             "BRAINTRUST_MODEL", "BRAINTRUST_API_BASE", "BRAINTRUST_API_KEY",
             "DATA_BRAINTRUST_KEY", "QWEN_EXPERIMENTS",
+            "AGENT_BRAINTRUST_API_KEY", "AGENT_BRAINTRUST_ORG_ID",
+            "AGENT_BRAINTRUST_PROJECT_ID", "AGENT_BRAINTRUST_PROJECT_NAME",
+            "AGENT_BRAINTRUST_DATASET_PROJECT", "AGENT_BRAINTRUST_DATASET",
+            "AGENT_BRAINTRUST_API_BASE",
         ):
             monkeypatch.delenv(key, raising=False)
 
@@ -104,3 +108,29 @@ class TestBraintrustConfig:
         monkeypatch.setenv("BRAINTRUST_DATASET", "")
         cfg = bc.load_braintrust_config(env_file="definitely-missing.env")
         assert cfg.dataset == bc.DEFAULT_DATASET
+
+    def test_agent_config_falls_back_to_main_defaults(self):
+        cfg = bc.load_agent_config(env_file="definitely-missing.env")
+        assert cfg.org_id == bc.DEFAULT_ORG_ID
+        assert cfg.project_id == bc.DEFAULT_PROJECT_ID
+        assert cfg.dataset == bc.DEFAULT_DATASET
+        assert cfg.api_key == ""
+
+    def test_agent_config_reads_agent_key_and_overrides(self, monkeypatch):
+        monkeypatch.setenv("AGENT_BRAINTRUST_API_KEY", "agent-key")
+        monkeypatch.setenv("AGENT_BRAINTRUST_PROJECT_ID", "agent-project-id")
+        monkeypatch.setenv("AGENT_BRAINTRUST_ORG_ID", "agent-org-id")
+        cfg = bc.load_agent_config(env_file="definitely-missing.env")
+        assert cfg.api_key == "agent-key"
+        assert cfg.project_id == "agent-project-id"
+        assert cfg.org_id == "agent-org-id"
+        # unoverridden fields keep main fallbacks
+        assert cfg.dataset == bc.DEFAULT_DATASET
+        assert cfg.model == bc.DEFAULT_MODEL
+
+    def test_agent_config_ignores_main_api_key(self, monkeypatch):
+        monkeypatch.setenv("BRAINTRUST_API_KEY", "main-key")
+        cfg = bc.load_agent_config(env_file="definitely-missing.env")
+        assert cfg.api_key == ""
+        monkeypatch.setenv("AGENT_BRAINTRUST_API_KEY", "agent-key")
+        assert bc.load_agent_config(env_file="definitely-missing.env").api_key == "agent-key"
