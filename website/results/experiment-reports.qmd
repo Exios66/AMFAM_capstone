@@ -4,7 +4,7 @@ subtitle: 'Per-run: accuracy · tokens · cost · per-class breakdowns'
 toc: true
 toc-depth: 3
 ---
-<p>Full per-experiment reports: exact-match accuracy, token usage, expected-vs-actual cost with scale-up projections, per-class accuracy, and confusion-matrix links.</p>
+<*p*>Full per-experiment reports: exact-match accuracy, token usage, expected-vs-actual cost with scale-up projections, per-class accuracy, and confusion-matrix links.</*p*>
 
 ## Braintrust Experiment Report — gemini-2.5-flash-lite_v11_8_reasoning_160-d558f2bc
 
@@ -34,7 +34,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.1/M input tokens, $0.4/M output tokens (`google/gemini-2.5-flash-lite`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.1/*M* input tokens, $0.4/*M* output tokens (`google/gemini-2.5-flash-lite`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -110,7 +110,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.14/M input tokens, $1.0/M output tokens (`qwen/qwen3.5-35b-a3b`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.14/*M* input tokens, $1.0/*M* output tokens (`qwen/qwen3.5-35b-a3b`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -186,7 +186,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.14/M input tokens, $1.0/M output tokens (`qwen/qwen3.5-35b-a3b`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.14/*M* input tokens, $1.0/*M* output tokens (`qwen/qwen3.5-35b-a3b`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -262,7 +262,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -338,7 +338,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -414,7 +414,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input — this run had heavy prompt caching (7,326 avg cached tokens/image, ~61% of prompt tokens), so expected cost below applies the cache discount to cached tokens.
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input — this run had heavy prompt caching (7,326 avg cached tokens/image, ~61% of prompt tokens), so expected cost below applies the cache discount to cached tokens.
 
 > Note: token/cost metrics are measured from the original run (experiment `qwen3.7-flash_v11.8_reasoning_800`); the final resume run's spans logged no usage because 797/800 rows were manifest-cache hits.
 
@@ -490,7 +490,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -566,7 +566,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -642,7 +642,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -715,7 +715,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -788,7 +788,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -861,7 +861,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|
@@ -937,7 +937,7 @@ toc-depth: 3
 
 ### Cost — Expected vs Actual
 
-**List pricing:** $0.03/M input tokens, $0.13/M output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
+**List pricing:** $0.03/*M* input tokens, $0.13/*M* output tokens (`qwen/qwen3.7-flash`, per OpenRouter model listing). Cached input priced at 10% of input (not applicable here — `cached_tokens` is 0 across the run).
 
 | Metric | Value |
 |--------|------:|

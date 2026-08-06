@@ -7,7 +7,7 @@ toc-depth: 3
 ## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
 
 **Experiment ID:** main-1785360515
-**Link:** <https://www.braintrust.dev/app/UW-Madison-DSHB/p/AMFAM-Doc-Classification/experiments/main-1785360515>
+**Link:** <https://www.braintrust.dev/app/UW-Madison-DSHB/*p*/AMFAM-Doc-Classification/experiments/main-1785360515>
 **Dataset:** Braintrust dataset `fixed_size_sampled` (project `DSHB_amfam_capstone_2026`), images pulled from row attachments
 **Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
 **Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`, `max_concurrency=8`

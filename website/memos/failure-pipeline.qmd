@@ -17,7 +17,7 @@ date: "2026-08-05"
 
 **With fallback enabled, the pipeline failure rate is ~0.11% — a 24× reduction over the observed 2.72% single-pass rate.** The fitted model: P(first success) = 0.946, provider transient/quota 429 failures ≈ 0, max_tries = 3, two API keys, fallback on.
 
-| Scale | Expected failures | 95% CI | P(>1%) | P(>5%) |
+| Scale | Expected failures | 95% *CI* | P(>1%) | P(>5%) |
 |---:|---:|---:|---:|---:|
 | 800 | 1 | 0–3 | 0.000 | 0.000 |
 | 25,000 | 28 | 19–39 | 0.000 | 0.000 |

@@ -4,7 +4,7 @@ subtitle: 'All experiments · heatmaps generated from committed tables'
 toc: true
 toc-depth: 3
 ---
-<p>Every confusion matrix computed from committed experiment data. The heatmap counts predicted (columns) against expected (rows) classes; the diagonal is the correct-class count. The recurring story across runs: `letter → memo`, `budget ↔ invoice`, and `* → form`.</p>
+<*p*>Every confusion matrix computed from committed experiment data. The heatmap counts predicted (columns) against expected (rows) classes; the diagonal is the correct-class count. The recurring story across runs: `letter → memo`, `budget ↔ invoice`, and `* → form`.</*p*>
 
 ## Confusion Matrix — gemini-2.5-flash-lite_v11_8_reasoning_160-d558f2bc
 

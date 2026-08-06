@@ -19,7 +19,38 @@ ROOT = Path(__file__).resolve().parents[2]
 WEBSITE = ROOT / "website"
 CHARTS = WEBSITE / "charts"
 
+sys.path.insert(0, str(ROOT))
+from src.apa7 import format_stats_apa  # noqa: E402
+
 GITHUB_BLOB = "https://github.com/Exios66/AMFAM_capstone/blob/main/"
+
+# Monte Carlo page → chart embed: (svg path relative to page, alt text)
+MC_EMBEDS = {
+    "montecarlo/ensemble-voting.qmd": (
+        "../charts/ensemble_vs_k.svg",
+        "Simulated ensemble majority-vote accuracy by committee size K with 95% CI band",
+    ),
+    "montecarlo/routing-abstention.qmd": (
+        "../charts/routing_escalation.svg",
+        "Confidence-gated escalation: accuracy vs cost Pareto curve",
+    ),
+    "montecarlo/failure-pipeline.qmd": (
+        "../charts/failure_pipeline.svg",
+        "Failure-pipeline sensitivity sweep: max_tries × fallback",
+    ),
+    "montecarlo/prompt-ablation.qmd": (
+        "../charts/prompt_ablation.svg",
+        "Paired-bootstrap prompt deltas with 95% CI (forest plot)",
+    ),
+    "montecarlo/verification.qmd": (
+        "../charts/verification.svg",
+        "Measured vs simulated accuracy: escalation + exemplar slices",
+    ),
+    "montecarlo/corpus-summary.qmd": (
+        "../charts/corpus_summary.svg",
+        "Corpus composition by model and prompt version",
+    ),
+}
 
 # ---------------------------------------------------------------------------
 # Corruption fixes for experiment_log.md (a `$0.` sequence was expanded by zsh
@@ -53,8 +84,10 @@ def _img_replacement(match: re.Match) -> str:
         return f"![{alt}](../charts/{stem}.svg)"
     if "stop_word_hasty" in stem:
         return "![Hasty-stop trigger words](../charts/hasty_stop_words.svg)"
-    if any(k in stem for k in ("ale_correctness", "stop_word_scatter")):
-        return f"*{alt} — chart not reproduced on the site; see `reports/monte_carlo/` in the repository.*"
+    if "ale_correctness" in stem:
+        return f"![{alt or 'ALE curves'}](../charts/ale_correctness.svg)"
+    if "stop_word_scatter" in stem:
+        return f"![{alt or 'Stop-word trigger geography'}](../charts/stop_word_scatter.svg)"
     return f"*{alt} — chart not reproduced on the site; see the repository's `reports/`.*"
 
 
@@ -68,8 +101,10 @@ def _png_link_replacement(match: re.Match) -> str:
         return f"[{text}](../charts/{stem}.svg)"
     if "stop_word_hasty" in stem:
         return f"[{text}](../charts/hasty_stop_words.svg)"
-    if any(k in stem for k in ("ale_correctness", "stop_word_scatter")):
-        return f"{text} (chart not reproduced on the site; see the repository's `reports/monte_carlo/`)"
+    if "ale_correctness" in stem:
+        return f"[{text}](../charts/ale_correctness.svg)"
+    if "stop_word_scatter" in stem:
+        return f"[{text}](../charts/stop_word_scatter.svg)"
     return f"[{text}]({GITHUB_BLOB}{path.replace('../../', '')})"
 
 
@@ -100,6 +135,15 @@ def strip_h1(text: str) -> str:
     return "\n".join(lines).lstrip("\n")
 
 
+def inject_mc_chart(body: str, svg_rel: str, alt: str) -> str:
+    """Inject a chart figure after the intro bullets, before the first ``##`` section."""
+    embed = f"\n![{alt}]({svg_rel})\n"
+    idx = body.find("\n## ")
+    if idx == -1:
+        return body + "\n" + embed
+    return body[:idx] + embed + body[idx:]
+
+
 def demote_heads(text: str, levels: int = 1) -> str:
     def _demote(m: re.Match) -> str:
         return "#" * (len(m.group(1)) + levels) + m.group(2)
@@ -114,6 +158,20 @@ def rewrite_assets(text: str, *, exp_log: bool = False) -> str:
     text = LINK_RE.sub(_link_replacement, text)
     text = PNG_LINK_RE.sub(_png_link_replacement, text)
     return text
+
+
+def format_body_apa(text: str) -> str:
+    """Apply APA 7 formatting, protecting fenced and inline code."""
+    # Split on fenced code blocks (```…```) and inline code (`…`),
+    # format only the non-code segments, then reassemble.
+    segments = re.split(r"(```[\s\S]*?```|`[^`\n]+`)", text)
+    out = []
+    for i, seg in enumerate(segments):
+        if i % 2 == 1:
+            out.append(seg)  # code segment — leave alone
+        else:
+            out.append(format_stats_apa(seg))
+    return "".join(out)
 
 
 def write_page(target: Path, title: str, body: str, *, subtitle: str = "",
@@ -435,6 +493,7 @@ def build_confusion_page() -> None:
         "count. The recurring story across runs: `letter → memo`, `budget ↔ invoice`, and "
         "`* → form`.</p>\n" + "\n".join(parts)
     )
+    body = format_body_apa(body)
     write_page(
         WEBSITE / "results/confusion-matrices.qmd",
         "Confusion Matrices",
@@ -458,6 +517,7 @@ def build_report_page() -> None:
         "cost with scale-up projections, per-class accuracy, and confusion-matrix links.</p>\n"
         + "\n".join(parts)
     )
+    body = format_body_apa(body)
     write_page(
         WEBSITE / "results/experiment-reports.qmd",
         "Experiment Reports",
@@ -476,6 +536,12 @@ def main() -> None:
         text = source.read_text(encoding="utf-8")
         text = rewrite_assets(text, exp_log=source.name == "experiment_log.md")
         body = strip_h1(text)
+        body = format_body_apa(body)
+        # Inject Monte Carlo charts for pages that have them
+        rel = target.relative_to(WEBSITE).as_posix()
+        if rel in MC_EMBEDS:
+            svg_rel, alt = MC_EMBEDS[rel]
+            body = inject_mc_chart(body, svg_rel, alt)
         write_page(target, title, body, description=desc)
 
     print("Aggregates:")

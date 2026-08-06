@@ -7,7 +7,7 @@ toc-depth: 3
 ## Experiment: `moonshotai/kimi-k3` — 160 Images (10 per class × 16 classes)
 
 **Experiment ID:** main-1785257772  
-**Link:** <https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/p/AMFAM-Doc-Classification/experiments/main-1785257772>  
+**Link:** <https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/*p*/AMFAM-Doc-Classification/experiments/main-1785257772>  
 **Dataset:** `fixed_size_sampled/images/` (1024×1024 padded PNGs)  
 **Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`  
 **Settings:** `max_tokens=500`, `temperature=0.1`
@@ -38,7 +38,7 @@ toc-depth: 3
 
 ### Cost Projections (Kimi K3, `max_tokens=500`, 1024×1024 images)
 
-**Pricing:** $0.30/M input tokens, $15.00/M output tokens
+**Pricing:** $0.30/*M* input tokens, $15.00/*M* output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
 | -------- | ---: | ---: | ---: | ---: |
@@ -53,7 +53,7 @@ toc-depth: 3
 ## Experiment: `google/gemini-2.5-flash` — 160 Images (10 per class × 16 classes)
 
 **Experiment ID:** main-1785265188  
-**Link:** <https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/p/AMFAM-Doc-Classification/experiments/main-1785265188>  
+**Link:** <https://www.braintrust.dev/app/DSHB_amfam_capstone_2026/*p*/AMFAM-Doc-Classification/experiments/main-1785265188>  
 **Dataset:** `fixed_size_sampled/images/` (1024×1024 padded PNGs)  
 **Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`  
 **Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`  
@@ -84,7 +84,7 @@ toc-depth: 3
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 1024×1024 images)
 
-**Pricing:** $0.15/M input tokens, $0.60/M output tokens
+**Pricing:** $0.15/*M* input tokens, $0.60/*M* output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
 | -------- | ---: | ---: | ---: | ---: |
@@ -123,7 +123,7 @@ toc-depth: 3
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
-**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+**Pricing:** $0.15/*M* input tokens, $0.6/*M* output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
 | -------- | ---: | ---: | ---: | ---: |
@@ -164,7 +164,7 @@ toc-depth: 3
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
-**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+**Pricing:** $0.15/*M* input tokens, $0.6/*M* output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
 | -------- | ---: | ---: | ---: | ---: |
@@ -196,7 +196,7 @@ toc-depth: 3
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
-**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+**Pricing:** $0.15/*M* input tokens, $0.6/*M* output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
 | -------- | ---: | ---: | ---: | ---: |
@@ -472,7 +472,7 @@ confusion matrix PNG/markdown, misclassification reasoning traces) live in
 | invoice | 9/10 | | specification | 10/10 |
 | letter | 10/10 | | memo | 10/10 |
 
-v11 improves v10's 154/158 → 156/158 (+1.3pp) and cuts the residual
+v11 improves v10's 154/158 → 156/158 (+1.3 *pp*) and cuts the residual
 `invoice ↔ budget` errors from 4 to 2. Only 2 misses remain, both in the
 agency-estimate/billing space v11 targets:
 
@@ -512,7 +512,7 @@ Per-class (20/class; 3 news_article rows unscored):
 | invoice | 15/20 | | specification | 15/20 |
 | letter | 15/20 | | memo | 19/20 |
 
-v11 on the noisy 320 set is 83.9% vs v10's 85.3% (−1.4pp) — a small regression
+v11 on the noisy 320 set is 83.9% vs v10's 85.3% (−1.4 *pp*) — a small regression
 on the same set, so the estimate-vs-bill tightening helps the curated archive
 set but does not transfer to the noisier 320 sample. Errors spread across many
 confusion pairs; the largest buckets (report filters 3 errored + 2 empty-output
@@ -665,7 +665,7 @@ no longer fall into budget:
   used for money planning or tracking**; a titled, designed deck chart stays
   presentation (check 9).
 - **Edit 2** — check 9 hardened: a titled/designed deck chart IS a
-  presentation slide; don't route it to budget.
+  presentation slide; don'*t* route it to budget.
 - **Edit 3** — calibration line: deck charts → presentation, product/parameter
   charts → specification.
 
@@ -718,7 +718,7 @@ Per-class (20/class):
 | invoice | 16/20 | | specification | 18/20 |
 | letter | 15/20 | | memo | 20/20 |
 
-v11.8 on the noisy 320 set is 87.2% vs v11's 83.9% (+3.3pp) — strong
+v11.8 on the noisy 320 set is 87.2% vs v11's 83.9% (+3.3 *pp*) — strong
 generalization of the 160-set improvement. Biggest per-class gains:
 
 - **budget** 13/20 → 16/20 (+3)
@@ -818,7 +818,7 @@ output after retries). Both remaining misses are pre-existing v11.7-era rows:
   0.1, regressed back at 0.3)
 
 So temperature 0.3 costs one regression on the budget/invoice boundary without recovering
-`jed71e00`; net −0.7pp vs temp 0.1 on scored rows.
+`jed71e00`; net −0.7 *pp* vs temp 0.1 on scored rows.
 
 ### qwen3.5-35b-a3b (max reasoning) — `qwen3.5-35b-a3b_v11_8_reasoning_160`
 
@@ -882,7 +882,7 @@ wanted; the experiment in Braintrust is partial and should not be used for compa
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
-**Pricing:** $0.15/M input tokens, $0.6/M output tokens
+**Pricing:** $0.15/*M* input tokens, $0.6/*M* output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
 |--------|---:|---:|---:|---:|
@@ -911,7 +911,7 @@ wanted; the experiment in Braintrust is partial and should not be used for compa
 
 ### Cost — Expected vs Actual
 
-**Pricing:** $0.03/M input, $0.13/M output. Expected $0.1792 (list price × measured tokens); actual billed $0.1773 (+1.1%).
+**Pricing:** $0.03/*M* input, $0.13/*M* output. Expected $0.1792 (list price × measured tokens); actual billed $0.1773 (+1.1%).
 
 | Images | Expected Cost | Estimated Actual |
 |--------|--------------:|-----------------:|
@@ -940,7 +940,7 @@ wanted; the experiment in Braintrust is partial and should not be used for compa
 
 ### Cost — Expected vs Actual
 
-**Pricing:** $0.03/M input ($0.003/M cached), $0.13/M output. Heavy prompt caching (~61% of prompt tokens cached). Expected $0.3276 (cache-adjusted); actual billed $0.3427 (+4.6%).
+**Pricing:** $0.03/*M* input ($0.003/*M* cached), $0.13/*M* output. Heavy prompt caching (~61% of prompt tokens cached). Expected $0.3276 (cache-adjusted); actual billed $0.3427 (+4.6%).
 
 | Images | Expected Cost | Estimated Actual |
 |--------|--------------:|-----------------:|

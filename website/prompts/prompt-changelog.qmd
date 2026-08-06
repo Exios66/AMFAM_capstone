@@ -70,7 +70,7 @@ No build script preserved. Likely minor tweaks between v11.5 and v11.7.
 **Three edits that narrow Edit B so titled/designed deck charts no longer fall into budget.**
 
 - **Edit 1 (Check 10 carve-out narrowed):** A product/parameter rate-data chart → specification. A research/measurement chart → scientific_report. A financial/money chart → budget ONLY when it is a standalone data table used for money planning or tracking (a ledger, budget-vs-actual, price/value table). A financial chart presented as a TITLED, DESIGNED DECK CHART (a chart page styled as a slide with its own title/caption, company logo/date, or chart-per-page deck look, e.g., a "brand shares" pie chart or "performance triggers" table page) → presentation (check 9), not budget.
-- **Edit 2 (Check 9 hardened):** A titled/designed deck chart IS a presentation slide; don't route it to budget. The check-10 carve-out routes money charts to budget only when they are standalone planning/tracking data tables, not when they are titled deck charts.
+- **Edit 2 (Check 9 hardened):** A titled/designed deck chart IS a presentation slide; don'*t* route it to budget. The check-10 carve-out routes money charts to budget only when they are standalone planning/tracking data tables, not when they are titled deck charts.
 - **Edit 3 (Calibration):** Keep the deck-chart exception visible next to the general chart rule.
 
 **Rationale:** v11.8's Edit B carve-out ("a financial/money chart is budget") was too broad — it routed titled designed deck charts to budget ahead of check 9. The eval set had two presentation→budget regressions (`presentation__0001`, `presentation__0011`) from v11.7 to v11.8. v11.9 narrows the carve-out to standalone planning/tracking tables only.
@@ -98,7 +98,7 @@ No build script preserved. Likely minor tweaks between v11.5 and v11.7.
 **Built from v11.9. Extends scientific_publication to specialist periodicals and scientific_report to research records.**
 
 - **Check 6 (Published evidence):** Include a dated, titled science, medical, engineering, or technical periodical page whose own masthead identifies that specialist publication (e.g., a science magazine or medical trade paper), even when it lacks volume/issue/DOI.
-- **Check 12 (News article caveat):** Don't use general-news caveat for specialist science, medical, engineering, or technical periodicals. A specialist periodical with its own dated masthead is scientific_publication, not news_article, even if its page uses magazine/news typography or a section title such as "Monitor" or "World Wide Report".
+- **Check 12 (News article caveat):** Don'*t* use general-news caveat for specialist science, medical, engineering, or technical periodicals. A specialist periodical with its own dated masthead is scientific_publication, not news_article, even if its page uses magazine/news typography or a section title such as "Monitor" or "World Wide Report".
 - **Check 10 (Form carve-out):** Generic administrative forms remain form, but a page whose fields, tables, signatures, or handwritten entries document a scientific experiment, laboratory result, compound test, analytical measurement, protocol review, or technical research report → scientific_report (check 13), not form.
 - **Check 10 (additional):** It does NOT cover scientific/laboratory research records merely because they use fields, tables, QA sign-offs, or a report cover.
 
@@ -186,7 +186,7 @@ No build script preserved. Likely minor tweaks between v11.5 and v11.7.
 | v2 (HF mirror) | 134/160 (83.8%) | 6 failed rows |
 | v3 (HF mirror) | 127/160 (79.4%) | 9 failed rows |
 
-**Findings:** Worked examples did not prevent the top confusions (handwritten→letter = 10, budget→invoice = 7 across slices). 16 total failed rows (13 finish_reason=length, 3 provider errors). v2/v3 HF-mirror source is ~15pp harder than v1 test_images source, independent of prompt version.
+**Findings:** Worked examples did not prevent the top confusions (handwritten→letter = 10, budget→invoice = 7 across slices). 16 total failed rows (13 finish_reason=length, 3 provider errors). v2/v3 HF-mirror source is ~15 *pp* harder than v1 test_images source, independent of prompt version.
 
 ---
 
@@ -198,7 +198,7 @@ Driven by three root causes identified in the v16 multispect evaluation (`report
 
 1. **Provider failures (16 rows / 3.3%)** — 13 finish_reason=length (qwen3.7-flash exhausts reasoning tokens on the bloated check-7 section) → **Fix:** Trim check-7 from 6,284 chars to ~1,100 chars (simplified invoice=payment-demand, budget=planning, estimate=budget). Reduced reasoning effort to `medium`. Raised MAX_TOKENS_CAP to 32,768. Added 300s HTTP timeout.
 
-2. **Slice source quality gap (~15pp)** — v2/v3 (HF mirror) images are inherently harder than v1 (test_images) → **Mitigation:** Stronger rules should be more robust across sources.
+2. **Slice source quality gap (~15 **pp**)** — v2/v3 (HF mirror) images are inherently harder than v1 (test_images) → **Mitigation:** Stronger rules should be more robust across sources.
 
 3. **Prompt regression from v11.8's 99.4%** — the agency-estimate sub-protocol caused the model to misclassify budgets (planning estimates) as invoices when "PREVIOUS/CURRENT ESTIMATE" revision columns were present. → **Fix:** Removed the entire agency-estimate sub-protocol. The rule is now simple: "A document titled ESTIMATE is budget — it PLANS spending. Only an explicit payment demand (Amount Due, Pay, Invoice header) makes it invoice."
 
@@ -287,7 +287,7 @@ own best evidence. These four exemplars teach the runner-up-vs-final decision on
 the highest-frequency pairs. Selected pairs cover 131 of 767 corpus errors (17%).
 
 **Status:** EXPERIMENTAL — NOT the default (default remains v17.2). **Verified
-on the exemplar slice (48 images): v18 scored 64.6% vs v17.2's 68.8% (−4.2pp) —
+on the exemplar slice (48 images): v18 scored 64.6% vs v17.2's 68.8% (−4.2 *pp*) —
 the exemplar appendix did NOT improve accuracy and slightly hurt.** The
 measurement shows that adding more worked-example text does not fix the
 runner-up-vs-final decision; the follow-up should be a decision-rule change

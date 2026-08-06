@@ -318,29 +318,54 @@ def f9_hasty_stop() -> None:
 def f10_failure_and_exemplar() -> None:
     fp = (MC / "failure_pipeline.md").read_text()
     sens = _parse_md_table(fp, "| max_tries |")
-    labels = [f"tries={r[0]}\nfallback={'on' if r[1] == 'on' else 'off'}" for r in sens]
-    rates = [float(r[2].rstrip("%")) for r in sens]
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+
+    # Left panel: grouped bars by max_tries, colored by fallback
     ax = axes[0]
-    colors = [PALETTE[1] if "on" in l else PALETTE[3] for l in labels]
-    ax.bar(labels, rates, color=colors, zorder=3)
-    for x, v in zip(range(len(rates)), rates):
-        ax.text(x, v * 1.03, f"{v:.3f}%", ha="center", fontsize=8.5)
-    ax.set_ylabel("Simulated failure rate (%)")
-    ax.set_title("Failure pipeline: fallback collapses 2.86% → 0.114%")
-    ax.set_ylim(0, 3.5)
-    ax.tick_params(axis="x", rotation=0, labelsize=8.5)
+    tries_unique = sorted(set(int(r[0]) for r in sens))
+    x = np.arange(len(tries_unique))
+    width = 0.32
+    off_rates = [float(r[2].rstrip("%")) for r in sens if r[1] == "off"]
+    on_rates = [float(r[2].rstrip("%")) for r in sens if r[1] == "on"]
+    bars_off = ax.bar(x - width / 2, off_rates, width, label="fallback off",
+                      color=PALETTE[3], zorder=3, edgecolor="#444", linewidth=0.4)
+    bars_on = ax.bar(x + width / 2, on_rates, width, label="fallback on",
+                     color=PALETTE[1], zorder=3, edgecolor="#444", linewidth=0.4)
+    for bar, v in zip(bars_off, off_rates):
+        ax.text(bar.get_x() + bar.get_width() / 2, v + 0.15, f"{v:.3f}%",
+                ha="center", va="bottom", fontsize=7.5, color="#444")
+    for bar, v in zip(bars_on, on_rates):
+        ax.text(bar.get_x() + bar.get_width() / 2, v + 0.08, f"{v:.3f}%",
+                ha="center", va="bottom", fontsize=7.5, color="#1a5c3a")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"max_tries={t}" for t in tries_unique], fontsize=9)
+    ax.set_ylabel("Simulated failure rate (%)", fontsize=10)
+    ax.set_title("Failure pipeline: fallback collapses 2.86% → 0.114%",
+                 fontsize=11, pad=10)
+    ax.set_ylim(0, 3.6)
+    ax.legend(loc="upper right", fontsize=9, framealpha=0.9)
+    ax.grid(axis="y", alpha=0.3)
+
+    # Right panel: measured vs simulated exemplar delta
     ax = axes[1]
     cats = ["Measured Δ\n(v18 vs v17.2)", "Simulated gain\n(exemplar model)"]
     vals = [-4.2, 4.27]
-    bars = ax.bar(cats, vals, color=[PALETTE[3], PALETTE[1]], zorder=3)
+    bars = ax.bar(cats, vals, color=[PALETTE[3], PALETTE[1]], zorder=3,
+                  width=0.55, edgecolor="#444", linewidth=0.4)
     for b, v in zip(bars, vals):
-        ax.text(b.get_x() + b.get_width() / 2, v + (0.3 if v > 0 else -0.3),
-                f"{v:+.2f} pp", ha="center", va="bottom" if v > 0 else "top", fontsize=9)
+        offset = 0.5 if v > 0 else -0.5
+        ax.text(b.get_x() + b.get_width() / 2, v + offset,
+                f"{v:+.2f} pp", ha="center",
+                va="bottom" if v > 0 else "top", fontsize=10,
+                fontweight="bold", color="#1a3a5c" if v > 0 else "#7a1a1a")
     ax.axhline(0, color="#444", linewidth=1)
-    ax.set_ylabel("Accuracy delta (percentage points)")
-    ax.set_title("Exemplar appendix: simulation over-optimistic vs measured")
-    ax.set_ylim(-6, 6)
+    ax.set_ylabel("Accuracy delta (percentage points)", fontsize=10)
+    ax.set_title("Exemplar appendix: simulation over-optimistic vs measured",
+                 fontsize=11, pad=10)
+    ax.set_ylim(-6.5, 6.5)
+    ax.grid(axis="y", alpha=0.3)
+
+    fig.tight_layout(w_pad=2.5)
     _save(fig, "f10_failure_and_exemplar")
 
 

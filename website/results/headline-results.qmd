@@ -104,7 +104,7 @@ about production behavior.
 ## Next moves (from the run analysis)
 
 1. **Fix the 72 near-misses** — sharpen tie-break rules between the top confused
-   pairs (highest leverage, up to ~6.4pp).
+   pairs (highest leverage, up to ~6.4 *pp*).
 2. **Revisit `budget`/`letter`** — the two classes whose low accuracy drives most
    of the miss budget.
 3. **Read the reasoning traces** before the next prompt iteration — the raw

@@ -20,7 +20,7 @@ On the 160-image `fixed_size_sampled` slice with comparable v11.8-era prompts, *
 | Model | Prompt | Accuracy | Notes |
 |---|---:|---:|---:|
 | **qwen/qwen3.7-flash** | v11.8 | **99.4%** (157/158) | best result on the curated slice |
-| qwen/qwen3.7-flash (temp 0.3) | v11.8 | 98.7% (157/159) | +0.3 temp costs ~0.7 pp |
+| qwen/qwen3.7-flash (temp 0.3) | v11.8 | 98.7% (157/159) | +0.3 temp costs ~0.7 *pp* |
 | qwen/qwen3.5-35b-a3b | v11.8 | 98.7% (155/157) | hybrid reasoning; 3 length-failed rows |
 | google/gemini-2.5-flash-lite | v11.8 | 86.9% (139/160) | zero failed rows; different miss profile |
 | google/gemini-2.5-flash | v3/v4 | 77.4% / 77.7% | pre-v7 prompt family |
@@ -30,7 +30,7 @@ The gap is **prompt-family × model interaction**, not raw capability: qwen3.7-f
 
 **Cost-adjusted view:** qwen3.7-flash is also the cheapest among the live runs — see the [cost memo](cost-per-image.qmd). Gemini-2.5-flash-lite, at 86.9% with zero failed rows, is a credible fallback/second-opinion model for the routing study.
 
-**Conclusion.** For this 16-class cascade, qwen3.7-flash + v11.8/v17.x is the best accuracy and cost choice; the other models bracket a 12–29 pp accuracy range that prompt family largely explains.
+**Conclusion.** For this 16-class cascade, qwen3.7-flash + v11.8/v17.x is the best accuracy and cost choice; the other models bracket a 12–29 *pp* accuracy range that prompt family largely explains.
 
 ::: {.memo-sources}
 *Sources:* `docs/experiments/experiment_log.md` · `reports/report_*_v11_8_*.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)

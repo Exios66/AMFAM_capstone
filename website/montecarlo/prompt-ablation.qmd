@@ -22,13 +22,15 @@ the 95% CI excludes zero.
 | `qwen3.7-flash` | `v11.8` | `v16` | 319 | 0.890 | 0.900 | -0.009 | -0.053..+0.034 | 0.306 | inconclusive |
 | `qwen3.7-flash` | `v16` | `v17` | 159 | 0.969 | 0.962 | +0.006 | -0.031..+0.044 | 0.563 | inconclusive |
 
+![Paired-bootstrap prompt deltas with 95% CI (forest plot)](../charts/prompt_ablation.svg)
+
 ## Per-class deltas (A - B) on shared images
 
 Only classes with >=5 shared images are shown.
 
 ### v0 vs v17 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | +0.000 | +0.000..+0.000 | 0.000 |
 | budget | -0.700 | -1.000..-0.400 | 0.000 |
@@ -49,7 +51,7 @@ Only classes with >=5 shared images are shown.
 
 ### v0 vs v16 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | -0.053 | -0.158..+0.000 | 0.000 |
 | budget | -0.474 | -0.737..-0.158 | 0.001 |
@@ -70,7 +72,7 @@ Only classes with >=5 shared images are shown.
 
 ### v0 vs v14 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | -0.100 | -0.300..+0.000 | 0.000 |
 | budget | +0.111 | -0.222..+0.444 | 0.613 |
@@ -91,7 +93,7 @@ Only classes with >=5 shared images are shown.
 
 ### v0 vs v11.8 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | +0.051 | +0.000..+0.119 | 0.955 |
 | budget | -0.321 | -0.472..-0.170 | 0.000 |
@@ -112,7 +114,7 @@ Only classes with >=5 shared images are shown.
 
 ### v11.8 vs v14 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | -0.200 | -0.500..+0.000 | 0.000 |
 | budget | +0.200 | -0.300..+0.600 | 0.730 |
@@ -133,7 +135,7 @@ Only classes with >=5 shared images are shown.
 
 ### v11.8 vs v17 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | +0.000 | +0.000..+0.000 | 0.000 |
 | budget | +0.100 | -0.200..+0.400 | 0.618 |
@@ -154,7 +156,7 @@ Only classes with >=5 shared images are shown.
 
 ### v14 vs v16 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | +0.000 | +0.000..+0.000 | 0.000 |
 | budget | -0.200 | -0.600..+0.200 | 0.093 |
@@ -175,7 +177,7 @@ Only classes with >=5 shared images are shown.
 
 ### v11.8 vs v16 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | -0.105 | -0.263..+0.000 | 0.000 |
 | budget | +0.000 | -0.250..+0.300 | 0.434 |
@@ -196,7 +198,7 @@ Only classes with >=5 shared images are shown.
 
 ### v16 vs v17 (qwen3.7-flash)
 
-| class | delta | 95% CI | P(A wins) |
+| class | delta | 95% *CI* | P(A wins) |
 |---|---:|---:|---:|
 | advertisement | +0.000 | +0.000..+0.000 | 0.000 |
 | budget | +0.100 | -0.200..+0.400 | 0.618 |

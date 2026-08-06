@@ -11,6 +11,7 @@ gitignores ``*.png`` but not ``*.svg``).
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -24,9 +25,18 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
 CHARTS_DIR = ROOT / "website" / "charts"
+MC_DIR = ROOT / "reports" / "monte_carlo"
+
+# Import ALE estimator from the braintrust script (approach A: import via sys.path)
+sys.path.insert(0, str(ROOT / "scripts" / "braintrust"))
+from ale_stopword_visual import (  # noqa: E402
+    accumulated_local_effects,
+    build_rows as _build_rows,
+)
 
 sys.path.insert(0, str(ROOT))
 from src.constants import DOCUMENT_CLASSES  # noqa: E402
+from src.monte_carlo import load_corpus  # noqa: E402
 
 N_CLASSES = len(DOCUMENT_CLASSES)
 
@@ -377,6 +387,408 @@ def chart_progress(out_name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# ALE (Accumulated Local Effects) curves
+# ---------------------------------------------------------------------------
+
+ALE_FEATURES = [
+    ("reasoning_len", "Reasoning length (chars)"),
+    ("checks_walked", "Checks walked before stop"),
+    ("stop_position", "Stop position (check #)"),
+    ("max_tokens", "Token budget"),
+    ("cost", "Cost (USD)"),
+    ("attempts", "Attempts"),
+]
+
+
+def chart_ale_correctness(out_name: str, prompt_version: str = "v11.8") -> None:
+    """Multi-panel ALE of reasoning features on P(correct).
+
+    Reads the committed corpus (reports/monte_carlo/corpus.jsonl), filters to
+    reasoning-covered rows, and computes ALE per feature with 20 quantile bins
+    and 200-draw bootstrap CI. Matches the methodology in ale_stopword_visual.py.
+    """
+    corpus_path = MC_DIR / "corpus.jsonl"
+    if not corpus_path.exists():
+        print(f"  skip ALE (corpus missing: {corpus_path})")
+        return
+    records = load_corpus(corpus_path)
+    rows = _build_rows(records)
+    rows = [r for r in rows if (r.get("reasoning_len") or 0) > 0]
+    if prompt_version:
+        rows = [r for r in rows if r.get("prompt_version") == prompt_version]
+    if not rows:
+        print("  skip ALE (no rows after filtering)")
+        return
+
+    panels = []
+    for key, label in ALE_FEATURES:
+        pts = [(r[key], 1.0 if r["correct"] else 0.0)
+               for r in rows if r.get(key) is not None and np.isfinite(r[key])]
+        if len(pts) < 20:
+            continue
+        xs = [p[0] for p in pts]
+        ys = [p[1] for p in pts]
+        res = accumulated_local_effects(xs, ys, n_bins=20)
+        if res is None:
+            continue
+        panels.append((key, label, res))
+
+    if not panels:
+        print("  skip ALE (no panels computable)")
+        return
+
+    ncols = 2
+    nrows = int(np.ceil(len(panels) / ncols))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(14, 3.6 * nrows))
+    axes = np.atleast_1d(axes).ravel()
+    for ax, (key, label, res) in zip(axes, panels):
+        ax.fill_between(res["centers"], res["ci_lo"], res["ci_hi"],
+                        color=ACCENT, alpha=0.15)
+        ax.plot(res["centers"], res["ale"], color=NAVY, lw=2)
+        ax.axhline(0.0, color="gray", lw=0.8, ls="--")
+        ax.set_title(f"ALE of {label}", fontsize=10, pad=6)
+        ax.set_xlabel(label, fontsize=9)
+        ax.set_ylabel("Effect on P(correct)", fontsize=9)
+        ax.tick_params(labelsize=8)
+        ax.grid(alpha=0.3)
+    for ax in axes[len(panels):]:
+        ax.set_visible(False)
+    fig.suptitle(
+        f"Accumulated Local Effects on Classification Accuracy — {prompt_version}\n"
+        f"({len(rows)} reasoning-covered rows, 20 bins, 200-draw bootstrap)",
+        fontsize=12, fontweight="bold", y=0.995,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    _save(fig, out_name)
+
+
+# ---------------------------------------------------------------------------
+# Stop-word scatter (trigger geography)
+# ---------------------------------------------------------------------------
+
+def chart_stop_scatter(md_path: Path, out_name: str) -> None:
+    """Bubble chart: stop position vs error rate per trigger word."""
+    rows = []
+    for line in md_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [_norm(c) for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 7 and cells[0] and cells[0] != "word":
+            try:
+                rows.append({
+                    "word": cells[0],
+                    "freq": int(cells[1]),
+                    "avg_stop_position": float(cells[2]),
+                    "error_rate": float(cells[3].rstrip("%")) / 100,
+                    "early_lift": float(cells[4]),
+                    "err_lift": float(cells[5]),
+                    "hasty_score": float(cells[6]),
+                })
+            except ValueError:
+                continue
+    if not rows:
+        print("  skip stop-scatter (no word table)")
+        return
+    rows.sort(key=lambda w: w["hasty_score"], reverse=True)
+    top = rows[:40]
+    fig, ax = plt.subplots(figsize=(11, 7))
+    xs = [w["avg_stop_position"] for w in top]
+    ys = [w["error_rate"] * 100 for w in top]
+    sizes = [20 + 55 * np.log1p(w["freq"]) for w in top]
+    sc = ax.scatter(xs, ys, s=sizes, alpha=0.65, c=[w["hasty_score"] for w in top],
+                    cmap="RdYlBu_r", edgecolor="gray", linewidth=0.5)
+    for w in top[:18]:
+        ax.annotate(w["word"], (w["avg_stop_position"], w["error_rate"] * 100),
+                    fontsize=7.5, xytext=(4, 3), textcoords="offset points")
+    ax.axvspan(1, 6, color="#e74c3c", alpha=0.06, label="early-stop zone")
+    ax.axhline(50, color="gray", ls="--", lw=0.8, alpha=0.6)
+    ax.set_xlabel("Mean stop position (check #) when word triggers", fontsize=11)
+    ax.set_ylabel("Error rate when word triggers (%)", fontsize=11)
+    ax.set_title("Stop-Word Trigger Geography: early + wrong = hasty",
+                 fontsize=12, fontweight="bold")
+    ax.legend(loc="lower right", fontsize=9)
+    cbar = fig.colorbar(sc, ax=ax, shrink=0.7)
+    cbar.set_label("hasty score", fontsize=10)
+    ax.grid(alpha=0.3)
+    _save(fig, out_name)
+
+
+# ---------------------------------------------------------------------------
+# Monte Carlo visualizations (for site montecarlo pages)
+# ---------------------------------------------------------------------------
+
+def chart_ensemble_vs_k(md_path: Path, out_name: str) -> None:
+    """Ensemble majority-vote accuracy by committee size K with 95% CI band."""
+    text = md_path.read_text(encoding="utf-8")
+    rows = []
+    for line in text.splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [_norm(c) for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 3 and cells[0] and cells[0] != "K":
+            try:
+                k = int(cells[0])
+                acc = float(cells[1])
+                lo_s, hi_s = cells[2].split("-")
+                lo, hi = float(lo_s), float(hi_s)
+                rows.append((k, acc, lo, hi))
+            except ValueError:
+                continue
+    if not rows:
+        print("  skip ensemble (no table)")
+        return
+    ks = [r[0] for r in rows]
+    accs = [r[1] for r in rows]
+    lo = [r[2] for r in rows]
+    hi = [r[3] for r in rows]
+    fig, ax = plt.subplots(figsize=(9, 5.2))
+    ax.plot(ks, [a * 100 for a in accs], marker="o", color=NAVY, linewidth=2.2, zorder=3)
+    ax.fill_between(ks, [l * 100 for l in lo], [h * 100 for h in hi],
+                    color=ACCENT, alpha=0.15)
+    for k, a in zip(ks, accs):
+        ax.annotate(f"{a:.3f}", (k, a * 100), textcoords="offset points",
+                    xytext=(0, 8), ha="center", fontsize=8.5)
+    ax.set_xticks(ks)
+    ax.set_xlabel("Committee size K (majority vote)", fontsize=10)
+    ax.set_ylabel("Simulated accuracy (%)", fontsize=10)
+    ax.set_title("Ensemble majority vote: monotone gains, diminishing returns",
+                 fontsize=11, fontweight="bold")
+    ax.set_ylim(80, 88)
+    ax.grid(alpha=0.3)
+    _save(fig, out_name)
+
+
+def chart_routing(md_path: Path, out_name: str) -> None:
+    """Confidence-gated escalation: accuracy vs alpha with cost twin axis."""
+    text = md_path.read_text(encoding="utf-8")
+    rows = []
+    for line in text.splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [_norm(c) for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 5 and cells[0] and cells[0] != "alpha":
+            try:
+                alpha = float(cells[0].rstrip("%")) / 100
+                acc = float(cells[3])
+                cost = float(cells[5].rstrip("x"))
+                rows.append((alpha, acc, cost))
+            except ValueError:
+                continue
+    if not rows:
+        print("  skip routing (no table)")
+        return
+    alpha = [r[0] for r in rows]
+    accs = [r[1] * 100 for r in rows]
+    cost = [r[2] for r in rows]
+    fig, ax1 = plt.subplots(figsize=(9, 5.2))
+    ax1.plot(alpha, accs, marker="o", color=NAVY, linewidth=2.2, zorder=3)
+    ax1.axhline(82.1, color="#999", linestyle="--", linewidth=1.3)
+    ax1.text(0.01, 82.6, "baseline 82.1%", fontsize=9, color="#666")
+    ax1.set_xlabel("Escalation fraction α (lowest-confidence tail)", fontsize=10)
+    ax1.set_ylabel("Accuracy (%)", fontsize=10)
+    ax1.set_ylim(80, 93)
+    ax1.grid(alpha=0.3)
+    ax2 = ax1.twinx()
+    ax2.plot(alpha, cost, marker="s", color=BAD, linewidth=1.8, linestyle="--", zorder=2)
+    ax2.set_ylabel("Cost factor (×)", color=BAD, fontsize=10)
+    ax2.tick_params(axis="y", labelcolor=BAD)
+    ax1.set_title("Confidence-gated escalation: peak 91.9% at 1.8× cost (simulated)",
+                  fontsize=11, fontweight="bold")
+    _save(fig, out_name)
+
+
+def chart_failure_pipeline(md_path: Path, out_name: str) -> None:
+    """Failure-pipeline sensitivity sweep: grouped bars by max_tries × fallback."""
+    text = md_path.read_text(encoding="utf-8")
+    rows = []
+    for line in text.splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [_norm(c) for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 3 and cells[0] and cells[0] != "max_tries":
+            try:
+                tries = int(cells[0])
+                fb = cells[1]
+                rate = float(cells[2].rstrip("%"))
+                rows.append((tries, fb, rate))
+            except ValueError:
+                continue
+    if not rows:
+        print("  skip failure-pipeline (no table)")
+        return
+    tries_unique = sorted(set(r[0] for r in rows))
+    x = np.arange(len(tries_unique))
+    width = 0.32
+    off_rates = [r[2] for r in rows if r[1] == "off"]
+    on_rates = [r[2] for r in rows if r[1] == "on"]
+    fig, ax = plt.subplots(figsize=(9, 5.2))
+    ax.bar(x - width / 2, off_rates, width, label="fallback off",
+           color=BAD, zorder=3, edgecolor="#444", linewidth=0.4)
+    ax.bar(x + width / 2, on_rates, width, label="fallback on",
+           color=GOOD, zorder=3, edgecolor="#444", linewidth=0.4)
+    for xi, v in zip(x - width / 2, off_rates):
+        ax.text(xi, v + 0.15, f"{v:.3f}%", ha="center", va="bottom", fontsize=8)
+    for xi, v in zip(x + width / 2, on_rates):
+        ax.text(xi, v + 0.08, f"{v:.3f}%", ha="center", va="bottom", fontsize=8)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"max_tries={t}" for t in tries_unique], fontsize=9)
+    ax.set_ylabel("Simulated failure rate (%)", fontsize=10)
+    ax.set_title("Failure pipeline: fallback collapses 2.86% → 0.114%",
+                 fontsize=11, fontweight="bold")
+    ax.set_ylim(0, 3.6)
+    ax.legend(fontsize=9, framealpha=0.9)
+    ax.grid(alpha=0.3)
+    _save(fig, out_name)
+
+
+def chart_prompt_ablation(md_path: Path, out_name: str) -> None:
+    """Forest plot of paired-bootstrap prompt deltas with 95% CI."""
+    text = md_path.read_text(encoding="utf-8")
+    rows = []
+    for line in text.splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [_norm(c) for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 10 and cells[0] and cells[0] != "model":
+            try:
+                delta = float(cells[6])
+                ci_s = cells[7]
+                m = re.search(r"([-+]?\d+\.\d+)\s*\.\.\s*([-+]?\d+\.\d+)", ci_s)
+                if not m:
+                    continue
+                lo, hi = float(m.group(1)), float(m.group(2))
+                label = f"{cells[1]} vs {cells[2]}"
+                rows.append((label, delta, lo, hi, cells[9]))
+            except (ValueError, IndexError):
+                continue
+    if not rows:
+        print("  skip prompt-ablation (no table)")
+        return
+    rows.reverse()
+    labels = [r[0] for r in rows]
+    deltas = [r[1] for r in rows]
+    ci_lo = [r[2] for r in rows]  # absolute lower bound
+    ci_hi = [r[3] for r in rows]  # absolute upper bound
+    verdicts = [r[4] for r in rows]
+    colors = [GOOD if v == "B wins**" else (BAD if v == "A wins**" else "#888")
+              for v in verdicts]
+    # barh xerr expects non-negative [[left_extent], [right_extent]]
+    left_extent = [max(0, d - lo) for d, lo in zip(deltas, ci_lo)]
+    right_extent = [max(0, hi - d) for d, hi in zip(deltas, ci_hi)]
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    y = np.arange(len(labels))
+    ax.barh(y, deltas, xerr=[left_extent, right_extent], capsize=3,
+            color=colors, zorder=3, error_kw=dict(elinewidth=1, ecolor="#444"))
+    for yi, d, lbl in zip(y, deltas, labels):
+        ax.text(d + 0.005, yi, f"{d:+.3f} ({lbl})", va="center", fontsize=8)
+    ax.axvline(0, color="#444", linewidth=1)
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=8.5)
+    ax.set_xlabel("Mean delta (A − B), positive favors A", fontsize=10)
+    ax.set_title("Paired-bootstrap prompt ablation (95% CI, 10 000 reps)",
+                 fontsize=11, fontweight="bold")
+    _save(fig, out_name)
+
+
+def chart_verification(md_path: Path, out_name: str) -> None:
+    """Measured vs simulated accuracy: escalation + exemplar slices."""
+    text = md_path.read_text(encoding="utf-8")
+    # Parse the two slices
+    groups = {"Escalation": [], "Exemplar": []}
+    cur = None
+    for line in text.splitlines():
+        if "Escalation slice" in line:
+            cur = "Escalation"
+        elif "Exemplar slice" in line:
+            cur = "Exemplar"
+        elif not line.strip().startswith("|") or "run" in line.lower():
+            continue
+        if cur:
+            cells = [_norm(c) for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 4:
+                try:
+                    run = cells[0]
+                    acc = float(cells[3])
+                    groups[cur].append((run, acc))
+                except ValueError:
+                    continue
+    cats, vals, colors = [], [], []
+    for g, grp in groups.items():
+        for run, acc in grp:
+            cats.append(f"{g}\n{run}")
+            vals.append(acc * 100)
+            colors.append(NAVY if "base" in run else ACCENT)
+    if not cats:
+        print("  skip verification (no data)")
+        return
+    fig, ax = plt.subplots(figsize=(9, 5.2))
+    bars = ax.bar(cats, vals, color=colors, zorder=3, width=0.55, edgecolor="#444", linewidth=0.4)
+    for b, v in zip(bars, vals):
+        ax.text(b.get_x() + b.get_width() / 2, v + 0.6, f"{v:.1f}%",
+                ha="center", va="bottom", fontsize=9, fontweight="bold")
+    ax.set_ylabel("Accuracy (%)", fontsize=10)
+    ax.set_title("Verification: measured vs simulated",
+                 fontsize=11, fontweight="bold")
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.3)
+    _save(fig, out_name)
+
+
+def chart_corpus_summary(md_path: Path, out_name: str) -> None:
+    """Corpus composition: model rows and prompt version rows side by side."""
+    text = md_path.read_text(encoding="utf-8")
+    models, prompts = [], []
+    cur = None
+    for line in text.splitlines():
+        if "## Models" in line:
+            cur = "models"
+        elif "## Prompt versions" in line:
+            cur = "prompts"
+        elif line.strip().startswith("## "):
+            cur = None
+        elif cur and line.strip().startswith("|") and "model" not in line.lower() and "prompt" not in line.lower():
+            cells = [_norm(c) for c in line.strip().strip("|").split("|")]
+            if len(cells) >= 2:
+                try:
+                    count = int(cells[-1])
+                    label = cells[0]
+                    if cur == "models":
+                        models.append((label, count))
+                    elif cur == "prompts":
+                        prompts.append((label, count))
+                except ValueError:
+                    continue
+    if not models and not prompts:
+        print("  skip corpus-summary (no tables)")
+        return
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5.5))
+    if models:
+        models.sort(key=lambda t: t[1])
+        y = np.arange(len(models))
+        axes[0].barh(y, [t[1] for t in models], color=NAVY, zorder=3)
+        for i, (lbl, v) in enumerate(models):
+            axes[0].text(v + 10, i, f"{v:,}", va="center", fontsize=8.5)
+        axes[0].set_yticks(y)
+        axes[0].set_yticklabels([t[0] for t in models], fontsize=8.5)
+        axes[0].set_xlabel("Rows", fontsize=10)
+        axes[0].set_title("Corpus by model", fontsize=11, fontweight="bold")
+    if prompts:
+        prompts.sort(key=lambda t: t[1])
+        y = np.arange(len(prompts))
+        axes[1].barh(y, [t[1] for t in prompts], color=ACCENT, zorder=3)
+        for i, (lbl, v) in enumerate(prompts):
+            axes[1].text(v + 10, i, f"{v:,}", va="center", fontsize=8.5)
+        axes[1].set_yticks(y)
+        axes[1].set_yticklabels([t[0] for t in prompts], fontsize=8.5)
+        axes[1].set_xlabel("Rows", fontsize=10)
+        axes[1].set_title("Corpus by prompt version", fontsize=11, fontweight="bold")
+    fig.suptitle("Monte Carlo corpus composition (4,641 rows / 1,512 images)",
+                 fontsize=12, fontweight="bold", y=1.01)
+    fig.tight_layout()
+    _save(fig, out_name)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -416,6 +828,48 @@ def main() -> None:
 
     print("Hasty-stop words:")
     chart_hasty_stop_words(ROOT / "reports" / "monte_carlo" / "ale_stopword_report.md", "hasty_stop_words.svg")
+
+    print("Stop-word scatter:")
+    chart_stop_scatter(ROOT / "reports" / "monte_carlo" / "ale_stopword_report.md", "stop_word_scatter.svg")
+
+    print("ALE correctness curves:")
+    chart_ale_correctness("ale_correctness.svg", prompt_version="v11.8")
+
+    print("Ensemble voting:")
+    chart_ensemble_vs_k(
+        ROOT / "reports" / "monte_carlo" / "ensemble_accuracy_vs_k.md",
+        "ensemble_vs_k.svg",
+    )
+
+    print("Routing escalation:")
+    chart_routing(
+        ROOT / "reports" / "monte_carlo" / "routing_abstention.md",
+        "routing_escalation.svg",
+    )
+
+    print("Failure pipeline:")
+    chart_failure_pipeline(
+        ROOT / "reports" / "monte_carlo" / "failure_pipeline.md",
+        "failure_pipeline.svg",
+    )
+
+    print("Prompt ablation:")
+    chart_prompt_ablation(
+        ROOT / "reports" / "monte_carlo" / "prompt_ablation.md",
+        "prompt_ablation.svg",
+    )
+
+    print("Verification measured vs simulated:")
+    chart_verification(
+        ROOT / "reports" / "monte_carlo" / "verification_results.md",
+        "verification.svg",
+    )
+
+    print("Corpus summary:")
+    chart_corpus_summary(
+        ROOT / "reports" / "monte_carlo" / "corpus.summary.md",
+        "corpus_summary.svg",
+    )
 
     print("Accuracy progress:")
     chart_progress("accuracy_progress.svg")

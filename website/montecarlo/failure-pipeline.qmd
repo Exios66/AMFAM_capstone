@@ -8,6 +8,8 @@ toc-depth: 3
 - **Fitted**: P(first success)=0.946, length=0.021, transient=0.0000, 429=0.0000, quota=0.0000
 - **Config**: max_tries=3, keys=2, fallback=on
 
+![Failure-pipeline sensitivity sweep: max_tries × fallback](../charts/failure_pipeline.svg)
+
 ## Current-pipeline simulation
 
 - **Failure rate**: 0.114% (observed 2.716%)
@@ -15,7 +17,7 @@ toc-depth: 3
 
 ## Extrapolated failures at scale
 
-| scale | expected | 95% CI | P(>1% failures) | P(>5% failures) |
+| scale | expected | 95% *CI* | P(>1% failures) | P(>5% failures) |
 |---:|---:|---:|---:|---:|
 | 800 | 1 | 0-3 | 0.000 | 0.000 |
 | 25,000 | 28 | 19-39 | 0.000 | 0.000 |

@@ -71,7 +71,7 @@ toc-depth: 3
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 
-**Pricing:** $0.15/M input tokens, $0.60/M output tokens
+**Pricing:** $0.15/*M* input tokens, $0.60/*M* output tokens
 
 | Images | Prompt Tokens | Completion Tokens | Total Tokens | **Estimated Cost** |
 | -------- | ---: | ---: | ---: | ---: |

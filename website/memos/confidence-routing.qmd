@@ -15,9 +15,9 @@ date: "2026-08-05"
 
 ## Answer, Response, + Summary of Results
 
-**Escalation recovers up to +9.8 pp at 1.8× cost** (α = 40%), and the accuracy-vs-cost Pareto curve dominates same-model ensembling at every point. Assumptions: escalated model accuracy 90%, escalated cost 3.0×.
+**Escalation recovers up to +9.8 **pp** at 1.8× cost** (α = 40%), and the accuracy-vs-cost Pareto curve dominates same-model ensembling at every point. Assumptions: escalated model accuracy 90%, escalated cost 3.0×.
 
-| α (escalate) | escalated | accuracy | 95% CI | cost factor |
+| α (escalate) | escalated | accuracy | 95% *CI* | cost factor |
 |---:|---:|---:|---:|---:|
 | 1% | 15 | 0.826 | 0.810–0.841 | 1.02× |
 | 5% | 76 | 0.845 | 0.830–0.859 | 1.10× |
@@ -31,7 +31,7 @@ The accuracy peak is at **α ≈ 40%** (0.919); beyond that, escalating more ima
 
 **Sensitivity to the escalated-model assumption** (`@acc ±5 pp`): at α = 10%, accuracy ranges 0.859–0.869; at α = 40%, 0.899–0.939. The ranking of α = 10% as the cost-efficient choice is robust; α = 40% only wins if the escalated model truly hits ~90%+.
 
-**Conclusion.** Routing the low-confidence tail to a stronger model is the best accuracy/cost lever in the study: +4.3 pp at 1.2× (α = 10%) or up to +9.8 pp at 1.8× (α = 40%), conditional on the escalated model being genuinely stronger.
+**Conclusion.** Routing the low-confidence tail to a stronger model is the best accuracy/cost lever in the study: +4.3 *pp* at 1.2× (α = 10%) or up to +9.8 *pp* at 1.8× (α = 40%), conditional on the escalated model being genuinely stronger.
 
 ::: {.memo-sources}
 *Sources:* `reports/monte_carlo/routing_abstention.md` · `reports/monte_carlo/escalation_candidates.txt` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)

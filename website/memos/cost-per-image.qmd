@@ -44,4 +44,4 @@ Actuals depend on provider pricing, prompt caching hit rate, and reasoning-token
 
 ## What other levers may also reduce cost?
 
-The [confidence-routing memo](confidence-routing.qmd) shows escalating only the low-confidence tail keeps cost at 1.02–1.8× while recovering accuracy — cheaper than full-model upgrades. [Ensemble voting](ensemble-voting.qmd) trades +4 pp accuracy for 3–25× cost, useful only where accuracy dominates budget.
+The [confidence-routing memo](confidence-routing.qmd) shows escalating only the low-confidence tail keeps cost at 1.02–1.8× while recovering accuracy — cheaper than full-model upgrades. [Ensemble voting](ensemble-voting.qmd) trades +4 *pp* accuracy for 3–25× cost, useful only where accuracy dominates budget.

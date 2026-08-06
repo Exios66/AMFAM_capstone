@@ -42,20 +42,20 @@ Corpus is cached at `reports/monte_carlo/corpus.jsonl`; rebuild idempotently wit
 ### 1. Ensemble + routing (`monte_carlo_ensemble.py`)
 - Per-image label distribution from hard votes (predicted) plus soft votes
   (runner-up as a half-weight second choice).
-- **accuracy(K)**: resample K draws per image, majority-vote, compare to ground
-  truth, with bootstrap CIs. The K=1 curve is the simulated single-pass baseline.
+- **accuracy(K)**: resample *K* draws per image, majority-vote, compare to ground
+  truth, with bootstrap CIs. The *K* = 1 curve is the simulated single-pass baseline.
 - Per-image confidence = blend of vote dominance, label entropy, a near-miss
   signal (some observation named the expected class as its runner-up), and
   uncertainty phrasing in the reasoning.
 - **Abstention/escalation**: route the lowest-confidence `alpha` fraction to a
-  stronger model (parameterized accuracy + cost multiplier, with a ±5pp
+  stronger model (parameterized accuracy + cost multiplier, with a ±5 *pp*
   sensitivity band) and read the accuracy-vs-cost Pareto curve.
 
 ### 2. Prompt ablation (`monte_carlo_prompt_ablation.py`)
 Per (model, prompt A, prompt B) pair, on the SHARED image set: paired bootstrap
-of per-image deltas → mean delta, 95% CI, `P(A beats B)`, plus per-class and
+of per-image deltas → mean delta, 95% *CI*, `P(A beats B)`, plus per-class and
 per-confusion-pair deltas. This is the statistical gate for promoting a prompt
-version (CI excluding zero with high P(win)), and it shows *where* a version
+version (*CI* excluding zero with high P(win)), and it shows *where* a version
 wins rather than just that it moved.
 
 ### 3. Failure pipeline (`monte_carlo_failures.py`)
@@ -83,22 +83,22 @@ same images to validate the simulator before committing to a production change.
 ## Current findings (corpus: 4,641 rows / 1,512 images, qwen3.7-flash dominant)
 
 - **Ensemble voting is a weak lever.** Simulated committee accuracy is 82.1% at
-  K=1 → 85.3% at K=10 → 86.3% at K=25. Cross-run variance is small; majority
-  voting buys at most ~4pp at 10-25x cost. The variance budget lives in prompt
+  *K* = 1 → 85.3% at *K* = 10 → 86.3% at *K* = 25. Cross-run variance is small; majority
+  voting buys at most ~4 *pp* at 10-25x cost. The variance budget lives in prompt
   quality, not sampling noise.
 - **Confidence-gated escalation is the accuracy lever.** Routing the lowest
-  ~10-15% of images to a ~90%-accurate model buys +4-6pp at +20-30% cost;
+  ~10-15% of images to a ~90%-accurate model buys +4-6 *pp* at +20-30% cost;
   40% escalation reaches ~92% at 1.8x cost. The 40→50% step is non-monotonic
   (the band contains near-miss/uncertainty-flagged single-observation images),
   so the Pareto point should be chosen from the table, not extrapolated.
 - **The fallback-model salvage is the failure lever.** With fallback on, the
   simulated failure rate drops from ~2.9% to ~0.11% — a ~25x reduction. At
-  320K images: ~364 expected failed rows (95% CI 328-402), P(>1% failures) = 0.
+  320K images: ~364 expected failed rows (95% *CI* [328, 402]), P(>1% failures) = 0.
   `max_tries` barely matters (1 vs 5 both ≈2.86% without fallback); the fallback
   pass is what eliminates failures.
 - **Prompt progress is real but the newest steps are not yet proven.**
-  v0→v17 +28.4pp (P=0.000), v0→v11.8 +13.0pp. But on shared images v11.8 beats
-  v17 (P=0.94, +2.5pp) and v16 vs v17 is inconclusive (+0.6pp, P=0.57). v17 is
+  v0→v17 +28.4 *pp* (*p* < .001), v0→v11.8 +13.0 *pp*. But on shared images v11.8 beats
+  v17 (*p* = .940, +2.5 *pp*) and v16 vs v17 is inconclusive (+0.6 *pp*, *p* = .570). v17 is
   not statistically better than v16 on the shared slice yet — worth a larger
   shared-image comparison before the next iteration.
 - **Targeted exemplars could recover ~4% of the error pool.** Top actionable

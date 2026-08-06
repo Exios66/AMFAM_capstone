@@ -7,7 +7,7 @@ toc-depth: 3
 - **Escalated model accuracy**: 90% (assumed)
 - **Escalated cost multiplier**: 3.0x
 
-| alpha | escalated | kept | accuracy | 95% CI | cost factor |
+| alpha | escalated | kept | accuracy | 95% *CI* | cost factor |
 |---:|---:|---:|---:|---:|---:|
 | 1% | 15 | 1497 | 0.826 | 0.810-0.841 | 1.02x |
 | 2% | 30 | 1482 | 0.831 | 0.816-0.846 | 1.04x |
@@ -19,9 +19,11 @@ toc-depth: 3
 | 40% | 605 | 907 | 0.919 | 0.909-0.928 | 1.80x |
 | 50% | 756 | 756 | 0.909 | 0.899-0.919 | 2.00x |
 
+![Confidence-gated escalation: accuracy vs cost Pareto curve](../charts/routing_escalation.svg)
+
 ## Sensitivity to the escalated-model accuracy assumption
 
-| alpha | accuracy @ acc-5pp | accuracy @ acc | accuracy @ acc+5pp |
+| alpha | accuracy @ acc-5 *pp* | accuracy @ acc | accuracy @ acc+5 *pp* |
 |---:|---:|---:|---:|
 | 1% | 0.826 | 0.826 | 0.827 |
 | 2% | 0.830 | 0.831 | 0.832 |

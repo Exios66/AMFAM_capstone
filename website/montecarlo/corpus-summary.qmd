@@ -9,6 +9,8 @@ toc-depth: 3
 - **Experiments**: 14
 - **Reasoning coverage**: 3113/4641 rows
 
+![Corpus composition by model and prompt version](../charts/corpus_summary.svg)
+
 ## Status
 
 | status | count |

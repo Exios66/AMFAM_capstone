@@ -42,7 +42,7 @@ The 4 selected exemplars each teach a clean disambiguation:
 
 ## What questions or uncertainties remain?
 
-The verification slice is small (48 rows) and the delta (−0.042) is within sampling error — a 95% CI would span ~±0.14. The exemplar prompt (v18) also differs from the base (v17.2) in more than the exemplars, so the measured regression is not a clean single-cause test. A larger, controlled exemplar-vs-base A/B with the *same* prompt text except the exemplar block is the decisive experiment.
+The verification slice is small (48 rows) and the delta (−0.042) is within sampling error — a 95% *CI* would span ~±0.14. The exemplar prompt (v18) also differs from the base (v17.2) in more than the exemplars, so the measured regression is not a clean single-cause test. A larger, controlled exemplar-vs-base A/B with the *same* prompt text except the exemplar block is the decisive experiment.
 
 ## What other levers may also improve accuracy?
 

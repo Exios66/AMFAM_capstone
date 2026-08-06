@@ -17,6 +17,8 @@ validate the confidence ordering.
 
 **Paired check:** 48 images matched to corpus sim; simulated mean p_correct = 0.425, measured base accuracy = 0.667.
 
+![Measured vs simulated accuracy: escalation + exemplar slices](../charts/verification.svg)
+
 ## Exemplar slice (top confusion pairs)
 
 | run | rows | correct | accuracy |

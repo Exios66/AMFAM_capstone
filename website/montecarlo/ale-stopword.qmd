@@ -14,13 +14,13 @@ toc-depth: 3
 
 ALE of each reasoning feature on the probability of a correct label, computed with 20 quantile bins and a 200-draw bootstrap. A rising curve means more of the feature is associated with higher accuracy; a falling curve means it is associated with error. Because ALE averages out correlated features locally, the curves isolate each feature's own effect rather than the raw marginal trend.
 
-*ALE curves — chart not reproduced on the site; see `reports/monte_carlo/` in the repository.*
+![ALE curves](../charts/ale_correctness.svg)
 
 ## Hasty-stop trigger words
 
 Words below are quoted in the stopping evidence of traces where the model committed to a label. `hasty_score` combines how much earlier than baseline the stop happens (`early_lift`) with how much the error rate rises (`err_lift`), weighted by frequency — a high score means the word pushes the model to over-hastily commit before finishing the check cascade, and that commit is wrong above the baseline rate.
 
-| word | n | avg stop # | error rate | early_lift | err_lift | hasty_score |
+| word | *n* | avg stop # | error rate | early_lift | err_lift | hasty_score |
 |---|---:|---:|---:|---:|---:|---:|
 | minutes | 11 | 2.0 | 82% | 0.88 | +0.65 | 1.891 |
 | routing | 10 | 3.8 | 90% | 0.67 | +0.73 | 1.540 |
@@ -50,4 +50,4 @@ Words below are quoted in the stopping evidence of traces where the model commit
 
 ![Hasty-stop trigger words](../charts/hasty_stop_words.svg)
 
-*Stop-word trigger geography — chart not reproduced on the site; see `reports/monte_carlo/` in the repository.*
+![Stop-word trigger geography](../charts/stop_word_scatter.svg)

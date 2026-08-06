@@ -75,7 +75,7 @@ continue where it left off.
 
 ## Data slices
 
-Balanced slices — N images per class × 16 classes — are uploaded to Braintrust
+Balanced slices — *N* images per class × 16 classes — are uploaded to Braintrust
 as base64 PNG attachments with ground-truth labels. Each is seeded and
 pixel-deduped against every prior slice, so evaluation sets are disjoint by
 construction.

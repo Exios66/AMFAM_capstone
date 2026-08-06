@@ -5,11 +5,13 @@ toc: true
 toc-depth: 3
 ---
 - **Images**: 1512 (multi-observation: 945)
-- **Simulations**: 2000 committee votes per image per K
+- **Simulations**: 2000 committee votes per image per *K*
 
-## Accuracy vs committee size K
+![Simulated ensemble majority-vote accuracy by committee size K with 95% CI band](../charts/ensemble_vs_k.svg)
 
-| K | accuracy | 95% CI | cost multiplier |
+## Accuracy vs committee size *K*
+
+| *K* | accuracy | 95% *CI* | cost multiplier |
 |---:|---:|---|---:|
 | 1 | 0.821 | 0.805-0.836 | 1x |
 | 3 | 0.836 | 0.820-0.851 | 3x |
@@ -19,9 +21,9 @@ toc-depth: 3
 | 15 | 0.859 | 0.842-0.874 | 15x |
 | 25 | 0.863 | 0.846-0.879 | 25x |
 
-## Per-class accuracy by K (simulated)
+## Per-class accuracy by *K* (simulated)
 
-| class | K=1 | K=3 | K=5 | K=7 | K=10 | K=15 | K=25 |
+| class | *K* = 1 | *K* = 3 | *K* = 5 | *K* = 7 | *K* = 10 | *K* = 15 | *K* = 25 |
 |---:|---:|---:|---:|---:|---:|---:|---:|
 | advertisement | 0.872 | 0.879 | 0.883 | 0.886 | 0.888 | 0.892 | 0.894 |
 | budget | 0.648 | 0.665 | 0.675 | 0.681 | 0.685 | 0.692 | 0.699 |
