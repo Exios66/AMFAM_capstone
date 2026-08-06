@@ -64,6 +64,8 @@ reports/manifests/
 
 # Quarto site build output
 website/_site/
+website/.quarto/
+website/site_libs/
 
 # Wiki build clone
 .wiki-build/
