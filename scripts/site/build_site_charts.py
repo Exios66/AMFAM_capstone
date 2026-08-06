@@ -140,7 +140,7 @@ def chart_confusion_matrix(md_path: Path, out_name: str) -> None:
     cmap = plt.matplotlib.colors.LinearSegmentedColormap.from_list(
         "amfam", ["#ffffff", "#c7d8fb", ACCENT]
     )
-    fig, ax = plt.subplots(figsize=(10, 8.4))
+    fig, ax = plt.subplots(figsize=(10.5, 8.8))
     im = ax.imshow(matrix, cmap=cmap, vmin=0, vmax=max_v, aspect="equal")
     for i in range(n):
         for j in range(n):
@@ -151,17 +151,12 @@ def chart_confusion_matrix(md_path: Path, out_name: str) -> None:
             color = "white" if v > max_v * 0.62 else ("#10316b" if on_diag else "#33415c")
             ax.text(
                 j, i, f"{int(v)}", ha="center", va="center",
-                fontsize=8, color=color, fontweight="bold" if on_diag else "normal",
+                fontsize=8.5, color=color, fontweight="bold" if on_diag else "normal",
             )
     ax.set_xticks(range(n))
     ax.set_yticks(range(n))
-    short = [
-        "advert", "budget", "email", "file_f", "form", "handwr", "invoic",
-        "letter", "memo", "news_a", "presen", "questi", "resume", "sci_pub",
-        "sci_rep", "specif",
-    ]
-    ax.set_xticklabels(short[:n], rotation=45, ha="right", fontsize=8)
-    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xticklabels(labels[:n], rotation=45, ha="right", fontsize=8.5)
+    ax.set_yticklabels(labels[:n], fontsize=8.5)
     ax.set_xlabel("Predicted")
     ax.set_ylabel("Expected")
     ax.set_title("Confusion matrix (correct class counts on the diagonal)", fontsize=12, pad=12)
@@ -279,12 +274,13 @@ def chart_cost_projection(paths: list[Path], out_name: str) -> None:
         )
         for b, v in zip(bars, vals):
             ax.text(
-                b.get_x() + b.get_width() / 2, b.get_height(),
-                f"${v:,.0f}", ha="center", va="bottom", fontsize=7.5,
+                b.get_x() + b.get_width() / 2, b.get_height() * 1.04,
+                f"${v:,.0f}", ha="center", va="bottom", fontsize=8.5,
             )
     ax.set_xticks(x)
     ax.set_xticklabels([m["model"] for m in models], rotation=20, ha="right", fontsize=8.5)
     ax.set_yscale("log")
+    ax.set_ylim(5, max(vals) * 2.5)
     ax.set_ylabel("Projected cost (USD, log scale)")
     ax.set_title("Extrapolated OpenRouter cost per model (800 / 25K / 320K images)")
     ax.legend(frameon=False)
@@ -320,6 +316,7 @@ def chart_hasty_stop_words(md_path: Path, out_name: str) -> None:
         ax.text(s + 0.01, yi, f"{s:.2f}  (n={n})", va="center", fontsize=8)
     ax.set_yticks(y)
     ax.set_yticklabels(words, fontsize=9)
+    ax.set_xlim(0, max(scores) * 1.28)
     ax.set_xlabel("hasty score (early stop × error lift × frequency)")
     ax.set_title("Hasty-stop trigger words — words that push early, wrong commits")
     ax.grid(axis="y", visible=False)
@@ -366,23 +363,24 @@ SLICE_COLORS = {
 
 
 def chart_progress(out_name: str) -> None:
-    fig, ax = plt.subplots(figsize=(11, 6))
+    fig, ax = plt.subplots(figsize=(12.5, 6.2))
     x = np.arange(len(PROGRESS))
     colors = [SLICE_COLORS.get(s, GRID) for _, s, _ in PROGRESS]
     vals = [v for _, _, v in PROGRESS]
     ax.bar(x, vals, color=colors, width=0.68)
-    for xi, (label, sl, v) in zip(x, PROGRESS):
-        ax.text(xi, v + 1.2, f"{v:.1f}", ha="center", fontsize=7.5, color="#33415c")
-        ax.text(xi, -3.0, label.split(" ")[0].split("-")[0], ha="center", fontsize=6.5, color="#6b7280")
+    for xi, v in zip(x, vals):
+        ax.text(xi, v - 2.4, f"{v:.1f}", ha="center", va="center",
+                fontsize=8.5, fontweight="bold", color="white")
     ax.set_xticks(x)
-    ax.set_xticklabels([f"{l}\n({s})" for l, s, _ in PROGRESS], rotation=45, ha="right", fontsize=7.5)
+    ax.set_xticklabels([f"{l}\n({s})" for l, s, _ in PROGRESS], rotation=45, ha="right", fontsize=8)
     ax.set_ylim(0, 108)
     ax.set_ylabel("Exact-match accuracy (%)")
-    ax.set_title("Accuracy progress: baseline → prompt iterations → production slices")
+    ax.set_title("Accuracy progress: baseline → prompt iterations → production slices", pad=14)
     ax.grid(axis="x", visible=False)
     handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in dict.fromkeys(SLICE_COLORS.values())]
     labels = ["160 dev-set", "320", "480", "800", "1,120", "HF-mirror v2/v3", "exemplar slice"]
-    ax.legend(handles, labels, ncol=4, frameon=False, loc="upper left", fontsize=8, bbox_to_anchor=(0, 1.14))
+    ax.legend(handles, labels, ncol=7, frameon=False, loc="upper center",
+              bbox_to_anchor=(0.5, 1.06), fontsize=8.5, columnspacing=1.2)
     _save(fig, out_name)
 
 
@@ -497,9 +495,15 @@ def chart_stop_scatter(md_path: Path, out_name: str) -> None:
     sizes = [20 + 55 * np.log1p(w["freq"]) for w in top]
     sc = ax.scatter(xs, ys, s=sizes, alpha=0.65, c=[w["hasty_score"] for w in top],
                     cmap="RdYlBu_r", edgecolor="gray", linewidth=0.5)
-    for w in top[:18]:
-        ax.annotate(w["word"], (w["avg_stop_position"], w["error_rate"] * 100),
-                    fontsize=7.5, xytext=(4, 3), textcoords="offset points")
+    placed = []
+    for wi, w in enumerate(top[:12]):
+        px, py = w["avg_stop_position"], w["error_rate"] * 100
+        if any(abs(px - ox) < 1.2 and abs(py - oy) < 6 for ox, oy in placed):
+            continue
+        placed.append((px, py))
+        offset = (4, 3) if wi % 2 == 0 else (4, -12)
+        ax.annotate(w["word"], (px, py), fontsize=8.5, xytext=offset,
+                    textcoords="offset points")
     ax.axvspan(1, 6, color="#e74c3c", alpha=0.06, label="early-stop zone")
     ax.axhline(50, color="gray", ls="--", lw=0.8, alpha=0.6)
     ax.set_xlabel("Mean stop position (check #) when word triggers", fontsize=11)
@@ -546,11 +550,13 @@ def chart_ensemble_vs_k(md_path: Path, out_name: str) -> None:
     ax.fill_between(ks, [l * 100 for l in lo], [h * 100 for h in hi],
                     color=ACCENT, alpha=0.15)
     for k, a in zip(ks, accs):
-        ax.annotate(f"{a:.3f}", (k, a * 100), textcoords="offset points",
-                    xytext=(0, 8), ha="center", fontsize=8.5)
+        if k % 2 == 1:
+            ax.annotate(f"{a:.3f}", (k, a * 100), textcoords="offset points",
+                        xytext=(0, 8), ha="center", fontsize=8.5)
     ax.set_xticks(ks)
     ax.set_xlabel("Committee size K (majority vote)", fontsize=10)
     ax.set_ylabel("Simulated accuracy (%)", fontsize=10)
+    ax.yaxis.set_label_coords(-0.09, 0.5)
     ax.set_title("Ensemble majority vote: monotone gains, diminishing returns",
                  fontsize=11, fontweight="bold")
     ax.set_ylim(80, 88)
@@ -581,17 +587,21 @@ def chart_routing(md_path: Path, out_name: str) -> None:
     accs = [r[1] * 100 for r in rows]
     cost = [r[2] for r in rows]
     fig, ax1 = plt.subplots(figsize=(9, 5.2))
-    ax1.plot(alpha, accs, marker="o", color=NAVY, linewidth=2.2, zorder=3)
+    ax1.plot(alpha, accs, marker="o", color=NAVY, linewidth=2.2, zorder=3, label="Accuracy")
     ax1.axhline(82.1, color="#999", linestyle="--", linewidth=1.3)
-    ax1.text(0.01, 82.6, "baseline 82.1%", fontsize=9, color="#666")
+    ax1.text(0.68, 82.6, "baseline 82.1%", fontsize=9, color="#666")
     ax1.set_xlabel("Escalation fraction α (lowest-confidence tail)", fontsize=10)
     ax1.set_ylabel("Accuracy (%)", fontsize=10)
     ax1.set_ylim(80, 93)
     ax1.grid(alpha=0.3)
     ax2 = ax1.twinx()
-    ax2.plot(alpha, cost, marker="s", color=BAD, linewidth=1.8, linestyle="--", zorder=2)
+    ax2.plot(alpha, cost, marker="s", color=BAD, linewidth=1.8, linestyle="--", zorder=2, label="Cost (×)")
     ax2.set_ylabel("Cost factor (×)", color=BAD, fontsize=10)
     ax2.tick_params(axis="y", labelcolor=BAD)
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left", fontsize=9,
+               framealpha=0.9, frameon=True)
     ax1.set_title("Confidence-gated escalation: peak 91.9% at 1.8× cost (simulated)",
                   fontsize=11, fontweight="bold")
     _save(fig, out_name)
@@ -680,10 +690,11 @@ def chart_prompt_ablation(md_path: Path, out_name: str) -> None:
     ax.barh(y, deltas, xerr=[left_extent, right_extent], capsize=3,
             color=colors, zorder=3, error_kw=dict(elinewidth=1, ecolor="#444"))
     for yi, d, lbl in zip(y, deltas, labels):
-        ax.text(d + 0.005, yi, f"{d:+.3f} ({lbl})", va="center", fontsize=8)
+        ax.text(d + 0.004, yi, f"{d:+.3f}", va="center", fontsize=8.5)
     ax.axvline(0, color="#444", linewidth=1)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=8.5)
+    ax.margins(x=0.22)
     ax.set_xlabel("Mean delta (A − B), positive favors A", fontsize=10)
     ax.set_title("Paired-bootstrap prompt ablation (95% CI, 10 000 reps)",
                  fontsize=11, fontweight="bold")
@@ -713,23 +724,30 @@ def chart_verification(md_path: Path, out_name: str) -> None:
                 except ValueError:
                     continue
     cats, vals, colors = [], [], []
+    RUN_SHORT = {
+        "base (v11.8)": "base v11.8",
+        "escalated (max effort)": "escalated (max effort)",
+        "base (v17.2)": "base v17.2",
+        "exemplar (v18)": "exemplar v18",
+    }
     for g, grp in groups.items():
         for run, acc in grp:
-            cats.append(f"{g}\n{run}")
+            cats.append(f"{g}\n{RUN_SHORT.get(run, run)}")
             vals.append(acc * 100)
             colors.append(NAVY if "base" in run else ACCENT)
     if not cats:
         print("  skip verification (no data)")
         return
-    fig, ax = plt.subplots(figsize=(9, 5.2))
+    fig, ax = plt.subplots(figsize=(8.5, 5.2))
     bars = ax.bar(cats, vals, color=colors, zorder=3, width=0.55, edgecolor="#444", linewidth=0.4)
     for b, v in zip(bars, vals):
         ax.text(b.get_x() + b.get_width() / 2, v + 0.6, f"{v:.1f}%",
-                ha="center", va="bottom", fontsize=9, fontweight="bold")
+                ha="center", va="bottom", fontsize=9.5, fontweight="bold")
     ax.set_ylabel("Accuracy (%)", fontsize=10)
     ax.set_title("Verification: measured vs simulated",
                  fontsize=11, fontweight="bold")
     ax.set_ylim(0, 100)
+    ax.tick_params(axis="x", labelsize=9.5)
     ax.grid(axis="y", alpha=0.3)
     _save(fig, out_name)
 

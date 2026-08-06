@@ -258,11 +258,13 @@ def f7_ensemble_vs_k() -> None:
     ax.plot(ks, [a * 100 for a in accs], marker="o", color=PALETTE[0], linewidth=2.2, zorder=3)
     ax.fill_between(ks, [l * 100 for l in lo], [h * 100 for h in hi], color=PALETTE[0], alpha=0.15)
     for k, a in zip(ks, accs):
-        ax.annotate(f"{a:.3f}", (k, a * 100), textcoords="offset points", xytext=(0, 8),
-                    ha="center", fontsize=8.5)
+        if k % 2 == 1:
+            ax.annotate(f"{a:.3f}", (k, a * 100), textcoords="offset points", xytext=(0, 8),
+                        ha="center", fontsize=8.5)
     ax.set_xticks(ks)
     ax.set_xlabel("Committee size K (majority vote)")
     ax.set_ylabel("Simulated accuracy (%)")
+    ax.yaxis.set_label_coords(-0.09, 0.5)
     ax.set_title("Ensemble majority vote: monotone gains, diminishing returns")
     ax.set_ylim(80, 88)
     _save(fig, "f7_ensemble_vs_k")
@@ -278,16 +280,21 @@ def f8_routing() -> None:
     accs = [float(r[3]) * 100 for r in rows]
     cost = [float(r[5].rstrip("x")) for r in rows]
     fig, ax1 = plt.subplots(figsize=(8.5, 4.8))
-    ax1.plot(alpha, accs, marker="o", color=PALETTE[0], linewidth=2.2, zorder=3)
+    ax1.plot(alpha, accs, marker="o", color=PALETTE[0], linewidth=2.2, zorder=3, label="Accuracy")
     ax1.axhline(82.1, color="#999", linestyle="--", linewidth=1.3)
-    ax1.text(0.01, 82.6, "baseline 82.1%", fontsize=9, color="#666")
+    ax1.text(0.68, 82.6, "baseline 82.1%", fontsize=9, color="#666")
     ax1.set_xlabel("Escalation fraction $\\alpha$ (lowest-confidence tail)")
     ax1.set_ylabel("Accuracy (%)")
     ax1.set_ylim(80, 93)
     ax2 = ax1.twinx()
-    ax2.plot(alpha, cost, marker="s", color=PALETTE[3], linewidth=1.8, linestyle="--", zorder=2)
+    ax2.plot(alpha, cost, marker="s", color=PALETTE[3], linewidth=1.8, linestyle="--", zorder=2,
+             label="Cost (×)")
     ax2.set_ylabel("Cost factor (×)", color=PALETTE[3])
     ax2.tick_params(axis="y", labelcolor=PALETTE[3])
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left", fontsize=9,
+               framealpha=0.9, frameon=True)
     ax1.set_title("Confidence-gated escalation: peak 91.9% at 1.8× cost (simulated)")
     _save(fig, "f8_routing")
 
@@ -307,7 +314,7 @@ def f9_hasty_stop() -> None:
         ax.text(sc + 0.02, y, f"{sc:.2f}", va="center", fontsize=9)
     ax.set_xlabel("Hasty-score (early stop + elevated error, frequency-weighted)")
     ax.set_title("Trigger words that push the model to commit too early (17.1% baseline error)")
-    ax.set_xlim(0, 2.1)
+    ax.set_xlim(0, max(scores) * 1.25)
     _save(fig, "f9_hasty_stop")
 
 
