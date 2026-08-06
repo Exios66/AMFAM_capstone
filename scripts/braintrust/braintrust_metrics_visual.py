@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import requests
 
-from src.braintrust_config import load_braintrust_config
+from src.braintrust_config import load_agent_config, load_braintrust_config
 from src.env_utils import require_env
 from src.openrouter_classifier import VALID_CLASSES
 
@@ -42,12 +42,17 @@ OUTPUT_DIR = Path(__file__).resolve().parents[2] / "reports"
 API_BASE = "https://api.braintrust.dev/v1"
 
 
-def fetch_experiment_results(target_experiment: Union[str, None] = None) -> tuple[list[dict], str, dict]:
+def fetch_experiment_results(target_experiment: Union[str, None] = None,
+                             agent: bool = False) -> tuple[list[dict], str, dict]:
     """Fetch results from a Braintrust experiment via REST API.
     If target_experiment is provided, fetch that specific experiment by name.
-    Otherwise fetch the most recent. Returns (results, experiment_name, experiment_meta)."""
-    config = load_braintrust_config()
-    api_key = config.api_key or require_env("BRAINTRUST_API_KEY")[0]
+    Otherwise fetch the most recent. Returns (results, experiment_name, experiment_meta).
+    ``agent=True`` resolves the agent account (AMFAMv4) that routed/reduced-spec
+    runs (--agent evals) log to."""
+    config = load_agent_config() if agent else load_braintrust_config()
+    api_key = config.api_key or require_env(
+        "AGENT_BRAINTRUST_API_KEY" if agent else "BRAINTRUST_API_KEY"
+    )[0]
 
     headers = {"Authorization": f"Bearer {api_key}"}
 
@@ -74,64 +79,74 @@ def fetch_experiment_results(target_experiment: Union[str, None] = None) -> tupl
         print("No experiments found.")
         sys.exit(1)
 
-    # Pick the target or most recent experiment
+    # Pick the target or most recent experiment. Resume-loop evals relaunch
+    # under version-suffixed names (<name>-<hash>), so a target experiment is
+    # matched by exact name OR prefix and ALL matching versions are fetched and
+    # merged — otherwise routed/reduced-spec runs would only yield a slice.
     if target_experiment:
-        latest = next((e for e in experiments if e["name"] == target_experiment), None)
-        if not latest:
+        prefix = target_experiment + "-"
+        matching = [
+            e for e in experiments
+            if e["name"] == target_experiment or e["name"].startswith(prefix)
+        ]
+        if not matching:
             print(f"Error: Experiment '{target_experiment}' not found.")
             print(f"Available: {[e['name'] for e in experiments]}")
             sys.exit(1)
+        experiments = matching
     else:
-        latest = sorted(experiments, key=lambda e: e.get("created", ""))[-1]
-    experiment_id = latest["id"]
-    experiment_name = latest["name"]
-    print(f"Fetching results from experiment: {experiment_name}")
+        experiments = sorted(experiments, key=lambda e: e.get("created", ""))[-1:]
+    experiment_name = target_experiment or experiments[0]["name"]
+    print(f"Fetching results from {len(experiments)} experiment version(s): {experiment_name}")
 
-    # Fetch experiment rows (paginated POST to handle large experiments)
     rows = []
     cursor = None
     max_retries = 6
-    while True:
-        body = {"limit": 100}
-        if cursor:
-            body["cursor"] = cursor
-        for attempt in range(max_retries):
-            try:
-                resp = requests.post(
-                    f"{API_BASE}/experiment/{experiment_id}/fetch",
-                    headers=headers,
-                    json=body,
-                    timeout=120,
-                )
-                resp.raise_for_status()
+    for experiment in experiments:
+        experiment_id = experiment["id"]
+        cursor = None
+        while True:
+            body = {"limit": 100}
+            if cursor:
+                body["cursor"] = cursor
+            for attempt in range(max_retries):
+                try:
+                    resp = requests.post(
+                        f"{API_BASE}/experiment/{experiment_id}/fetch",
+                        headers=headers,
+                        json=body,
+                        timeout=120,
+                    )
+                    resp.raise_for_status()
+                    break
+                except requests.exceptions.HTTPError as e:
+                    if resp.status_code == 429 and attempt < max_retries - 1:
+                        wait = 10 * (2 ** attempt)  # 10, 20, 40, 80, 160s
+                        print(f"  Rate limited, waiting {wait}s (retry {attempt + 1}/{max_retries})")
+                        time.sleep(wait)
+                    elif attempt < max_retries - 1:
+                        wait = 5 * (attempt + 1)
+                        print(f"  Retry {attempt + 1}/{max_retries} after {wait}s ({e})")
+                        time.sleep(wait)
+                    else:
+                        raise
+                except requests.exceptions.Timeout as e:
+                    if attempt < max_retries - 1:
+                        wait = 10 * (attempt + 1)
+                        print(f"  Timeout, retry {attempt + 1}/{max_retries} after {wait}s")
+                        time.sleep(wait)
+                    else:
+                        raise
+            data = resp.json()
+            batch = data.get("events", [])
+            rows.extend(batch)
+            cursor = data.get("cursor")
+            print(f"  Fetched {len(batch)} rows (total: {len(rows)})")
+            if not cursor or not batch:
                 break
-            except requests.exceptions.HTTPError as e:
-                if resp.status_code == 429 and attempt < max_retries - 1:
-                    wait = 10 * (2 ** attempt)  # 10, 20, 40, 80, 160s
-                    print(f"  Rate limited, waiting {wait}s (retry {attempt + 1}/{max_retries})")
-                    time.sleep(wait)
-                elif attempt < max_retries - 1:
-                    wait = 5 * (attempt + 1)
-                    print(f"  Retry {attempt + 1}/{max_retries} after {wait}s ({e})")
-                    time.sleep(wait)
-                else:
-                    raise
-            except requests.exceptions.Timeout as e:
-                if attempt < max_retries - 1:
-                    wait = 10 * (attempt + 1)
-                    print(f"  Timeout, retry {attempt + 1}/{max_retries} after {wait}s")
-                    time.sleep(wait)
-                else:
-                    raise
-        data = resp.json()
-        batch = data.get("events", [])
-        rows.extend(batch)
-        cursor = data.get("cursor")
-        print(f"  Fetched {len(batch)} rows (total: {len(rows)})")
-        if not cursor or not batch:
-            break
-
+    
     results = []
+    seen_filenames = set()
     # Collect token/timing metrics from all rows (including spans)
     prompt_tokens_list = []
     completion_tokens_list = []
@@ -185,6 +200,14 @@ def fetch_experiment_results(target_experiment: Union[str, None] = None) -> tupl
 
         reasoning = metadata.get("reasoning", "") or child_meta.get("reasoning", "")
         filename = metadata.get("filename", "") or child_meta.get("filename", "")
+
+        # Resume-loop versions re-log every row under version-suffixed
+        # experiments; dedupe by filename (first occurrence wins) so merged
+        # versions never double-count an image.
+        if filename:
+            if filename in seen_filenames:
+                continue
+            seen_filenames.add(filename)
 
         results.append({
             "expected": expected,
@@ -554,9 +577,14 @@ def print_doc_section(results: list[dict], experiment_name: str, meta: dict):
 
 
 def main():
-    # Optional CLI arg: experiment name
-    target = sys.argv[1] if len(sys.argv) > 1 else None
-    results, experiment_name, meta = fetch_experiment_results(target)
+    # Optional CLI arg: experiment name, then optional --agent flag
+    args = sys.argv[1:]
+    agent = False
+    if "--agent" in args:
+        agent = True
+        args.remove("--agent")
+    target = args[0] if args else None
+    results, experiment_name, meta = fetch_experiment_results(target, agent=agent)
     print(f"Fetched {len(results)} results\n")
     plot_per_class_accuracy(results, experiment_name)
 

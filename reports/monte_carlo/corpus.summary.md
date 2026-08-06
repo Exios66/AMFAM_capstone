@@ -1,15 +1,15 @@
 # Monte Carlo Corpus Summary
 
-- **Records**: 5280
+- **Records**: 5599
 - **Images**: 1512
-- **Experiments**: 17
-- **Reasoning coverage**: 3889/5280 rows
+- **Experiments**: 18
+- **Reasoning coverage**: 4580/5599 rows
 
 ## Status
 
 | status | count |
 |---|---:|
-| completed | 5151 |
+| completed | 5470 |
 | error | 129 |
 
 ## Models
@@ -17,7 +17,7 @@
 | model | rows |
 |---|---:|
 | google/gemini-2.5-flash-lite | 320 |
-| google/gemini-3.5-flash-lite | 160 |
+| google/gemini-3.5-flash-lite | 479 |
 | moonshotai/kimi-k2.6 | 109 |
 | qwen/qwen3.5-35b-a3b | 212 |
 | qwen/qwen3.7-flash | 4479 |
@@ -26,7 +26,7 @@
 
 | prompt | rows |
 |---|---:|
-| v0 | 1440 |
+| v0 | 1759 |
 | v11.8 | 2561 |
 | v14 | 160 |
 | v16 | 480 |
@@ -38,23 +38,23 @@
 
 | expected->predicted | count |
 |---|---:|
-| `budget->invoice` | 60 |
-| `letter->memo` | 58 |
-| `specification->form` | 49 |
-| `invoice->form` | 47 |
-| `budget->form` | 36 |
-| `scientific_report->form` | 30 |
+| `budget->invoice` | 63 |
+| `letter->memo` | 63 |
+| `specification->form` | 52 |
+| `invoice->form` | 51 |
+| `budget->form` | 40 |
+| `handwritten->letter` | 34 |
+| `scientific_report->form` | 34 |
+| `resume->form` | 33 |
 | `invoice->budget` | 28 |
-| `resume->form` | 25 |
-| `handwritten->letter` | 24 |
-| `file_folder->presentation` | 18 |
-| `presentation->file_folder` | 18 |
-| `presentation->news_article` | 17 |
-| `scientific_publication->news_article` | 16 |
-| `questionnaire->form` | 16 |
-| `scientific_report->scientific_publication` | 16 |
-| `presentation->scientific_report` | 15 |
-| `news_article->advertisement` | 14 |
+| `file_folder->presentation` | 22 |
+| `presentation->news_article` | 19 |
+| `presentation->file_folder` | 19 |
+| `scientific_report->scientific_publication` | 19 |
+| `scientific_publication->news_article` | 18 |
+| `questionnaire->form` | 17 |
+| `news_article->advertisement` | 16 |
+| `presentation->scientific_report` | 16 |
+| `presentation->memo` | 14 |
+| `questionnaire->scientific_report` | 14 |
 | `scientific_publication->scientific_report` | 13 |
-| `file_folder->form` | 13 |
-| `questionnaire->scientific_report` | 13 |

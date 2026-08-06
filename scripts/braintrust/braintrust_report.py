@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -390,15 +391,27 @@ def main():
     parser.add_argument("--reasoning", default="enabled (effort=high), trace logged")
     parser.add_argument("--project-id", default=PROJECT_ID)
     parser.add_argument("--project", default=_CONFIG.project_name)
+    parser.add_argument(
+        "--agent",
+        action="store_true",
+        help="Read the experiment from the agent account (AMFAMv4) that routed/"
+             "reduced-spec runs (--agent evals) log to",
+    )
     parser.add_argument("--output-dir", default="reports")
     args = parser.parse_args()
 
     (api_key,) = require_env("BRAINTRUST_API_KEY")
+    project_id = args.project_id
+    if args.agent:
+        from src.braintrust_config import load_agent_config
+        agent_cfg = load_agent_config()
+        api_key = agent_cfg.api_key or os.environ.get("AGENT_BRAINTRUST_API_KEY", api_key)
+        project_id = agent_cfg.project_id or project_id
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Fetching experiment {args.experiment}...")
-    rows, meta = fetch_experiment(api_key, args.experiment, args.project_id)
+    rows, meta = fetch_experiment(api_key, args.experiment, project_id)
     tasks, failures = build_results(rows)
     print(f"Scored rows: {len(tasks)} (failures: {len(failures)}, total expected rows: {len(tasks) + len(failures)})")
 

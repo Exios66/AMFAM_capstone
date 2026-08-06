@@ -259,6 +259,49 @@ settings in Braintrust experiment metadata for reproducibility.
 
 ---
 
+## v18.1 — Decision-Rule Discipline (Aug 2026)
+
+**v18 + the two decision rules the corpus EDA points to: the RUNNER-UP RESCUE
+("never override your own stated runner-up without new evidence — commit to
+your runner-up when evidence is balanced") and the FORM ANTI-ATTRACTOR
+("form is never a default; walking back through checks 1-14 before committing
+to form"). Default remains v17.2; v18.1 is the eval line for the decision-rule
+experiment.**
+
+| Metric | qwen3.7-flash v18.1 (320-slice, high effort) | qwen3.7-flash v17.2 baseline (160-slice) |
+|---|---|---|
+| exact_match | 269/319 (84.3%) | — |
+| failures | 2/319 (0.6%) | — |
+| near-miss | 33 (10.3% of rows; **68.8% of misses**) | 27.7% of misses (v11.8-era corpus) |
+| runner_up coverage | 295/317 completed rows | — |
+| total cost | $0.12 (avg $0.0004/image) | — |
+
+The run (`qwen3.7-flash_v18.1_high_320`, `fixed_size_sampled_320`, 319 images,
+reasoning high, routed tail escalation on the AMFAMv4 agent org) scores 84.3%
+with a third of misses being near-misses — the decision-rule line is the
+cheapest remaining lever. Reports: `reports/report_qwen3.7-flash_v18.1_high_320.md`,
+`reports/experiment_reports/qwen3.7-flash_v18.1_high_320_final.md`.
+
+### gemini-3.5-flash-lite v0 medium-effort routed run (320 images)
+
+`google/gemini-3.5-flash-lite` v0 at **medium** reasoning on
+`fixed_size_sampled_320` (319 images, agent org AMFAMv4):
+
+| Metric | Value |
+|---|---|
+| exact_match | 232/319 (72.7%) |
+| failures | 0/319 |
+| total cost | $0.40 (avg $0.0012/image) |
+| runner_up coverage | 0/319 (gemini 3.5 reasoning yields no parsable runner-up) |
+
+Medium effort tracks max effort (72.5% on the 160 slice) at ~60% of the
+per-image cost — the cheaper spec loses nothing measurable on gemini-3.5-flash-lite.
+(Experiment `gemini-3.5-flash-lite_v0_medium`, manifest
+`reports/manifests/gemini-3.5-flash-lite_v0_medium_320.jsonl`, report
+`reports/report_gemini-3.5-flash-lite_v0_medium.md`.)
+
+---
+
 ## v18 — Monte Carlo Exemplar Appendix (Aug 2026, EXPERIMENTAL)
 
 **Data-driven worked examples mined by `monte_carlo_exemplars.py` from the joint

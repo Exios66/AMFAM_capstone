@@ -40,6 +40,35 @@ def _v1_api_base(api_base: str) -> str:
     return f"{api_base}/v1" if not api_base.endswith("/v1") else api_base
 
 
+def extract_event_filename(event: dict) -> str:
+    """Best-effort filename from a Braintrust event (task span or attachment).
+
+    Task spans carry ``metadata.filename``; dataset-attachment spans and some
+    routed runs store it on the ``input`` payload instead. ``input`` may be a
+    dict (``{"filename": ...}`` or nested ``{"input_data": {"filename": ...}}``)
+    or a list of message parts, so all shapes are probed. Returns "" when the
+    event has no usable filename (audit events, child spans, etc.).
+    """
+    if not isinstance(event, dict):
+        return ""
+    meta = event.get("metadata")
+    if isinstance(meta, dict):
+        fn = meta.get("filename")
+        if fn:
+            return str(fn)
+    inp = event.get("input")
+    if isinstance(inp, dict):
+        inner = inp.get("input_data") if isinstance(inp.get("input_data"), dict) else inp
+        fn = inner.get("filename")
+        if fn:
+            return str(fn)
+    elif isinstance(inp, list):
+        for part in inp:
+            if isinstance(part, dict) and part.get("filename"):
+                return str(part["filename"])
+    return ""
+
+
 def list_experiments(api_key: str, project_id: str, api_base: str = "https://api.braintrust.dev/v1") -> list[dict]:
     """Return metadata for every experiment in a project."""
     resp = requests.get(

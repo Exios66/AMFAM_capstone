@@ -29,7 +29,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from src.constants import DOCUMENT_CLASSES  # noqa: E402
 from src.braintrust_config import load_braintrust_config  # noqa: E402
-from src.braintrust_utils import fetch_experiment_rows, list_experiments  # noqa: E402
+from src.braintrust_utils import (  # noqa: E402
+    extract_event_filename,
+    fetch_experiment_rows,
+    list_experiments,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFESTS_DIR = ROOT / "reports" / "manifests"
@@ -119,12 +123,8 @@ def fetch_span_metadata_by_filename(
                   file=sys.stderr)
             continue
         for event in events:
-            meta = event.get("metadata") or {}
-            input_data = event.get("input")
-            input_filename = ""
-            if isinstance(input_data, dict):
-                input_filename = input_data.get("filename") or ""
-            filename = meta.get("filename") or input_filename
+            meta = event.get("metadata") if isinstance(event.get("metadata"), dict) else {}
+            filename = meta.get("filename") or extract_event_filename(event)
             if not filename:
                 continue
             entry = meta_by_filename.setdefault(filename, {})
@@ -135,11 +135,29 @@ def fetch_span_metadata_by_filename(
                 value = meta.get(field)
                 if value is not None and field not in entry:
                     entry[field] = value
-            for field in ("cost", "runner_up"):
+            for field in ("cost", "runner_up", "raw_response"):
                 value = meta.get(field)
                 if value and field not in entry:
                     entry[field] = value
     return meta_by_filename
+
+
+def _backfill_configs():
+    """Primary project first, then the agent account (``AMFAMv4``) as a fallback.
+
+    Routed/reduced-spec runs (``--agent``) log their experiments to the agent
+    org, so the corpus backfill probes both projects when a manifest's
+    experiment is not in the primary project. Duplicate projects are skipped.
+    """
+    configs = [_canonical_braintrust_config()]
+    try:
+        from src.braintrust_config import load_agent_config
+        agent = load_agent_config()
+        if agent.api_key and agent.project_id != configs[0].project_id:
+            configs.append(agent)
+    except Exception:  # noqa: BLE001 - backfill must never abort the build
+        pass
+    return configs
 
 
 def build_corpus(manifests_dir: Path, backfill: bool) -> list[dict]:
@@ -158,13 +176,17 @@ def build_corpus(manifests_dir: Path, backfill: bool) -> list[dict]:
         metadata, final = load_manifest(manifest_path)
         experiment_name = metadata.get("experiment_name") or manifest_path.stem
         span_meta: dict[str, dict] = {}
-        if backfill and experiment_name and config:
-            span_meta = fetch_span_metadata_by_filename(
-                experiment_name,
-                config.project_id,
-                config.api_key or "",
-                config.api_base,
-            )
+        if backfill and experiment_name:
+            # Probe the primary project first, then the agent account
+            # (AMFAMv4) where routed/reduced-spec runs (--agent) log their
+            # experiments.
+            for cfg in _backfill_configs():
+                span_meta.update(fetch_span_metadata_by_filename(
+                    experiment_name,
+                    cfg.project_id,
+                    cfg.api_key or "",
+                    cfg.api_base,
+                ))
             if span_meta:
                 print(f"Backfilled span metadata for {len(span_meta)} rows from {experiment_name}")
 

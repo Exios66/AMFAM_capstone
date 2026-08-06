@@ -7,7 +7,38 @@ from PIL import Image
 
 from src import braintrust_config as bc
 from src import constants, env_utils, image_utils
+from src.braintrust_utils import extract_event_filename
 from src.prompts import DEFAULT_PROMPT_VERSION, get_prompt, list_prompt_versions
+
+
+class TestExtractEventFilename:
+    """Filename extraction from Braintrust events must tolerate every payload
+    shape the API returns (task spans, attachment spans, routed runs)."""
+
+    def test_metadata_filename_wins(self):
+        event = {"metadata": {"filename": "a.png"}, "input": {"filename": "b.png"}}
+        assert extract_event_filename(event) == "a.png"
+
+    def test_flat_dict_input(self):
+        event = {"input": {"filename": "flat.png"}}
+        assert extract_event_filename(event) == "flat.png"
+
+    def test_nested_input_data(self):
+        event = {"input": {"input_data": {"filename": "nested.png", "index": 3}}}
+        assert extract_event_filename(event) == "nested.png"
+
+    def test_list_input_parts(self):
+        event = {"input": [{"type": "text", "text": "x"}, {"filename": "part.png"}]}
+        assert extract_event_filename(event) == "part.png"
+
+    def test_no_filename_returns_empty(self):
+        assert extract_event_filename({"metadata": {"reasoning": "x"}}) == ""
+        assert extract_event_filename({"input": {"index": 1}}) == ""
+        assert extract_event_filename({"input": [{"type": "text"}]}) == ""
+
+    def test_non_dict_event_returns_empty(self):
+        assert extract_event_filename([1, 2, 3]) == ""
+        assert extract_event_filename(None) == ""
 
 
 class TestConstants:

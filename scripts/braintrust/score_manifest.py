@@ -35,8 +35,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # noqa: E402
 
 from src.constants import DOCUMENT_CLASSES  # noqa: E402
-from src.braintrust_config import load_braintrust_config  # noqa: E402
-from src.braintrust_utils import fetch_experiment_rows, list_experiments  # noqa: E402
+from src.braintrust_config import load_agent_config, load_braintrust_config  # noqa: E402
+from src.braintrust_utils import (  # noqa: E402
+    extract_event_filename,
+    fetch_experiment_rows,
+    list_experiments,
+)
 from src.openrouter_classifier import extract_runner_up  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -135,18 +139,38 @@ def fetch_row_metadata_by_filename(
                   file=sys.stderr)
             continue
         for event in events:
-            meta = event.get("metadata") or {}
-            filename = meta.get("filename") or (event.get("input") or {}).get("filename")
+            meta = event.get("metadata") if isinstance(event.get("metadata"), dict) else {}
+            filename = meta.get("filename") or extract_event_filename(event)
             if not filename:
                 continue
             entry = meta_by_filename.setdefault(filename, {})
             reasoning = meta.get("reasoning")
             if reasoning and reasoning != REASONING_PLACEHOLDER and "reasoning" not in entry:
                 entry["reasoning"] = reasoning
+            raw_response = meta.get("raw_response")
+            if raw_response and "raw_response" not in entry:
+                entry["raw_response"] = raw_response
             cost = meta.get("cost")
             if isinstance(cost, (int, float)) and "cost" not in entry:
                 entry["cost"] = float(cost)
     return meta_by_filename
+
+
+def _backfill_configs() -> list:
+    """Main config first, then the agent account (``AMFAMv4``) as a fallback.
+
+    Routed/agent runs (``--agent``) log their experiments to the agent org, so
+    backfill probes both projects when the manifest's experiment is not in the
+    primary project. Duplicate projects are skipped.
+    """
+    configs = [_canonical_braintrust_config()]
+    try:
+        agent = load_agent_config()
+        if agent.api_key and agent.project_id != configs[0].project_id:
+            configs.append(agent)
+    except Exception:  # noqa: BLE001 - backfill must never abort scoring
+        pass
+    return configs
 
 
 def backfill_rows(final: dict[str, dict], metadata: dict) -> tuple[int, int, int, int]:
@@ -163,20 +187,38 @@ def backfill_rows(final: dict[str, dict], metadata: dict) -> tuple[int, int, int
     cost_missing = [r for r in final.values()
                     if r.get("status") == "completed" and not isinstance(r.get("cost"), (int, float))]
     if not runner_missing and not cost_missing:
-        return 0, 0, 0, 0
+        return 0, 0, 0, 0, 0
     experiment_name = metadata.get("experiment_name")
     if not experiment_name:
-        return 0, len(runner_missing), 0, len(cost_missing)
-    config = _canonical_braintrust_config()
-    meta_map = fetch_row_metadata_by_filename(
-        experiment_name, config.project_id, config.api_key or "", config.api_base
-    )
+        return 0, len(runner_missing), 0, len(cost_missing), 0
+    # Probe the primary project first, then the agent account (AMFAMv4) where
+    # routed/reduced-spec runs (--agent) log their experiments.
+    meta_map: dict[str, dict] = {}
+    for config in _backfill_configs():
+        meta_map.update(fetch_row_metadata_by_filename(
+            experiment_name, config.project_id, config.api_key or "", config.api_base
+        ))
+    # Reasoning durability: every completed row lacking a local reasoning trace
+    # gets one from span metadata, so the manifest becomes self-contained and
+    # never depends on the Braintrust log for the full metric set.
+    reasoning_filled = 0
+    for r in final.values():
+        if r.get("status") != "completed" or (r.get("reasoning") or "").strip():
+            continue
+        entry = meta_map.get(r["filename"], {})
+        if entry.get("reasoning"):
+            r["reasoning"] = entry["reasoning"]
+            if not (r.get("raw_response") or "").strip() and entry.get("raw_response"):
+                r["raw_response"] = entry["raw_response"]
+            reasoning_filled += 1
     runner_backfilled = 0
     for r in runner_missing:
         reasoning = meta_map.get(r["filename"], {}).get("reasoning")
         if reasoning:
-            r["runner_up"] = extract_runner_up(reasoning)
-            runner_backfilled += 1
+            extracted = extract_runner_up(reasoning)
+            if extracted:
+                r["runner_up"] = extracted
+                runner_backfilled += 1
     cost_backfilled = 0
     for r in cost_missing:
         cost = meta_map.get(r["filename"], {}).get("cost")
@@ -188,7 +230,21 @@ def backfill_rows(final: dict[str, dict], metadata: dict) -> tuple[int, int, int
         len(runner_missing) - runner_backfilled,
         cost_backfilled,
         len(cost_missing) - cost_backfilled,
+        reasoning_filled,
     )
+
+
+def persist_manifest(path: Path, metadata: dict, final: dict[str, dict]) -> None:
+    """Rewrite a manifest with the backfilled reasoning/raw_response in place.
+
+    Uses the same header shape as ``ManifestStore`` so resume and fingerprint
+    validation keep working after the rewrite.
+    """
+    header = json.dumps({"type": "header", "metadata": metadata}, sort_keys=True)
+    lines = [header]
+    for record in final.values():
+        lines.append(json.dumps(record, sort_keys=True))
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def score(metadata: dict, final: dict[str, dict]) -> dict:
@@ -314,16 +370,27 @@ def main() -> None:
                         help="Skip fetching reasoning/cost from Braintrust for rows that "
                              "predate runner-up/cost tracking (near-miss and cost then only "
                              "count rows recorded in the manifest)")
+    parser.add_argument("--persist-manifest", action="store_true",
+                        help="Rewrite the manifest in place with any reasoning/raw_response "
+                             "backfilled from Braintrust spans, so the local file is "
+                             "self-contained for scoring")
     args = parser.parse_args()
 
     metadata, final = load_manifest(args.manifest)
     ru_backfilled = ru_missing = cost_backfilled = cost_missing = 0
+    reasoning_filled = 0
     if not args.no_backfill:
-        ru_backfilled, ru_missing, cost_backfilled, cost_missing = backfill_rows(final, metadata)
+        ru_backfilled, ru_missing, cost_backfilled, cost_missing, reasoning_filled = \
+            backfill_rows(final, metadata)
         if ru_backfilled:
             print(f"Backfilled runner_up for {ru_backfilled} pre-tracking rows from Braintrust reasoning")
         if cost_backfilled:
             print(f"Backfilled cost for {cost_backfilled} pre-tracking rows from Braintrust span metadata")
+        if reasoning_filled:
+            print(f"Backfilled reasoning for {reasoning_filled} rows into the scored records")
+            if args.persist_manifest:
+                persist_manifest(args.manifest, metadata, final)
+                print(f"Persisted reasoning/raw_response back into {args.manifest}")
     result = score(metadata, final)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)

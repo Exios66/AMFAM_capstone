@@ -367,6 +367,9 @@ def main() -> None:
     parser.add_argument("--no-backfill", action="store_true",
                         help="Skip the Braintrust fetch; reasoning and token metrics will be "
                              "empty (billed cost still comes from the manifest's per-row cost)")
+    parser.add_argument("--agent", action="store_true",
+                        help="Merge trace data from the agent account (AMFAMv4) that "
+                             "routed/reduced-spec runs (--agent evals) log to")
     args = parser.parse_args()
 
     metadata, final = load_manifest(args.manifest)
@@ -381,6 +384,11 @@ def main() -> None:
     actual_cost = 0.0
     if not args.no_backfill:
         config = _canonical_braintrust_config()
+        if args.agent:
+            from src.braintrust_config import load_agent_config
+            agent_cfg = load_agent_config()
+            if agent_cfg.api_key:
+                config = agent_cfg
         print(f"Merging trace data from Braintrust experiments matching '{experiment}'...")
         events = fetch_merged_events(experiment, config.project_id, config.api_key or "", config.api_base)
         reasoning_by_filename, metrics_by_filename, actual_cost = merge_trace_data(events)

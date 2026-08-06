@@ -991,3 +991,35 @@ wanted; the experiment in Braintrust is partial and should not be used for compa
 | Expected cost | $0.0000 |
 | Actual cost | $0.3406 |
 
+---
+
+## Experiment: `qwen3.7-flash_v18.1_high_320` — 319 images (19 per class × 16 classes)
+
+**Model:** `qwen/qwen3.7-flash`  
+**Prompt:** `v18.1`  
+**Dataset:** `fixed_size_sampled_320`  
+
+| Metric | Value |
+|---|---:|
+| **exact_match** | **269/319 (84.3%)** |
+| Failure rate | 0.6% |
+| Near-miss | 33 (68.8% of misses) |
+| Expected cost | $0.1843 |
+| Actual cost | $0.1972 |
+
+---
+
+## Experiment: `gemini-3.5-flash-lite_v0_medium` — 319 images (19 per class × 16 classes)
+
+**Model:** `google/gemini-3.5-flash-lite`  
+**Prompt:** `v0`  
+**Dataset:** `fixed_size_sampled_320`  
+
+| Metric | Value |
+|---|---:|
+| **exact_match** | **232/319 (72.7%)** |
+| Failure rate | 0.0% |
+| Near-miss | 0 (0.0% of misses) |
+| Expected cost | $0.0265 |
+| Actual cost | $0.3958 |
+

@@ -422,6 +422,83 @@ def _run_escalation(
 
 
 # ---------------------------------------------------------------------------
+# Manifest record builders
+# ---------------------------------------------------------------------------
+
+def _manifest_completed_record(
+    *,
+    filename: str,
+    expected: str,
+    predicted: str,
+    attempts: int,
+    used_fallback: bool,
+    runner_up: str,
+    row_cost: float,
+    routed: bool,
+    confidence: float | None,
+    self_report: float | None,
+    escalation_reason: str,
+    escalation_model: str | None,
+    escalated_cost: float,
+    escalation_error: str,
+    reasoning_text: str,
+    raw: str,
+) -> dict:
+    """Durable per-row manifest record for a completed classification.
+
+    ``reasoning`` (and the raw response) are saved to the manifest itself, not
+    only to the Braintrust span, so the full metric set survives even when the
+    spans live on another account (``--agent`` / AMFAMv4 routed runs) or the
+    experiment is pruned. Local scoring (near-miss from the runner-up line,
+    failure analysis, corpus reasoning coverage) must never depend on the
+    Braintrust log.
+    """
+    return {
+        "filename": filename,
+        "expected": expected,
+        "status": "completed",
+        "tag": "OK" if predicted.strip().lower() == expected.strip().lower() else "MISS!",
+        "predicted": predicted,
+        "attempts": attempts,
+        "error": "",
+        "fallback": used_fallback,
+        "runner_up": runner_up,
+        "cost": row_cost,
+        "routed": routed,
+        "confidence": confidence,
+        "self_report": self_report,
+        "escalation_reason": escalation_reason,
+        "escalated_cost": escalated_cost if routed else 0.0,
+        "escalated_model": escalation_model if routed else None,
+        "escalation_error": escalation_error,
+        "reasoning": reasoning_text,
+        "raw_response": raw,
+    }
+
+
+def _manifest_error_record(
+    *,
+    filename: str,
+    expected: str,
+    status: str,
+    attempts: int,
+    error: str,
+    reasoning_text: str = "",
+) -> dict:
+    """Durable per-row manifest record for a failed/empty classification."""
+    return {
+        "filename": filename,
+        "expected": expected,
+        "status": status,
+        "tag": "ERROR!",
+        "predicted": "",
+        "attempts": attempts,
+        "error": error,
+        "reasoning": reasoning_text,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Braintrust Eval
 # ---------------------------------------------------------------------------
 
@@ -742,15 +819,14 @@ def run_eval(
             status = "error" if last_error is not None or raw.strip() == "" else "empty"
             error_msg = str(last_error) if last_error is not None else "response contained no valid class"
             if manifest:
-                manifest.append({
-                    "filename": filename,
-                    "expected": expected,
-                    "status": status,
-                    "tag": "ERROR!",
-                    "predicted": "",
-                    "attempts": attempts,
-                    "error": error_msg,
-                })
+                manifest.append(_manifest_error_record(
+                    filename=filename,
+                    expected=expected,
+                    status=status,
+                    attempts=attempts,
+                    error=error_msg,
+                    reasoning_text=reasoning_text,
+                ))
             msg = f"{ERROR_PREFIX}{filename}: {error_msg}"
             print(msg, file=sys.stderr)
             _safe_span_log(
@@ -764,26 +840,24 @@ def run_eval(
             return msg
 
         if manifest:
-            tag = "OK" if predicted.strip().lower() == expected.strip().lower() else "MISS!"
-            manifest.append({
-                "filename": filename,
-                "expected": expected,
-                "status": "completed",
-                "tag": tag,
-                "predicted": predicted,
-                "attempts": attempts,
-                "error": "",
-                "fallback": used_fallback,
-                "runner_up": runner_up,
-                "cost": row_cost,
-                "routed": routed,
-                "confidence": confidence,
-                "self_report": self_report,
-                "escalation_reason": reason,
-                "escalated_cost": escalated_cost if routed else 0.0,
-                "escalated_model": escalation_model if routed else None,
-                "escalation_error": escalation_error,
-            })
+            manifest.append(_manifest_completed_record(
+                filename=filename,
+                expected=expected,
+                predicted=predicted,
+                attempts=attempts,
+                used_fallback=used_fallback,
+                runner_up=runner_up,
+                row_cost=row_cost,
+                routed=routed,
+                confidence=confidence,
+                self_report=self_report,
+                escalation_reason=reason,
+                escalation_model=escalation_model,
+                escalated_cost=escalated_cost,
+                escalation_error=escalation_error,
+                reasoning_text=reasoning_text,
+                raw=raw,
+            ))
 
         # Log metadata for Braintrust UI — includes reasoning trace and prompt.
         # finish_reason is recorded so rows salvaged from truncated/errored

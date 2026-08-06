@@ -17,12 +17,12 @@
 | Failure rate | 0.0% |
 | **Near-miss** (correct answer was model's runner-up) | **0** (0.0% of rows; 0.0% of all misses) |
 | Runner-up coverage | 0/160 completed rows |
-| Prompt tokens (avg) | 0.0 |
+| Prompt tokens (avg) | 1,296.0 |
 | Prompt cached tokens (avg) | 0.0 |
-| Completion tokens (avg) | 0.0 |
-| Completion reasoning tokens (avg) | 0.0 |
-| Total tokens (avg) | 0.0 |
-| Time to first token (avg) | 0.00s |
+| Completion tokens (avg) | 696.0 |
+| Completion reasoning tokens (avg) | 686.3 |
+| Total tokens (avg) | 1,992.1 |
+| Time to first token (avg) | 4.28s |
 | Duration (avg) | 0.00s |
 
 ## Cost — Expected vs Actual
@@ -31,21 +31,21 @@
 
 | Metric | Value |
 |--------|------:|
-| Total prompt tokens (measured) | 0 |
-| Total completion tokens (measured) | 0 |
-| Total tokens (measured) | 0 |
-| **Expected cost** (list price × measured tokens) | **$0.0000** |
+| Total prompt tokens (measured) | 207,362 |
+| Total completion tokens (measured) | 111,366 |
+| Total tokens (measured) | 318,728 |
+| **Expected cost** (list price × measured tokens) | **$0.3406** |
 | **Actual cost** (OpenRouter billed, all calls incl. retries) | **$0.3406** |
-| Difference (expected − actual) | $-0.3406 (+0.0%) |
+| Difference (expected − actual) | $-0.0000 (-0.0%) |
 | Cost coverage | 160/160 rows with billed cost |
 
 ### Scale-up projections (list-price expected vs extrapolated actual)
 
 | Images | Expected Cost | Estimated Actual |
 |--------|--------------:|-----------------:|
-| 800 | $0.00 | $1.70 |
-| 25,000 | $0.00 | $53.22 |
-| 320,000 | $0.00 | $681.25 |
+| 800 | $1.70 | $1.70 |
+| 25,000 | $53.22 | $53.22 |
+| 320,000 | $681.25 | $681.25 |
 
 ## Per-Class Accuracy
 
@@ -135,7 +135,7 @@ The dominant failure mode is confusion between visually similar classes (`handwr
 
 ### Cost
 
-The run billed **$0.3406** actual vs **$0.0000** list-price expected (+0.0%), averaging $0.002129/image. Extrapolated linearly: $1.70 for 800 images, $53.22 for 25,000, and $681.25 for a 320,000-image production sweep.
+The run billed **$0.3406** actual vs **$0.3406** list-price expected (-0.0%), averaging $0.002129/image. The gap is mostly prompt caching — 0 of 1,296 avg prompt tokens/row were cache hits (cached input billed at ~10% of the input price). Extrapolated linearly: $1.70 for 800 images, $53.22 for 25,000, and $681.25 for a 320,000-image production sweep.
 
 ### Recommendations
 

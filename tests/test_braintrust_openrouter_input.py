@@ -17,6 +17,55 @@ class TestNearMissScore:
         assert bi.near_miss_score("budget", "invoice", "") == 0.0
 
 
+class TestManifestRecords:
+    """Manifest records must carry the reasoning trace (and raw response) so the
+    full metric set is derivable locally — reduced-spec/routed runs may log
+    their spans to another Braintrust account (--agent / AMFAMv4)."""
+
+    def _completed(self, **overrides):
+        kwargs = dict(
+            filename="ds__invoice__0001.png", expected="invoice", predicted="invoice",
+            attempts=1, used_fallback=False, runner_up="budget", row_cost=0.001,
+            routed=False, confidence=0.9, self_report=0.8, escalation_reason="",
+            escalation_model=None, escalated_cost=0.0, escalation_error="",
+            reasoning_text="**Check 1:** header. **Runner-up:** budget", raw="invoice",
+        )
+        kwargs.update(overrides)
+        return bi._manifest_completed_record(**kwargs)
+
+    def test_completed_record_carries_reasoning_and_raw(self):
+        rec = self._completed()
+        assert rec["reasoning"] == "**Check 1:** header. **Runner-up:** budget"
+        assert rec["raw_response"] == "invoice"
+        assert rec["status"] == "completed"
+        assert rec["tag"] == "OK"
+        assert rec["cost"] == 0.001
+
+    def test_completed_record_tag_miss_on_wrong_prediction(self):
+        rec = self._completed(predicted="letter", expected="invoice")
+        assert rec["tag"] == "MISS!"
+
+    def test_routed_record_keeps_reasoning_and_escalation_fields(self):
+        rec = self._completed(
+            routed=True, escalation_model="google/gemini-2.5-flash",
+            escalated_cost=0.02, escalation_reason="low confidence",
+            reasoning_text="**Runner-up:** invoice", raw="budget", predicted="budget",
+        )
+        assert rec["reasoning"] == "**Runner-up:** invoice"
+        assert rec["routed"] is True
+        assert rec["escalated_model"] == "google/gemini-2.5-flash"
+        assert rec["escalated_cost"] == 0.02
+
+    def test_error_record_keeps_reasoning(self):
+        rec = bi._manifest_error_record(
+            filename="ds__letter__0002.png", expected="letter", status="error",
+            attempts=3, error="provider 502", reasoning_text="partial trace",
+        )
+        assert rec["reasoning"] == "partial trace"
+        assert rec["tag"] == "ERROR!"
+        assert rec["status"] == "error"
+
+
 class TestExtractClassFromFilename:
     def test_extracts_middle_segment(self):
         name = "processed_balanced__invoice__0001.png"

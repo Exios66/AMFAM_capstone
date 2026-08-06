@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import braintrust
 
-from src.braintrust_config import load_braintrust_config
+from src.braintrust_config import load_agent_config, load_braintrust_config
 from src.env_utils import require_env
 from src.openrouter_classifier import VALID_CLASSES
 
@@ -30,15 +30,27 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment", required=True, help="Experiment name to summarize")
     parser.add_argument("--project-id", default=PROJECT_ID)
+    parser.add_argument(
+        "--agent",
+        action="store_true",
+        help="Read the experiment from the agent account (AMFAMv4) that routed/"
+             "reduced-spec runs (--agent evals) log to",
+    )
     args = parser.parse_args()
 
     require_env("BRAINTRUST_API_KEY")
-    braintrust.login(api_key=os.environ["BRAINTRUST_API_KEY"])
+    if args.agent:
+        agent_cfg = load_agent_config()
+        braintrust.login(api_key=agent_cfg.api_key or os.environ["AGENT_BRAINTRUST_API_KEY"])
+        project_id = agent_cfg.project_id or args.project_id
+    else:
+        braintrust.login(api_key=os.environ["BRAINTRUST_API_KEY"])
+        project_id = args.project_id
 
     from braintrust.logger import init
 
     exp = init(
-        project_id=args.project_id,
+        project_id=project_id,
         experiment=args.experiment,
         open=True,
     )
