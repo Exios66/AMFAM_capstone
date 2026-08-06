@@ -10,7 +10,8 @@ Full reasoning traces for all 195 misclassifications (70 confusion pairs) from t
 1,120-image v11.8 run — every trace's **14-check scratchpad**, runner-up line, and final
 label. Collapse each pair to browse, or expand to read the model's reasoning. Each trace
 shows the model walking the check-1→14 cascade, naming its runner-up, and committing to
-a (wrong) final label.
+a (wrong) final label. This page shows a **representative trace per pair**; the complete
+set for every run is linked in [Materials & Sources](#materials-sources).
 :::
 
 # Misclassification Reasoning — `qwen3.7-flash_v11.8_reasoning_1600_balanced_1120`
@@ -165,8 +166,41 @@ Final label: memo.
 
 </details>
 
-::: {.callout-note title="Full Truncated Traces"}
-This appendix shows representative reasoning traces. The full set of 195 misclassifications
-with complete scratchpads is available in the committed markdown reports under
-`reports/misclassification_reasoning_*.md`.
-:::
+# Materials & Sources
+
+This appendix renders a **representative** subset of the misclassification traces. Every number, trace, and chart on this page is traceable to a committed artifact in the repository — none are regenerated on the fly, so the appendix and the artifacts always agree.
+
+## Full reasoning traces (all runs)
+
+- **This run (1,120-image v11.8, 195 errors)** — complete 14-check scratchpads for all 195 misclassifications: [`reports/misclassification_reasoning_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/misclassification_reasoning_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.md)
+- **All other runs** — `reports/failed_reasoning_traces/` holds trace reports for 13 additional experiments (v0 480/800, v11 160/320, v11.7 160, v11.8 160/320/800, v14 160, smoke, `gemini-2.5-flash-lite` 160, `qwen3.5-35b-a3b` 160 + v12-retro): [browse the directory](https://github.com/Exios66/AMFAM_capstone/tree/main/reports/failed_reasoning_traces)
+- **Early runs** — additional trace reports under [`docs/experiments/`](https://github.com/Exios66/AMFAM_capstone/tree/main/docs/experiments) (`misclassification_reasoning_main-*.md`, `smoke_v10_full`, `v10_320_dataset`)
+
+## Confusion matrices & per-class accuracy
+
+- **Confusion matrix for this run** — [markdown](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/confusion_matrix_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.md) · [PNG heatmap](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/confusion_matrix_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.png)
+- **Per-class accuracy chart for this run** — [PNG](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/per_class_accuracy_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.png)
+- **All matrices** — 26 heatmaps and markdown tables under [`reports/confusion_matrices/`](https://github.com/Exios66/AMFAM_capstone/tree/main/reports/confusion_matrices), also rendered on [`results/confusion-matrices.qmd`](../results/confusion-matrices.html)
+
+## Full experiment reports
+
+- **Final 1,120-image report** — [`reports/experiment_reports/qwen3.7-flash_v11.8_1600_balanced_1120_final.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/experiment_reports/qwen3.7-flash_v11.8_1600_balanced_1120_final.md) (+ [`.json`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/experiment_reports/qwen3.7-flash_v11.8_1600_balanced_1120_final.json) data)
+- **All reports** — [`reports/experiment_reports/`](https://github.com/Exios66/AMFAM_capstone/tree/main/reports/experiment_reports) (v0 480/800, v11 160/320, v11.8 160/320/800, v14, v16, v17, Gemini-lite, Qwen3.5) · condensed log at [`docs/experiments/experiment_log.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/docs/experiments/experiment_log.md), rendered on [`results/experiment-log.qmd`](../results/experiment-log.html)
+
+## Raw eval data (per-row)
+
+- **Manifests** — per-row OK/MISS/ERROR checkpoints with `runner_up` and `cost` under [`reports/manifests/`](https://github.com/Exios66/AMFAM_capstone/tree/main/reports/manifests); the 1,120-image manifest is [`qwen3.7-flash_v11.8_1600_balanced_1120.jsonl`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/manifests/qwen3.7-flash_v11.8_1600_balanced_1120.jsonl)
+- **Eval runner logs** — full stdout logs of every eval under [`reports/`](https://github.com/Exios66/AMFAM_capstone/tree/main/reports) (`eval_*.log`)
+- **Monte Carlo corpus** — the joint per-image corpus behind all simulations: [`reports/monte_carlo/corpus.jsonl`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/monte_carlo/corpus.jsonl) (1,912 rows) · [`corpus.summary.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/monte_carlo/corpus.summary.md)
+
+## Interactive data layer
+
+The site ships the underlying data as browser-loadable JSON under [`website/data/`](https://github.com/Exios66/AMFAM_capstone/tree/main/website/data): `experiments.json` (every eval), `confusion-matrices.json`, `per-class-accuracy.json`, `cost-models.json`, and `chat-examples.json`. Browsable via [`interactive/experiment-explorer.qmd`](../interactive/experiment-explorer.html) and [`interactive/cost-calculator.qmd`](../interactive/cost-calculator.html).
+
+## Source code
+
+- **Versioned prompts** — [`src/prompts.py`](https://github.com/Exios66/AMFAM_capstone/blob/main/src/prompts.py) (v0–v17.2, append-only; the `PROMPTS` dict and `PROMPT_V17_2` referenced throughout) · changelog at [`prompts/prompt-changelog.qmd`](../prompts/prompt-changelog.html)
+- **Eval runner & scoring** — [`scripts/braintrust/braintrust_openrouter_input.py`](https://github.com/Exios66/AMFAM_capstone/blob/main/scripts/braintrust/braintrust_openrouter_input.py) (retries, `max_tokens` growth, manifest writing) · [`src/evaluation.py`](https://github.com/Exios66/AMFAM_capstone/blob/main/src/evaluation.py) (`ManifestStore`, `validate_dataset`)
+- **Monte Carlo suite** — [`scripts/braintrust/monte_carlo_*.py`](https://github.com/Exios66/AMFAM_capstone/tree/main/scripts/braintrust) (corpus, ensemble, ablation, failures, exemplars, verify) · [`src/monte_carlo.py`](https://github.com/Exios66/AMFAM_capstone/blob/main/src/monte_carlo.py)
+- **Prompt rules & provenance** — [`docs/prompt_rules_provenance.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/docs/prompt_rules_provenance.md) · [`methods/prompt-rules-provenance.qmd`](../methods/prompt-rules-provenance.html)
+- **Repository root** — [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone) (all reports, notebooks, and scripts)
