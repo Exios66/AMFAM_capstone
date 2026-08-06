@@ -25,13 +25,21 @@ $font-size-base: 1rem;
 $link-color: #2d6cdf;
 $link-decoration: none;
 $headings-color: #14213d;
-// APA 7 typography: serif body (Georgia) for academic reading;
-// sans-serif (Inter) reserved for nav, headings, UI chrome.
-$font-family-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-  Roboto, "Helvetica Neue", Arial, sans-serif;
-$font-family-serif: Georgia, "Times New Roman", Times, serif;
-$font-family-monospace: "SFMono-Regular", Menlo, Consolas, "Liberation Mono",
-  monospace;
+// Source family typography — self-hosted (woff2 in assets/fonts), so the site
+// renders with zero external requests. Source Serif 4 (an editorial display
+// serif with optical sizing) carries headings, the hero, stat numerals, and
+// pull-quotes; Source Sans 3 carries body text, tables, and UI chrome; Source
+// Code Pro carries code. This replaces the previous default-font "vanilla"
+// stack (Inter + Georgia) with a designed, cohesive type system.
+$font-family-sans-serif: "Source Sans 3", -apple-system, BlinkMacSystemFont,
+  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-family-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
+$font-family-monospace: "Source Code Pro", ui-monospace, "SFMono-Regular",
+  Menlo, Consolas, "Liberation Mono", monospace;
+$font-family-base: $font-family-sans-serif;
+$headings-font-family: $font-family-serif;
+$headings-font-weight: 600;
+$headings-line-height: 1.18;
 $navbar-dark-color: rgba(255, 255, 255, 0.82);
 $navbar-dark-hover-color: #ffffff;
 $navbar-dark-active-color: #ffffff;
@@ -41,12 +49,92 @@ $code-color: #b3287a;
 /*-- scss:rules --*/
 
 // ===========================================================================
+// Self-hosted fonts — Source Serif 4 / Source Sans 3 / Source Code Pro
+// ===========================================================================
+
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Code Pro";
+  src: url("/assets/fonts/source-code-pro-v31-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Code Pro";
+  src: url("/assets/fonts/source-code-pro-v31-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+// ===========================================================================
 // Design tokens — one palette per theme
 // ===========================================================================
 
 :root {
   color-scheme: light;
 
+  --font-sans: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
+  --font-mono: "Source Code Pro", ui-monospace, "SFMono-Regular", Menlo,
+    Consolas, "Liberation Mono", monospace;
   --canvas: #f6f8fb;
   --card: #ffffff;
   --surface-2: #f0f3f9;
@@ -94,6 +182,11 @@ $code-color: #b3287a;
   --shadow-sm: rgba(20, 33, 61, 0.05);
   --shadow-hover: rgba(20, 33, 61, 0.12);
 
+  // mark/highlight + kbd (Bootstrap compiles these to literal light colors)
+  --highlight-bg: #ffe3d0;
+  --kbd-bg: #212a3a;
+  --kbd-fg: #f6f8fb;
+
   --ok-bg: #e7f6ec; --ok-fg: #1d7a3e; --ok-border: #bfe6cd;
   --miss-bg: #fdeeee; --miss-fg: #b03030; --miss-border: #f2c9c9;
   --illu-bg: #eef2f8; --illu-fg: #5a6b85; --illu-border: #d4dce8;
@@ -126,6 +219,10 @@ html[data-site-theme="synthwave84"] {
   --shadow-sm: rgba(0, 0, 0, 0.3);
   --shadow-hover: rgba(0, 0, 0, 0.5);
   --chart-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+  --highlight-bg: rgba(255, 179, 71, 0.24);
+  --kbd-bg: #2a3550;
+  --kbd-fg: var(--text-body);
 
   // Navbar: dark shadow instead of a light hairline, so the chrome sinks into
   // the dark canvas instead of glowing off it.
@@ -308,6 +405,202 @@ html[data-site-theme="synthwave84"] {
 }
 
 // ===========================================================================
+// Bootstrap component tokens — Quarto compiles the Bootstrap 5.3 component
+// variables (dropdown/modal/card/offcanvas/popover) to LITERAL light colors,
+// so dark mode leaves them light. Re-point them at our theme tokens; the
+// values here are chosen to match the compiled light output exactly, and the
+// dark themes flow through automatically via the --canvas/--card tokens.
+// ===========================================================================
+
+.card {
+  --bs-card-bg: var(--canvas);
+  --bs-card-color: var(--text-body);
+  --bs-card-border-color: var(--border);
+  --bs-card-cap-bg: var(--surface-2);
+  --bs-card-cap-color: var(--text-muted);
+}
+
+.dropdown-menu {
+  --bs-dropdown-bg: var(--canvas);
+  --bs-dropdown-color: var(--text-body);
+  --bs-dropdown-border-color: var(--border);
+  --bs-dropdown-link-color: var(--text-body);
+  --bs-dropdown-link-hover-color: var(--accent);
+  --bs-dropdown-link-hover-bg: var(--accent-soft);
+  --bs-dropdown-link-active-color: var(--accent);
+  --bs-dropdown-link-active-bg: var(--accent-soft);
+}
+
+.modal {
+  --bs-modal-bg: var(--canvas);
+  --bs-modal-color: var(--text-body);
+  --bs-modal-border-color: var(--border);
+}
+
+.offcanvas,
+.offcanvas-sm,
+.offcanvas-md,
+.offcanvas-lg,
+.offcanvas-xl,
+.offcanvas-xxl {
+  --bs-offcanvas-bg: var(--canvas);
+  --bs-offcanvas-color: var(--text-body);
+}
+
+.popover {
+  --bs-popover-bg: var(--canvas);
+  --bs-popover-color: var(--text-body);
+  --bs-popover-border-color: var(--border);
+}
+
+mark,
+.search-match.mark {
+  --bs-highlight-bg: var(--highlight-bg);
+  background-color: var(--highlight-bg);
+}
+
+kbd {
+  color: var(--kbd-fg);
+  background-color: var(--kbd-bg);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > *,
+.table-striped-columns > :not(caption) > tr > :nth-child(even) {
+  --bs-table-striped-bg: var(--surface-2);
+}
+
+.table-hover > tbody > tr:hover > * {
+  --bs-table-hover-bg: var(--accent-soft);
+}
+
+// Quarto sidebar bottom border compiles to a literal light color
+.sidebar.sidebar-navigation {
+  border-bottom-color: var(--border);
+}
+
+// ===========================================================================
+// Algolia / Quarto search (`.aa-*`) — the compiled search stylesheet is
+// hardcoded to light surfaces; re-theme for all four schemes. The navbar
+// overlay input already inherits (`.navbar #quarto-search.type-overlay .aa-Form`
+// is transparent); the results panel, detached (mobile) container, and result
+// rows are what needed theming.
+// ===========================================================================
+
+html[data-bs-theme="dark"] .aa-Form,
+html[data-bs-theme="dark"] .aa-DetachedFormContainer .aa-Form {
+  background-color: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-Input,
+html[data-bs-theme="dark"] .aa-Input::placeholder,
+html[data-bs-theme="dark"] .aa-ClearButton,
+html[data-bs-theme="dark"] .aa-CopyButton,
+html[data-bs-theme="dark"] .aa-DetachedCancelButton {
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-DetachedFormContainer {
+  background-color: var(--card);
+  border-bottom-color: var(--border);
+}
+
+html[data-bs-theme="dark"] .aa-Panel,
+html[data-bs-theme="dark"] .aa-DetachedContainer .aa-Panel,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Panel {
+  background-color: var(--card);
+}
+
+html[data-bs-theme="dark"] .aa-DetachedContainer {
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-hover);
+}
+
+html[data-bs-theme="dark"] .aa-DetachedOverlay {
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+html[data-bs-theme="dark"] .aa-Item .search-item,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item .search-item {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-SourceHeader,
+html[data-bs-theme="dark"] #quarto-search-results .aa-SourceHeader .search-result-header {
+  background-color: var(--surface-3);
+}
+
+html[data-bs-theme="dark"] .aa-Item[aria-selected="false"] .search-item .search-result-text-container,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="false"] .search-item .search-result-text-container {
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .search-result-doc:not(.document-selectable) .search-result-title-container,
+html[data-bs-theme="dark"] #quarto-search-results .search-result-doc:not(.document-selectable) .search-result-title-container {
+  background-color: var(--card);
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-Item[aria-selected="true"] .search-item,
+html[data-bs-theme="dark"] .aa-Item[aria-selected="true"] .search-item .search-result-text-container,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="true"] .search-item,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="true"] .search-item .search-result-text-container {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+html[data-bs-theme="dark"] .aa-Item[aria-selected="true"] .search-item .search-match.mark,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="true"] .search-item .search-match.mark {
+  background-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+html[data-bs-theme="dark"] .search-match.mark,
+html[data-bs-theme="dark"] #quarto-search-results .search-match.mark {
+  background-color: var(--selection-bg);
+}
+
+// ===========================================================================
+// Interactive widget chrome (phrase-net + scattertext) — the widgets carry
+// their chrome as INLINE styles (white frame, light #f7f9fc legend/toolbar
+// bars), so `!important` is required to theme them. The canvases themselves
+// stay white in every theme: vis-network node labels and the d3 SVG are
+// drawn in dark ink and need a light backdrop for legibility. Only the outer
+// frame, toolbar, and legend bars follow the theme tokens.
+// ===========================================================================
+
+.phrase-net-widget,
+.scatter-widget {
+  border-color: var(--border) !important;
+}
+
+// Legend bar (both widgets) + scattertext toolbar — last/first child divs.
+.phrase-net-widget > div:last-child,
+.scatter-widget > div:last-child,
+.scatter-widget > div:first-child {
+  background: var(--surface-2) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+.phrase-net-widget > div:last-child > span:last-child,
+.scatter-widget > div:last-child > span:last-child {
+  color: var(--text-faint) !important;
+}
+
+// Scattertext toolbar controls (inline white + navy in the source HTML)
+.scatter-widget input[type="text"],
+.scatter-widget button,
+#scatter-count {
+  background: var(--card) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-body) !important;
+}
+
+// ===========================================================================
 // Accessibility — skip link, focus, reduced motion
 // ===========================================================================
 
@@ -369,40 +662,41 @@ textarea:focus-visible {
 }
 
 // ===========================================================================
-// Base / APA 7 Typography
+// Base typography — Source Sans 3 body, Source Serif 4 headings
 // ===========================================================================
 
 body {
   background-color: var(--canvas);
-  // APA 7: serif body text for academic readability
-  font-family: $font-family-serif;
+  font-family: $font-family-sans-serif;
   font-size: 16px;
-  line-height: 1.65;
+  line-height: 1.7;
   color: var(--text-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  letter-spacing: 0.002em;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  letter-spacing: 0.001em;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-// Headings: sans-serif for clean academic hierarchy (APA 7: bold, left-aligned)
+// Headings: Source Serif 4 — an editorial display serif for a confident hierarchy
 h1, h2, h3, h4, h5, h6 {
-  font-family: $font-family-sans-serif;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+  font-family: $font-family-serif;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
   text-wrap: balance;
   text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
   color: var(--heading);
 }
 
-h1 { font-size: 2rem; letter-spacing: -0.02em; margin-bottom: 1rem; }
-h2 { font-size: 1.55rem; margin-top: 2rem; margin-bottom: 0.75rem; }
-h3 { font-size: 1.25rem; margin-top: 1.5rem; margin-bottom: 0.6rem; }
-h4 { font-size: 1.1rem; margin-top: 1.25rem; margin-bottom: 0.5rem; }
-h5 { font-size: 1rem; margin-top: 1rem; margin-bottom: 0.4rem; }
-h6 { font-size: 0.92rem; margin-top: 1rem; margin-bottom: 0.4rem; font-style: italic; }
+h1 { font-size: 2.05rem; letter-spacing: -0.02em; margin-bottom: 1rem; }
+h2 { font-size: 1.6rem; margin-top: 2rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1.28rem; margin-top: 1.5rem; margin-bottom: 0.6rem; }
+h4 { font-size: 1.12rem; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+h5 { font-size: 1rem; margin-top: 1rem; margin-bottom: 0.4rem; font-weight: 600; }
+h6 { font-size: 0.92rem; margin-top: 1rem; margin-bottom: 0.4rem; font-style: italic; font-weight: 500; }
 
 // Anchored sections must not hide under the fixed navbar
 section,
@@ -444,11 +738,12 @@ main > figure, main > .figure {
 
 figure figcaption,
 .figure-caption {
-  font-family: $font-family-sans-serif;
+  font-family: $font-family-serif;
+  font-style: italic;
   color: var(--text-faint);
-  font-size: 0.82rem;
-  line-height: 1.5;
-  margin-top: 0.5rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  margin-top: 0.55rem;
   text-align: center;
   padding: 0 1rem;
 }
@@ -477,12 +772,14 @@ img.svg {
   height: auto;
 }
 
-// Blockquotes (callout excerpts, pull quotes)
+// Blockquotes (callout excerpts, pull quotes) — editorial serif
 blockquote {
-  border-left: 3px solid var(--border-strong);
+  font-family: $font-family-serif;
+  font-size: 1.08rem;
+  border-left: 3px solid var(--accent);
   color: var(--text-muted);
   font-style: italic;
-  padding: 0.25rem 0 0.25rem 1.2rem;
+  padding: 0.35rem 0 0.35rem 1.3rem;
   margin-left: 0;
   margin-bottom: 1rem;
 }
@@ -533,10 +830,10 @@ blockquote {
   min-height: auto;
 
   .navbar-brand {
-    font-family: $font-family-sans-serif;
-    font-size: 1.02rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    font-family: $font-family-serif;
+    font-size: 1.12rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
     padding: 0.25rem 0;
   }
 
@@ -545,6 +842,7 @@ blockquote {
     padding: 0.42rem 0.65rem !important;
     margin: 0 0.1rem;
     color: var(--navbar-text) !important;
+    letter-spacing: 0.012em;
 
     &:hover,
     &.active {
@@ -757,21 +1055,23 @@ body.landing {
   > * { position: relative; }
 
   h1, .hero-title {
-    font-family: $font-family-sans-serif;
+    font-family: $font-family-serif;
     color: var(--hero-text);
-    font-size: clamp(1.7rem, 2.4rem + 1vw, 2.8rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-size: clamp(1.95rem, 2.5rem + 1vw, 3.1rem);
+    font-weight: 600;
+    letter-spacing: -0.025em;
     margin-bottom: 0.8rem;
-    line-height: 1.15;
+    line-height: 1.12;
+    font-optical-sizing: auto;
   }
 
   .hero-subtitle {
-    font-family: $font-family-serif;
-    font-size: clamp(1rem, 1.1rem + 0.2vw, 1.15rem);
+    font-family: $font-family-sans-serif;
+    font-size: clamp(1rem, 1.05rem + 0.2vw, 1.18rem);
     color: var(--hero-text-muted);
-    max-width: 44rem;
-    line-height: 1.65;
+    max-width: 46rem;
+    line-height: 1.7;
+    letter-spacing: 0.002em;
   }
 
   .hero-badges {
@@ -811,11 +1111,13 @@ body.landing {
   box-shadow: 0 1px 3px var(--shadow-sm);
 
   .stat-value {
-    font-family: $font-family-sans-serif;
-    font-size: 1.85rem;
-    font-weight: 800;
+    font-family: $font-family-serif;
+    font-size: 2rem;
+    font-weight: 600;
     color: var(--primary);
-    line-height: 1.1;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
   }
 
   .stat-label {
@@ -947,6 +1249,7 @@ main table {
 table {
   font-family: $font-family-sans-serif;
   font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
 
   thead th {
     background: var(--surface-3);
@@ -954,7 +1257,7 @@ table {
     font-weight: 700;
     font-size: 0.82rem;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
   }
 
   td, th {
@@ -982,8 +1285,9 @@ div.sourceCode {
   background: var(--card);
 
   pre {
+    font-family: $font-family-monospace;
     font-size: 0.82rem;
-    line-height: 1.55;
+    line-height: 1.6;
   }
 }
 
@@ -991,7 +1295,8 @@ p code,
 li code,
 td code,
 code:not(.sourceCode) {
-  font-size: 0.85em;
+  font-family: $font-family-monospace;
+  font-size: 0.83em;
   color: var(--code);
   background: var(--code-bg);
   padding: 0.08rem 0.28rem;
@@ -1097,9 +1402,10 @@ div.quarto-title-block {
   .title, .subtitle, .quarto-title-meta { margin-bottom: 0.4rem; }
 
   .title {
-    font-family: $font-family-sans-serif;
-    font-size: 1.8rem;
-    font-weight: 700;
+    font-family: $font-family-serif;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
     color: var(--heading);
   }
 }
