@@ -102,12 +102,3 @@ class ManifestStore:
                 stream.write(line)
                 stream.flush()
             self.records[str(record["filename"])] = record
-
-
-def classify_row_status(output: Any, error: Any) -> str:
-    """Return the accounting status for one evaluator row."""
-    if error is not None:
-        return "error"
-    if output is None or str(output).strip() == "":
-        return "empty"
-    return "scored"

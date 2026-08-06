@@ -8,7 +8,7 @@ document images from the dataset slice so the site can render LLaVA-style chat c
 Outputs:
   - website/data/chat-examples.json   — curated example records (real traces)
   - website/chat_images/*.png         — source document images for the examples
-  - reports/chat_data/<name>.json     — cached raw experiment rows (optional re-fetch)
+  - archive/chat_data/<name>.json     — cached raw experiment rows (optional re-fetch)
 
 Usage:
   python scripts/site/build_chat_examples.py
@@ -43,7 +43,7 @@ from src.braintrust_config import load_braintrust_config  # noqa: E402
 from src.braintrust_utils import fetch_attachment_bytes, fetch_experiment_rows, list_experiments  # noqa: E402
 from src.constants import DOCUMENT_CLASSES  # noqa: E402
 
-CACHE_DIR = ROOT / "reports" / "chat_data"
+CACHE_DIR = ROOT / "archive" / "chat_data"
 DATA_DIR = ROOT / "website" / "data"
 IMG_DIR = ROOT / "website" / "chat_images"
 

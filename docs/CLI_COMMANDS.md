@@ -21,7 +21,7 @@ settings; `.env` fills the gaps (notably `OPENROUTER_API_KEY`).
 
 | Task | Command |
 |---|---|
-| Download RVL-CDIP (Kaggle) | `python scripts/datasets/download_dataset.py` |
+| Download RVL-CDIP (Kaggle, archived) | `python archive/datasets/download_dataset.py` |
 | Sample 50 images/class | `python scripts/datasets/create_balanced_dataset.py` |
 | Build fixed-size image sets | `python scripts/datasets/create_fixed_size_dataset.py` |
 | TIFF → 300 DPI PNG + OCR | `python scripts/datasets/run_tiff_processing.py` |
@@ -45,8 +45,8 @@ dataset. `fixed_siz_sample` is not a repository dataset name.
 ## Data pipeline
 
 ```bash
-# 1. Download the RVL-CDIP dataset from Kaggle
-python scripts/datasets/download_dataset.py
+# 1. Download the RVL-CDIP dataset from Kaggle (archived — use the create_braintrust_*.py builders)
+python archive/datasets/download_dataset.py
 
 # 2. Sample a balanced subset (50 per class) — edit SOURCE_PATH/OUTPUT_PATH in the script
 python scripts/datasets/create_balanced_dataset.py
@@ -135,7 +135,7 @@ python scripts/braintrust/copy_datasets_to_new_env.py \
 ```
 
 Attachments upload synchronously with retries and every row is verified by re-download;
-`--delete-existing` makes re-copies idempotent. The one-off `copy_braintrust_dataset.py` variant
+`--delete-existing` makes re-copies idempotent. The one-off `archive/braintrust/copy_braintrust_dataset.py` variant
 copies a single dataset by editing its `SOURCE_*`/`DEST_*` constants.
 
 ## Research funding key
@@ -143,7 +143,7 @@ copies a single dataset by editing its `SOURCE_*`/`DEST_*` constants.
 `RESEARCH_FUNDING_API_KEY` (optional, in `.env`) is a separate OpenRouter key reserved for large
 or significant runs whose prompt has passed all vetting steps. It is **never** the default —
 routine testing/iteration runs on `OPENROUTER_API_KEY`. It is used only when a script explicitly
-requests it (e.g. `run_v11_8_800_after_480.py`) or as automatic 403-quota failover in
+requests it (e.g. `archive/braintrust/run_v11_8_800_after_480.py`) or as automatic 403-quota failover in
 `braintrust_openrouter_input.py`.
 
 ## Helpful flags

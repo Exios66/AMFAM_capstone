@@ -94,11 +94,6 @@ def majority_margin(dist: dict[str, float]) -> float:
     return float(first - second)
 
 
-def top_labels(dist: dict[str, float], k: int = 2) -> list[tuple[str, float]]:
-    """Return the ``k`` most probable (label, share) pairs."""
-    return sorted(dist.items(), key=lambda item: item[1], reverse=True)[:k]
-
-
 def draw_committee(dist: dict[str, float], k: int, rng: random.Random) -> str:
     """One Monte Carlo draw of a ``k``-member majority-vote committee.
 

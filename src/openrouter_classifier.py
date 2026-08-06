@@ -15,9 +15,6 @@ from src.image_utils import encode_image_base64
 from src.openrouter_utils import OPENROUTER_API_URL, build_vision_messages
 from src.prompts import get_prompt
 
-# Recommended vision models on OpenRouter
-VISION_MODELS = []
-
 CLASSIFICATION_PROMPT = get_prompt("v14")
 
 VALID_CLASSES = list(DOCUMENT_CLASSES)

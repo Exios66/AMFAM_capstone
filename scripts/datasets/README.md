@@ -5,16 +5,11 @@ image sets used by the classification pipeline.
 
 ## Scripts
 
-### `download_dataset.py`
+### `download_dataset.py` (archived)
 
-Downloads the RVL-CDIP document-image dataset from Kaggle using `kagglehub` and prints the path to
-the downloaded files.
-
-```bash
-python scripts/datasets/download_dataset.py
-```
-
-Requires Kaggle credentials to be configured for `kagglehub`.
+Downloads the full RVL-CDIP dataset from Kaggle using `kagglehub`. Retired in favor of the
+streaming HF-parquet slice builders (`create_braintrust_*.py`); kept at
+`archive/datasets/download_dataset.py` for reference.
 
 ### `create_balanced_dataset.py`
 

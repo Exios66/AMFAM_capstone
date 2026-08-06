@@ -19,7 +19,7 @@ pytest -k "test_clean_prediction"   # by name match
 pytest --cov=src --cov=scripts --cov-report=term-missing
 
 # Run scripts (work from any directory)
-python scripts/datasets/download_dataset.py
+python archive/datasets/download_dataset.py
 python scripts/braintrust/braintrust_report.py
 python src/openrouter_classifier.py
 ```
@@ -42,7 +42,7 @@ System binaries required: **Tesseract OCR** and **Poppler** (for `pdf2image`).
 `RESEARCH_FUNDING_API_KEY` (optional, in `.env`) is a separate OpenRouter key reserved for **large or significant runs only**:
 
 - **Default access**: every run uses `OPENROUTER_API_KEY` as its OpenRouter access point. All routine testing and prompt iteration runs on the default key.
-- **Explicit invocation only**: the research funding key is used only when a script explicitly requests it — e.g. `run_v11_8_800_after_480.py` calls `require_env("RESEARCH_FUNDING_API_KEY")` and injects it into the child eval's environment. It is never selected by default.
+- **Explicit invocation only**: the research funding key is used only when a script explicitly requests it — e.g. `archive/braintrust/run_v11_8_800_after_480.py` calls `require_env("RESEARCH_FUNDING_API_KEY")` and injects it into the child eval's environment. It is never selected by default.
 - **Vetting gate**: it is only saved for runs that have passed all vetting steps — a settled, most-confident prompt that has cleared preflight and prior slice evaluations — such as a final 800-image slice on the current best prompt.
 - **Automatic failover**: `braintrust_openrouter_input.py:_candidate_keys()` falls back to `RESEARCH_FUNDING_API_KEY` when the primary key hits an OpenRouter quota/credit 403, so a funded run survives the default key running out of credits.
 
@@ -223,7 +223,7 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 
   Flags: `--source-project` (defaults to the `braintrust.env` project), `--source-api-key` (or `BRAINTRUST_SOURCE_API_KEY`; defaults to the `braintrust.env` key), `--no-verify` to skip the full re-download check, and `--delete-existing` to drop a same-named destination dataset first (idempotent re-copy).
 
-- **One-off — `copy_braintrust_dataset.py`**: a simple hardcoded variant. Edit the `SOURCE_API_KEY` / `SOURCE_PROJECT` / `SOURCE_DATASET` and `DEST_API_KEY` / `DEST_PROJECT` / `DEST_DATASET` constants at the top before running; no CLI flags. Prefer `copy_datasets_to_new_env.py` for repeatable, verified porting.
+- **One-off — `archive/braintrust/copy_braintrust_dataset.py`**: a simple hardcoded variant. Edit the `SOURCE_API_KEY` / `SOURCE_PROJECT` / `SOURCE_DATASET` and `DEST_API_KEY` / `DEST_PROJECT` / `DEST_DATASET` constants at the top before running; no CLI flags. Prefer `copy_datasets_to_new_env.py` for repeatable, verified porting.
 
 **Key Braintrust concepts used**:
 - **Datasets** — rows with `input` (image base64 + filename), `expected` (ground-truth class). Stored in a Braintrust project. Multiple named datasets coexist (`fixed_size_sampled`, `fixed_size_sampled_v2`, `_v3`, `_v4`, `_480`, smoke sets).

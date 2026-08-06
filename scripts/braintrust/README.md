@@ -131,15 +131,11 @@ python scripts/braintrust/copy_datasets_to_new_env.py \
 Flags: `--source-project`, `--source-api-key` (or `BRAINTRUST_SOURCE_API_KEY`), `--no-verify`,
 `--delete-existing`.
 
-### `copy_braintrust_dataset.py`
+### `copy_braintrust_dataset.py` (archived)
 
-One-off utility: copies a Braintrust dataset from one account to another. Edit the
-`SOURCE_*` / `DEST_*` constants at the top of the file (API keys, project names, dataset names)
-before running. Prefer `copy_datasets_to_new_env.py` for repeatable, verified porting.
-
-```bash
-python scripts/braintrust/copy_braintrust_dataset.py
-```
+One-off utility that copies a single dataset between accounts by editing the `SOURCE_*` / `DEST_*`
+constants. Superseded by `copy_datasets_to_new_env.py`; kept at
+`archive/braintrust/copy_braintrust_dataset.py` for reference.
 
 ## Configuration
 
