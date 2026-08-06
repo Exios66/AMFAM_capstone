@@ -177,8 +177,13 @@ def build_corpus(manifests_dir: Path, backfill: bool) -> list[dict]:
             reasoning = record.get("reasoning") or span.get("reasoning") or ""
             if reasoning == REASONING_PLACEHOLDER:
                 reasoning = ""
-            if predicted.strip().lower() in VALID_CLASSES and status == "completed":
-                confusion_pair = f"{expected}->{predicted.strip().lower()}" if expected else ""
+            if (
+                predicted.strip().lower() in VALID_CLASSES
+                and status == "completed"
+                and expected
+                and expected.strip().lower() != predicted.strip().lower()
+            ):
+                confusion_pair = f"{expected}->{predicted.strip().lower()}"
             else:
                 confusion_pair = ""
             records.append({
@@ -217,7 +222,13 @@ def summarize(records: list[dict]) -> dict:
     experiments = Counter(r["experiment_name"] for r in records)
     images = Counter(r["filename"] for r in records)
     reasoning_coverage = sum(1 for r in records if r["reasoning_len"] > 0)
-    pairs = Counter(r["confusion_pair"] for r in records if r["confusion_pair"])
+    pairs = Counter(
+        r["confusion_pair"]
+        for r in records
+        if r["confusion_pair"]
+        and (r["expected"] or "").strip().lower()
+        != (r["predicted"] or "").strip().lower()
+    )
     return {
         "records": len(records),
         "images": len(images),

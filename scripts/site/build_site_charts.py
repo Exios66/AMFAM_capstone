@@ -284,10 +284,10 @@ def chart_cost_projection(paths: list[Path], out_name: str) -> None:
         for b, v in zip(bars, vals):
             ax.text(
                 b.get_x() + b.get_width() / 2, b.get_height() * 1.04,
-                f"${v:,.0f}", ha="center", va="bottom", fontsize=8.5,
+                f"${v:,.0f}", ha="center", va="bottom", fontsize=9,
             )
     ax.set_xticks(x)
-    ax.set_xticklabels([m["model"] for m in models], rotation=20, ha="right", fontsize=8.5)
+    ax.set_xticklabels([m["model"] for m in models], rotation=25, ha="right", fontsize=9)
     ax.set_yscale("log")
     ax.set_ylim(5, max(vals) * 2.5)
     ax.set_ylabel("Projected cost (USD, log scale)")
@@ -338,9 +338,9 @@ def chart_hasty_stop_words(md_path: Path, out_name: str) -> None:
 
 PROGRESS = [
     # (label, slice, accuracy_pct) -- curated from docs/CHANGELOG.md + experiment_log.md
-    ("gemini-2.5-flash v0 (baseline)", "800", 72.9),
-    ("qwen v0 (baseline control)", "480", 69.2),
-    ("gemini disambiguation", "160", 83.75),
+    ("gemini v0 (base)", "800", 72.9),
+    ("qwen v0 (ctrl)", "480", 69.2),
+    ("gemini disambig", "160", 83.75),
     ("qwen v10", "160", 97.5),
     ("qwen v11", "160", 98.7),
     ("qwen v11.7", "160", 98.1),
@@ -372,16 +372,16 @@ SLICE_COLORS = {
 
 
 def chart_progress(out_name: str) -> None:
-    fig, ax = plt.subplots(figsize=(12.5, 6.2))
+    fig, ax = plt.subplots(figsize=(14, 7.6))
     x = np.arange(len(PROGRESS))
     colors = [SLICE_COLORS.get(s, GRID) for _, s, _ in PROGRESS]
     vals = [v for _, _, v in PROGRESS]
     ax.bar(x, vals, color=colors, width=0.68)
     for xi, v in zip(x, vals):
         ax.text(xi, v - 2.4, f"{v:.1f}", ha="center", va="center",
-                fontsize=8.5, fontweight="bold", color="white")
+                fontsize=9, fontweight="bold", color="white")
     ax.set_xticks(x)
-    ax.set_xticklabels([f"{l}\n({s})" for l, s, _ in PROGRESS], rotation=45, ha="right", fontsize=8)
+    ax.set_xticklabels([f"{l}\n({s})" for l, s, _ in PROGRESS], rotation=45, ha="right", fontsize=8.5)
     ax.set_ylim(0, 108)
     ax.set_ylabel("Exact-match accuracy (%)")
     ax.set_title("Accuracy progress: baseline → prompt iterations → production slices", pad=14)
@@ -389,7 +389,7 @@ def chart_progress(out_name: str) -> None:
     handles = [plt.Rectangle((0, 0), 1, 1, color=c) for c in dict.fromkeys(SLICE_COLORS.values())]
     labels = ["160 dev-set", "320", "480", "800", "1,120", "HF-mirror v2/v3", "exemplar slice"]
     ax.legend(handles, labels, ncol=7, frameon=False, loc="upper center",
-              bbox_to_anchor=(0.5, 1.06), fontsize=8.5, columnspacing=1.2)
+              bbox_to_anchor=(0.5, -0.36), fontsize=9, columnspacing=1.2)
     _save(fig, out_name)
 
 

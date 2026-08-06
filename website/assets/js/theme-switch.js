@@ -1,7 +1,8 @@
 // ---------------------------------------------------------------------------
 // Theme switcher — Light / Dark / Osaka-Jade / Synthwave84
-// Persists the choice in localStorage; falls back to the OS color-scheme
-// preference. Applied as `data-site-theme` + `data-bs-theme` on <html>.
+// Persists the choice in localStorage; the site default is Light (the OS
+// color-scheme preference is ignored). Applied as `data-site-theme` +
+// `data-bs-theme` on <html>.
 // (The pre-parse FOUC guard lives in assets/html/theme-head.html.)
 // ---------------------------------------------------------------------------
 (function () {

@@ -1,3 +1,4 @@
+# Development/test dependencies for the AMFAM document-classification pipeline.
 -r requirements.txt
 pytest>=8.0.0
 pytest-cov>=5.0.0

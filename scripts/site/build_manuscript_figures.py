@@ -136,29 +136,34 @@ def f2_generalization_falloff() -> None:
 def f3_model_comparison() -> None:
     data = json.loads((ROOT / "website/data/experiments.json").read_text())
     rows = [r for r in data["experiments"] if r.get("images") == 160 and r.get("total")]
-    keep = {}
+    best: dict[str, tuple] = {}
     for r in rows:
-        key = (r["model_short"], r.get("prompt_version"))
-        if key in keep and (r.get("accuracy") or 0) <= (keep[key][0] or 0):
-            continue
-        keep[key] = (r.get("accuracy"), r.get("correct"), r.get("total"), r.get("model"))
-    items = sorted(keep.items(), key=lambda kv: -(kv[1][0] or 0))
-    labels = [f"{k[0]} {k[1]}" for k, _ in items]
-    accs = [v[0] * 100 for v in [kv[1] for kv in items]]
+        key = r["model_short"]
+        acc = r.get("accuracy") or 0
+        if key not in best or acc > best[key][0]:
+            best[key] = (acc, r.get("correct"), r.get("total"), r.get("prompt_version"))
+    items = sorted(best.items(), key=lambda kv: -kv[1][0])
+    models = [k for k, _ in items]
+    prompts = [(v[3] or "unknown") for _, v in items]
+    labels = [f"{m}\n{'best' if p == 'unknown' else p}" for m, p in zip(models, prompts)]
+    accs = [v[0] * 100 for _, v in items]
     lo, hi = [], []
     for _, (_, correct, total, _) in items:
         l, h = _wilson(correct, total)
-        lo.append((accs[len(lo)] - l * 100))
+        lo.append(accs[len(lo)] - l * 100)
         hi.append(h * 100 - accs[len(hi)])
-    fig, ax = plt.subplots(figsize=(9, 5.2))
-    bars = ax.bar(labels, accs, yerr=[lo, hi], capsize=4, color=PALETTE[2], edgecolor="#7a6a2f",
-                  error_kw=dict(elinewidth=1.2, ecolor="#444"), zorder=3)
-    for b, a in zip(bars, accs):
-        ax.text(b.get_x() + b.get_width() / 2, a + 1.8, f"{a:.1f}%", ha="center", fontsize=9)
-    ax.axhline(80.1, color=PALETTE[4], linestyle="--", linewidth=1.4)
-    ax.text(7.4, 81.0, "v1 baseline 80.1%", fontsize=9, color=PALETTE[4])
+    fig, ax = plt.subplots(figsize=(11, 5.6))
+    bars = ax.bar(labels, accs, yerr=[lo, hi], capsize=4, color=PALETTE[2],
+                  edgecolor="#7a6a2f", error_kw=dict(elinewidth=1.2, ecolor="#444"), zorder=3)
+    for b, a, h in zip(bars, accs, hi):
+        ax.text(b.get_x() + b.get_width() / 2, a + h + 1.5, f"{a:.1f}%",
+                ha="center", fontsize=10, color="#222", fontweight="bold")
+    ax.axhline(80.1, color=PALETTE[4], linestyle="--", linewidth=1.4, zorder=1)
+    ax.text(4.38, 81.4, "v1 baseline 80.1%", ha="right", va="bottom",
+            fontsize=9.5, color=PALETTE[4])
     ax.set_ylim(0, 105)
     ax.set_ylabel("Exact-match accuracy (%) on the 160-image slice")
+    ax.set_xlabel("Model (best prompt version on the 160-image slice)")
     ax.set_title("Model comparison (best prompt version per model)")
     _save(fig, "f3_model_comparison")
 
@@ -222,11 +227,12 @@ def f6_cost_projections() -> None:
     ax = axes[0]
     bars = ax.bar(names, per_img, color=PALETTE[0], zorder=3)
     for b, v in zip(bars, per_img):
-        ax.text(b.get_x() + b.get_width() / 2, v * 1.03, f"${v:.4f}", ha="center", fontsize=8.5)
+        ax.text(b.get_x() + b.get_width() / 2, v * 1.03, f"${v:.4f}", ha="center", fontsize=9)
     ax.set_yscale("log")
     ax.set_ylabel("Billed cost per image (USD, log scale)")
     ax.set_title("OpenRouter-reported per-image cost")
-    ax.tick_params(axis="x", rotation=18, labelsize=8.5)
+    ax.set_xticks(range(len(names)))
+    ax.set_xticklabels(names, rotation=25, ha="right", fontsize=9)
     scales = [800, 25000, 320000]
     x = np.arange(len(models))
     width = 0.26
@@ -236,7 +242,7 @@ def f6_cost_projections() -> None:
         ax.bar(x + (i - 1) * width, vals, width, label=f"{n:,}", color=PALETTE[i], zorder=3)
     ax.set_yscale("log")
     ax.set_xticks(x)
-    ax.set_xticklabels(names, rotation=18, fontsize=8.5)
+    ax.set_xticklabels(names, rotation=25, ha="right", fontsize=9)
     ax.set_ylabel("Projected total cost (USD, log scale)")
     ax.set_title("Linear scale-up at 800 / 25k / 320k images")
     ax.legend(title="Images", fontsize=9)

@@ -1,0 +1,119 @@
+# =============================================================================
+# .venv.example — pluggable environment template for a full-featured replica.
+#
+# Copy to `.venv.env` (gitignored) and fill in real values, then activate it
+# alongside your virtual environment:
+#
+#     python3 -m venv .venv && source .venv/bin/activate
+#     pip install -r requirements-dev.txt
+#     cp .venv.example .venv.env
+#     set -a; source .venv.env; set +a          # inject into the shell session
+#
+# Scripts read these variables from the process environment (os.environ); no
+# code change is needed. `src/braintrust_config.py` additionally prefers a
+# checked-in `braintrust.env` (see braintrust.env.example) and falls back to
+# `.env` for anything it does not set.
+#
+# MODEL BACKEND SELECTION — one of the three blocks below drives inference.
+#   * OpenRouter (default): keep OPENROUTER_BASE_URL unset; set the API key.
+#   * Ollama (local):       set OPENROUTER_BASE_URL to the Ollama OpenAI
+#                           endpoint and use a model served by Ollama.
+#   * vLLM (self-hosted):   set OPENROUTER_BASE_URL to your vLLM OpenAI
+#                           endpoint and use a model loaded in the server.
+# All three are OpenAI-compatible, so the same prompts, evals, and reports run
+# unchanged; only the base URL and the model id differ.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# 1) OpenRouter (default remote backend)
+# ---------------------------------------------------------------------------
+# Primary key for all routine runs. Required unless a local backend is used.
+OPENROUTER_API_KEY=your-openrouter-api-key-here
+
+# Optional: separate OpenRouter key (research funding) reserved for LARGE or
+# significant runs only (e.g. a final 800-image slice on the most-confident,
+# fully-vetted prompt). Used ONLY when a script explicitly invokes it or as
+# automatic 403-quota failover for OPENROUTER_API_KEY.
+# RESEARCH_FUNDING_API_KEY=your-research-funding-openrouter-key-here
+
+# Optional: override the OpenAI-compatible base URL. Leave unset for
+# OpenRouter. Uncomment ONE of the two local backends to run fully offline:
+# OPENROUTER_BASE_URL=http://localhost:11434/v1   # Ollama
+# OPENROUTER_BASE_URL=http://localhost:8000/v1    # vLLM
+
+# ---------------------------------------------------------------------------
+# 2) Ollama (local backend — optional)
+# ---------------------------------------------------------------------------
+# Used when OPENROUTER_BASE_URL points at an Ollama server. Ollama's OpenAI
+# endpoint accepts any non-empty bearer token ("ollama" works).
+# OLLAMA_BASE_URL=http://localhost:11434
+# OLLAMA_API_KEY=ollama
+# OLLAMA_MODEL=qwen3:32b
+
+# ---------------------------------------------------------------------------
+# 3) vLLM (self-hosted backend — optional)
+# ---------------------------------------------------------------------------
+# Used when OPENROUTER_BASE_URL points at a vLLM OpenAI-compatible server.
+# The API key must match --api-key given to the vLLM server (omit if none).
+# VLLM_BASE_URL=http://localhost:8000
+# VLLM_API_KEY=your-vllm-api-key-here
+# VLLM_MODEL=Qwen/Qwen3-32B
+
+# ---------------------------------------------------------------------------
+# 4) Braintrust (evaluation, datasets, experiments)
+# ---------------------------------------------------------------------------
+# Organization this environment runs experiments in.
+BRAINTRUST_ORG_ID=your-org-id-here
+
+# Project used for experiments, reports, and datasets.
+BRAINTRUST_PROJECT_NAME=AMFAM v2
+BRAINTRUST_PROJECT_ID=your-project-id-here
+
+# Project + dataset that holds the labeled source images (attachments + ground
+# truth) that experiments classify. Usually the same project as above.
+BRAINTRUST_DATASET_PROJECT=AMFAM v2
+BRAINTRUST_DATASET=fixed_size_sampled
+
+# Dataset built from every qwen v1-v11 misclassification, with each row
+# annotated by the prompt version it stemmed from.
+BRAINTRUST_SMOKE_DATASET=qwen_misclassification_smoke_v1_v11
+
+# Space-separated list of Qwen experiments (prompt versions v1-v11) whose
+# misclassifications feed the smoke-test dataset. Entries may carry the suffix
+# Braintrust appends to duplicate experiment names. Experiments with zero
+# misclassifications contribute no rows.
+QWEN_EXPERIMENTS=\
+qwen3.7-flash_v1_reasoning-5718f5da \
+qwen3.7-flash_v2_reasoning \
+qwen3.7-flash_v3_reasoning-14553e3a \
+qwen3.7-flash_v4_reasoning \
+qwen3.7-flash_v5_reasoning \
+qwen3.7-flash_v6_reasoning \
+qwen3.7-flash_v7_reasoning \
+qwen3.7-flash_v8_reasoning \
+qwen3.7-flash_v8.5_reasoning \
+qwen3.7-flash_v9_reasoning \
+qwen3.7-flash_v10_smoke \
+qwen3.7-flash_v10_reasoning \
+qwen3.7-flash_v11_smoke \
+qwen3.7-flash_v11_reasoning
+
+# Default model used to run experiments against the datasets. Set this to the
+# local model id when using an Ollama/vLLM backend (e.g. qwen/qwen3.7-flash
+# for OpenRouter, or OLLAMA_MODEL/VLLM_MODEL for a local backend).
+BRAINTRUST_MODEL=qwen/qwen3.7-flash
+
+# API base (only change if you use a Braintrust proxy).
+BRAINTRUST_API_BASE=https://api.braintrust.dev
+
+# API keys.
+BRAINTRUST_API_KEY=your-braintrust-api-key-here
+
+# Optional: a separate read-only key for a different source account when the
+# dataset lives somewhere else. Leave blank to use BRAINTRUST_API_KEY.
+# DATA_BRAINTRUST_KEY=
+
+# Optional keys for copy_datasets_to_new_env.py (porting datasets between
+# accounts). Both can instead be passed via --source-api-key / --dest-api-key.
+# BRAINTRUST_SOURCE_API_KEY=
+# BRAINTRUST_DEST_API_KEY=
