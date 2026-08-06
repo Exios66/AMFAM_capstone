@@ -2,10 +2,10 @@
 title: "Prompt-Engineered Zero-Shot Document Classification on RVL-CDIP: Accuracy, Cost, and Monte Carlo Robustness of OpenRouter Vision Models"
 author:
   - name: "Jack J. Burleson"
-    affiliation: "AMFAM Capstone"
+    affiliation: "University of Wisconsin–Madison"
     email: "jackjburleson@gmail.com"
   - name: "Grant Mooslin"
-    affiliation: "AMFAM Capstone"
+    affiliation: "University of Wisconsin–Madison"
     email: "gmooslin@gmail.com"
 date: "2026-08-05"
 abstract: |
@@ -33,7 +33,19 @@ The contribution is three-fold. First, we show that prompt engineering alone mov
 
 # Related Work {#sec-related}
 
-**Document image classification.** The field spans handcrafted layout features, deep CNNs [@harley2015rvlcdip], and vision transformers. Harley et al. established the deep-CNN baseline on RVL-CDIP in 2015 [@harley2015rvlcdip]; subsequent fine-tuned transformers exceed 90% top-1 accuracy on the full test set. All of these methods are supervised and require training data.
+**Document image classification.** The field spans handcrafted layout features, deep CNNs, and vision transformers. Harley et al. established the deep-CNN baseline on RVL-CDIP in 2015 [@harley2015rvlcdip]; subsequent fine-tuned transformers exceed 90% top-1 accuracy on the full test set. All of these methods are supervised and require training data. The task is not confined to the academic benchmark: Raj et al. described a document classification and information-extraction framework specifically for insurance applications at American Family Insurance, validating the production relevance of the 16-class taxonomy we target [@raj2021insurance].
+
+**Thread 1 — Supervised multimodal pretraining (LayoutLM family).** The LayoutLM line injects layout and visual signals into transformer pretraining for visually-rich document understanding: LayoutLM adds 2D position embeddings to a masked language model [@xu2020layoutlm]; LayoutLMv2 adds a spatial-aware self-attention module and image embeddings to combine text, layout, and visual information [@xu2021layoutlmv2]; LayoutLMv3 simplifies this into a single unified text-image masked pretraining objective [@huang2022layoutlmv3]. Donut sidesteps OCR entirely with an OCR-free end-to-end transformer that reads the image directly [@kim2022donut]. These models set the supervised state of the art on RVL-CDIP-derived tasks, but each requires task-specific fine-tuning on labeled data — precisely the cost our zero-shot pipeline avoids.
+
+**Thread 2 — Non-neural document classifiers.** Cooney et al. showed that RVL-CDIP classification does not require deep learning at all: an end-to-end pipeline that extracts text and layout, then classifies via assignment optimization, achieves competitive 16-class accuracy with fully interpretable decision rules and no model training [@cooney2023endtoend]. This work is a useful point of reference because, like our pipeline, it treats classification as a promptable decision problem rather than a learned feature problem — but it still requires OCR text extraction and hand-built rule templates.
+
+**Thread 3 — Hybrid OCR + LLM pipelines.** A parallel line composes OCR with general-purpose language models. LMDX couples a document text extractor with an LLM to perform zero-shot information extraction and localization [@perot2024lmdx]; ChatIE frames joint extraction as multi-turn chat to exploit LLM zero-shot ability [@wei2023chatie]; and Wang and Shen describe a production OCR-LLM framework for enterprise document extraction under copy-heavy conditions [@wang2025hybridocrllm]. These systems target extraction (field-level values), not 16-class document-type classification, but they establish that off-the-shelf LLMs can perform document reasoning without fine-tuning when given the right prompting scaffolding.
+
+**Thread 4 — Small-model specialization.** A growing body of work shows that small, task-specialized models can approach frontier performance at a fraction of the cost. Extract-0 is a 7B-parameter model distilled specifically for document information extraction [@godoy2025extract0]; the Contextual Graph Transformer applies a small language model to engineering-document extraction [@reddy2025cgt]; Florence-2 introduces a unified sequence-to-sequence vision model that competes with much larger models on dense vision and document tasks [@xiao2024florence2]; Khan et al. fine-tune a vision-language model for engineering-drawing information extraction [@khan2024drawingvlm]; and Christou and Tsoumakas report that sub-billion-parameter models rival frontier LLMs on relation extraction [@christou2026subbillion]. The lesson we adopt is architectural: for a narrow, well-specified task, small models can dominate — a design point our cost analysis returns to (Section @sec-cost-results).
+
+**Thread 5 — The unified small-model wave and cheap serving.** 2024–2025 saw compact general models designed to run locally at scale: SmolDocling (256M parameters) does end-to-end multimodal document conversion [@nassar2025smoldocling]; SmolVLM compresses a full VLM into a few billion parameters while retaining strong vision-language performance [@marafioti2025smolvlm]; and the Phi-4-mini, Gemma 3, Llama 3.2, Qwen2.5, SmolLM2, and Mistral 7B releases collectively established that small open models are viable deployment targets for document workloads [@phiminipro2025;@gemma3technical;@grattafiori2024llama3;@qwen252024;@benallal2025smollm2;@jiang2023mistral]. Serving advances close the loop: GPTQ and AWQ quantize weights with minimal accuracy loss [@frantar2022gptq;@lin2023awq]; the GGUF format in llama.cpp makes quantized models portable to commodity hardware [@gerganov2023llamacpp]; speculative decoding accelerates inference without changing outputs [@leviathan2023speculative]; and PagedAttention removes the memory fragmentation that blocks long-context serving [@kwon2023pagedattention].
+
+**Position of this work.** The threads above optimize one of two axes — either supervised accuracy (Threads 1–2) or local cost at fixed quality (Threads 3–5). Our contribution sits on the third axis the literature largely assumes away: **whether prompt engineering alone can move a general-purpose hosted VLM's accuracy from roughly-chance to near-ceiling on a fixed 16-class taxonomy, with no training, no OCR, no fine-tuning, and no model swap.** We deliberately do not claim an extraction system or a "small document analyzer"; we measure a pure zero-shot classifier and report exactly what a prompt-only intervention buys — and where it stops generalizing.
 
 **Vision-language models for OCR-free document understanding.** Recent VLM families — Qwen2.5-VL [@bai2025qwen25vl], Qwen3 [@qwen32025], Gemini 2.5 [@gemini25], and the 2026 generation of reasoning-native models including Claude Fable 5 [@claudefable5], Nex-N2-Pro [@nexn2pro], Grok 4.5 [@grok45], and Kimi K3 [@kimik3] — perform joint layout-and-text understanding, enabling zero-shot classification from an image alone. In this work the models are accessed via OpenRouter, a unified API gateway [@openrouter], and evaluated on Braintrust, an experiment-tracking and scoring platform [@braintrust].
 
@@ -186,5 +198,9 @@ The interactive pages (Cost Calculator and Experiment Explorer) and the data lay
 # Conclusion {#sec-conclusion}
 
 A zero-shot, prompt-engineered VLM pipeline classifies RVL-CDIP document types at 99.4% on a curated slice and 82.6% at 1,120 images, at ≈ $0.0004/image, with no training data or fine-tuning. Monte Carlo analysis bounds the ensemble, routing, and reliability frontiers and surfaced two measured negative results that refine the design space. The full methodology, versioned prompts, all slices, evaluation harness, and interactive cost/experiment tools are publicly reproducible at [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone).
+
+# Acknowledgements {#sec-acknowledgements}
+
+We thank our Project Advisor, **Siddharth Suresh**, for his mentorship and guidance throughout the project. We thank the Data Science Hub (DSHB) at the University of Wisconsin–Madison for the capstone program that made this work possible. We thank the University of Wisconsin–Madison Center for High Throughput Computing (CHTC) for computing resources and consultation. We thank **Dr. Timothy Rogers** for his guidance and instruction, and **Dr. Caitlin Roa**, DSHB Program Director, for her guidance and advocacy for research funding. Any errors are our own.
 
 # References

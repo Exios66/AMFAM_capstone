@@ -8,8 +8,6 @@ toc-depth: 3
 
 ## Braintrust Experiment Report — gemini-2.5-flash-lite_v11_8_reasoning_160-d558f2bc
 
-## Braintrust Experiment Report — gemini-2.5-flash-lite_v11_8_reasoning_160-d558f2bc
-
 **Model:** `google/gemini-2.5-flash-lite`  
 **Prompt version:** `v11.8`  
 **Dataset:** `fixed_size_sampled` (10 per class × 16 classes = 160 images)  
@@ -83,9 +81,6 @@ toc-depth: 3
 - [Confusion matrix markdown](../results/confusion-matrices.html)
   - [Confusion matrix heatmap](../charts/confusion_matrix_gemini-2.5-flash-lite_v11_8_reasoning_160-d558f2bc.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
-
-
-## Braintrust Experiment Report — qwen3.5-35b-a3b_v11_8_reasoning_160
 
 ## Braintrust Experiment Report — qwen3.5-35b-a3b_v11_8_reasoning_160
 
@@ -163,9 +158,6 @@ toc-depth: 3
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.5-35b-a3b_v11_8_reasoning_160.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
 
-
-## Braintrust Experiment Report — qwen3.5-35b-a3b_v11_8_reasoning_v12retro
-
 ## Braintrust Experiment Report — qwen3.5-35b-a3b_v11_8_reasoning_v12retro
 
 **Model:** `qwen/qwen3.5-35b-a3b`  
@@ -241,9 +233,6 @@ toc-depth: 3
 - [Confusion matrix markdown](../results/confusion-matrices.html)
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.5-35b-a3b_v11_8_reasoning_v12retro.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
-
-
-## Braintrust Experiment Report — qwen3.7-flash_v0_reasoning_480-d4c97ff0
 
 ## Braintrust Experiment Report — qwen3.7-flash_v0_reasoning_480-d4c97ff0
 
@@ -321,9 +310,6 @@ toc-depth: 3
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v0_reasoning_480-d4c97ff0.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
 
-
-## Braintrust Experiment Report — qwen3.7-flash_v0_reasoning_800-f0b6b2e4
-
 ## Braintrust Experiment Report — qwen3.7-flash_v0_reasoning_800-f0b6b2e4
 
 **Model:** `qwen/qwen3.7-flash`  
@@ -399,9 +385,6 @@ toc-depth: 3
 - [Confusion matrix markdown](../results/confusion-matrices.html)
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v0_reasoning_800-f0b6b2e4.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
-
-
-## Braintrust Experiment Report — qwen3.7-flash_v11.8_reasoning_800-f6f4648b
 
 ## Braintrust Experiment Report — qwen3.7-flash_v11.8_reasoning_800-f6f4648b
 
@@ -482,9 +465,6 @@ toc-depth: 3
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v11.8_reasoning_800-f6f4648b.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
 
-
-## Braintrust Experiment Report — qwen3.7-flash_v11_7_reasoning_160
-
 ## Braintrust Experiment Report — qwen3.7-flash_v11_7_reasoning_160
 
 **Model:** `qwen/qwen3.7-flash`  
@@ -557,9 +537,6 @@ toc-depth: 3
 - [Confusion matrix markdown](../results/confusion-matrices.html)
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v11_7_reasoning_160.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
-
-
-## Braintrust Experiment Report — qwen3.7-flash_v11_8_reasoning_160_t0_3
 
 ## Braintrust Experiment Report — qwen3.7-flash_v11_8_reasoning_160_t0_3
 
@@ -637,9 +614,6 @@ toc-depth: 3
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v11_8_reasoning_160_t0_3.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
 
-
-## Braintrust Experiment Report — qwen3.7-flash_v11_8_reasoning_320
-
 ## Braintrust Experiment Report — qwen3.7-flash_v11_8_reasoning_320
 
 **Model:** `qwen/qwen3.7-flash`  
@@ -716,9 +690,6 @@ toc-depth: 3
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v11_8_reasoning_320.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
 
-
-## Braintrust Experiment Report — qwen3.7-flash_v11_reasoning_160
-
 ## Braintrust Experiment Report — qwen3.7-flash_v11_reasoning_160
 
 **Model:** `qwen/qwen3.7-flash`  
@@ -791,9 +762,6 @@ toc-depth: 3
 - [Confusion matrix markdown](../results/confusion-matrices.html)
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v11_reasoning_160.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
-
-
-## Braintrust Experiment Report — qwen3.7-flash_v11_reasoning_320
 
 ## Braintrust Experiment Report — qwen3.7-flash_v11_reasoning_320
 
@@ -868,9 +836,6 @@ toc-depth: 3
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v11_reasoning_320.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
 
-
-## Braintrust Experiment Report — qwen3.7-flash_v11_smoke_full
-
 ## Braintrust Experiment Report — qwen3.7-flash_v11_smoke_full
 
 **Model:** `qwen/qwen3.7-flash`  
@@ -943,9 +908,6 @@ toc-depth: 3
 - [Confusion matrix markdown](../results/confusion-matrices.html)
   - [Confusion matrix heatmap](../charts/confusion_matrix_qwen3.7-flash_v11_smoke_full.svg)
 - [Misclassification reasoning traces](../appendix/misclassifications.html)
-
-
-## Braintrust Experiment Report — qwen3.7-flash_v14_reasoning_160_v2_retry
 
 ## Braintrust Experiment Report — qwen3.7-flash_v14_reasoning_160_v2_retry
 

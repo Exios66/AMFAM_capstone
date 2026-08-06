@@ -8,7 +8,7 @@
 
 ## Raw Counts
 
-| Expected \ Predicted | `advert` | `budget` | `email` | `file_f` | `form` | `handwr` | `invoic` | `letter` | `memo` | `news_a` | `presen` | `questi` | `resume` | `scient` | `scient` | `specif` | `__inva` | **Total** | **Acc** |
+| Expected \ Predicted | `advert` | `budget` | `email` | `file_f` | `form` | `handwr` | `invoic` | `letter` | `memo` | `news_a` | `presen` | `questi` | `resume` |`sci_pub`|`sci_rep`| `specif` |`__inv`| **Total** | **Acc** |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `advertisement` | **10** | . | . | . | . | . | . | . | . | . | . | . | . | . | . | . | . | 10 | 100% |
 | `budget` | . | **4** | . | . | 1 | . | 3 | . | . | . | 1 | . | . | . | 1 | . | . | 10 | 40% |

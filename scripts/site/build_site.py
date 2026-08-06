@@ -425,7 +425,7 @@ def build_confusion_page() -> None:
         text = md.read_text(encoding="utf-8")
         title_line = text.splitlines()[0] if text.splitlines() else md.stem
         title_line = title_line.lstrip("# ").strip()
-        text = rewrite_assets(text)
+        text = rewrite_assets(strip_h1(text))
         text = demote_heads(text, 1)
         parts.append(f"\n## {title_line}\n")
         parts.append(text)
@@ -449,7 +449,7 @@ def build_report_page() -> None:
         text = md.read_text(encoding="utf-8")
         title_line = text.splitlines()[0] if text.splitlines() else md.stem
         title_line = title_line.lstrip("# ").strip()
-        text = rewrite_assets(text)
+        text = rewrite_assets(strip_h1(text))
         text = demote_heads(text, 1)
         parts.append(f"\n## {title_line}\n")
         parts.append(text)
