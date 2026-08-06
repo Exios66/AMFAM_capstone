@@ -37,6 +37,7 @@ from ale_stopword_visual import (  # noqa: E402
 from trace_language_viz import (  # noqa: E402
     build_trace_records,
     differential_bigrams,
+    differential_bigrams_two_sided,
     find_cycles,
     load_prompt_vocab,
     log_odds_ratio,
@@ -842,15 +843,17 @@ def _trace_rows() -> list[dict]:
     return build_trace_records(load_corpus(corpus_path))
 
 
-def _trace_graph() -> tuple[list[dict], list[dict]]:
-    """Shared phrase-net analysis: (nodes, edges) for both SVG and JSON output."""
-    rows = _trace_rows()
-    if not rows:
-        return [], []
-    edges = differential_bigrams(rows, alpha=0.01, min_fail=3, min_z=0.5,
-                                 max_edges=300)
-    prompt_vocab = load_prompt_vocab()
-    cycles = find_cycles(edges, max_len=6)
+def _graph_from_edges(edges: list[dict], prompt_vocab: frozenset[str]
+                      ) -> tuple[list[dict], list[dict]]:
+    """Project differential edges into widget nodes + edges.
+
+    Structural loops are detected over the failure-biased edges only (loops
+    are a failure phenomenon; success-side edges never carry ``in_cycle``).
+    Every edge is tagged with its ``bias`` ("fail"|"ok") so the interactive
+    widget can render both sides of the classification coin.
+    """
+    cycle_base = [e for e in edges if e.get("bias") != "ok"]
+    cycles = find_cycles(cycle_base, max_len=6)
     cycle_edges = set()
     for c in cycles:
         for i in range(len(c)):
@@ -872,7 +875,6 @@ def _trace_graph() -> tuple[list[dict], list[dict]]:
         }
         for w, s in sorted(stats.items())
     ]
-    node_by_id = {n["id"]: n for n in nodes}
     out_edges = [
         {
             "from": e["a"],
@@ -881,10 +883,33 @@ def _trace_graph() -> tuple[list[dict], list[dict]]:
             "fail": e["fail"],
             "ok": e["ok"],
             "in_cycle": (e["a"], e["b"]) in cycle_edges,
+            "bias": e.get("bias", "fail"),
         }
         for e in edges
     ]
     return nodes, out_edges
+
+
+def _trace_graph() -> tuple[list[dict], list[dict]]:
+    """One-sided (failure-biased) phrase-net graph for the static SVG."""
+    rows = _trace_rows()
+    if not rows:
+        return [], []
+    edges = differential_bigrams(rows, alpha=0.01, min_fail=3, min_z=0.5,
+                                 max_edges=300)
+    prompt_vocab = load_prompt_vocab()
+    return _graph_from_edges(edges, prompt_vocab)
+
+
+def _trace_graph_widget() -> tuple[list[dict], list[dict]]:
+    """Two-sided phrase-net graph (failure- AND correct-biased) for the widget."""
+    rows = _trace_rows()
+    if not rows:
+        return [], []
+    edges = differential_bigrams_two_sided(rows, alpha=0.01, min_count=3,
+                                           min_z=0.5, max_edges=300)
+    prompt_vocab = load_prompt_vocab()
+    return _graph_from_edges(edges, prompt_vocab)
 
 
 def _blend(lo, hi, t):
@@ -1129,8 +1154,8 @@ def chart_phrase_net(out_name: str) -> None:
 
 
 def chart_phrase_net_data(out_json: str) -> None:
-    """Emit the phrase-net graph as JSON for the interactive vis-network widget."""
-    nodes, edges = _trace_graph()
+    """Emit the two-sided phrase-net graph as JSON for the interactive widget."""
+    nodes, edges = _trace_graph_widget()
     if not edges:
         print(f"  skip phrase net JSON (no differential edges): {out_json}")
         return

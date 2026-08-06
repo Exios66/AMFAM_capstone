@@ -12,6 +12,7 @@ from scripts.braintrust.trace_language_viz import (
     _node_stats,
     build_trace_records,
     differential_bigrams,
+    differential_bigrams_two_sided,
     find_cycles,
     log_odds_ratio,
     scatter_frequencies,
@@ -151,6 +152,55 @@ class TestDifferentialBigrams:
         edges = differential_bigrams(self._records(), min_fail=1, min_z=0.0,
                                      max_edges=50, exclude_prompt_leaks=True)
         assert all(e["z"] >= 0.0 for e in edges)
+
+
+class TestDifferentialBigramsTwoSided:
+    def _records(self):
+        # 'revisit -> the -> check' is failure-heavy; 'move -> on' is
+        # success-only; 'the -> check' is shared boilerplate.
+        fail_text = "revisit the check revisit the check revisit the check"
+        ok_text = "revisit the check move on the check move on"
+        return [
+            {"text": fail_text, "correct": False},
+            {"text": fail_text, "correct": False},
+            {"text": ok_text, "correct": True},
+            {"text": ok_text, "correct": True},
+            {"text": ok_text, "correct": True},
+        ]
+
+    def test_returns_both_biases(self):
+        edges = differential_bigrams_two_sided(self._records(), min_count=1,
+                                               min_z=0.0, max_edges=50)
+        biases = {e["bias"] for e in edges}
+        assert biases == {"fail", "ok"}
+        for e in edges:
+            assert e["bias"] in ("fail", "ok")
+            assert {"a", "b", "fail", "ok", "z", "bias"} <= set(e)
+
+    def test_fail_biased_edges_positive_z(self):
+        edges = differential_bigrams_two_sided(self._records(), min_count=1,
+                                               min_z=0.0, max_edges=50)
+        for e in edges:
+            if e["bias"] == "fail":
+                assert e["z"] >= 0.0
+            else:
+                assert e["z"] <= 0.0
+
+    def test_dominant_class_min_count(self):
+        # min_count applies to the DOMINANT class of each edge. Nothing here
+        # clears min_count=7; with min_count=1 the balanced edges survive.
+        assert differential_bigrams_two_sided(self._records(), min_count=7,
+                                              min_z=0.0, max_edges=50) == []
+        edges = differential_bigrams_two_sided(self._records(), min_count=1,
+                                               min_z=0.0, max_edges=50)
+        assert edges
+
+    def test_per_side_cap(self):
+        edges = differential_bigrams_two_sided(self._records(), min_count=1,
+                                               min_z=0.0, max_edges=1)
+        fail_n = sum(1 for e in edges if e["bias"] == "fail")
+        ok_n = sum(1 for e in edges if e["bias"] == "ok")
+        assert fail_n <= 1 and ok_n <= 1
 
 
 class TestNodeStats:

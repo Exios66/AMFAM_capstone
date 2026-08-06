@@ -243,6 +243,52 @@ def differential_bigrams(records: list[dict], alpha: float = 0.01,
     return scored[:max_edges]
 
 
+def differential_bigrams_two_sided(records: list[dict], alpha: float = 0.01,
+                                   min_count: int = 3, min_z: float = 0.5,
+                                   max_edges: int = 300,
+                                   exclude_prompt_leaks: bool = False) -> list[dict]:
+    """Differential bi-grams in BOTH directions — failure- AND correct-biased.
+
+    Every bigram is scored by its fail-vs-correct log-odds difference with the
+    symmetric Dirichlet prior (Fightin' Words). Edges clearing ``+min_z`` are
+    kept as **failure-biased** (characteristic of reasoning breakdowns); edges
+    clearing ``-min_z`` are kept as **correct-biased** (characteristic of
+    successful classification). Each returned edge carries a ``bias`` field
+    (``"fail"`` or ``"ok"``) and appears in at least ``min_count`` traces of
+    its dominant class. Both sides are capped at ``max_edges`` each so the
+    interactive widget shows the two sides in balance; the list is sorted by
+    absolute log-odds descending.
+    """
+    fail_edges: Counter = Counter()
+    ok_edges: Counter = Counter()
+    for r in records:
+        toks = tokenize_phrases(r["text"])
+        target = ok_edges if r["correct"] else fail_edges
+        for a, b in zip(toks, toks[1:]):
+            target[(a, b)] += 1
+    n_fail = sum(fail_edges.values())
+    n_ok = sum(ok_edges.values())
+    prompt_vocab = load_prompt_vocab() if exclude_prompt_leaks else frozenset()
+    scored = []
+    for (a, b) in set(fail_edges) | set(ok_edges):
+        if prompt_vocab and a in prompt_vocab and b in prompt_vocab:
+            continue
+        yf = fail_edges.get((a, b), 0)
+        yo = ok_edges.get((a, b), 0)
+        if max(yf, yo) < min_count:
+            continue
+        z = (log(yf + alpha) - log(n_fail - yf + alpha)
+             - (log(yo + alpha) - log(n_ok - yo + alpha)))
+        if z >= min_z:
+            scored.append({"a": a, "b": b, "fail": yf, "ok": yo, "z": z, "bias": "fail"})
+        elif z <= -min_z:
+            scored.append({"a": a, "b": b, "fail": yf, "ok": yo, "z": z, "bias": "ok"})
+    scored.sort(key=lambda d: abs(d["z"]), reverse=True)
+    fail_side = [e for e in scored if e["bias"] == "fail"][:max_edges]
+    ok_side = [e for e in scored if e["bias"] == "ok"][:max_edges]
+    return fail_side + ok_side
+
+
 def find_cycles(edges: list[dict], max_len: int = 6) -> list[list[str]]:
     """Bounded directed-cycle search over the edge list.
 

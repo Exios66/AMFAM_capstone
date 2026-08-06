@@ -210,11 +210,17 @@ class TestQuartoAssets:
         assert isinstance(graph.get("nodes"), list) and graph["nodes"]
         assert isinstance(graph.get("edges"), list) and graph["edges"]
         node_keys = {"id", "fail", "ok", "share"}
-        edge_keys = {"from", "to", "z", "fail", "ok", "in_cycle"}
+        edge_keys = {"from", "to", "z", "fail", "ok", "in_cycle", "bias"}
         for node in graph["nodes"]:
             assert node_keys <= set(node), f"node missing keys: {node}"
         for edge in graph["edges"]:
             assert edge_keys <= set(edge), f"edge missing keys: {edge}"
+        # The interactive widget shows BOTH sides of the coin: failure-biased
+        # and success-biased differential edges (plus structural loops).
+        biases = {e["bias"] for e in graph["edges"]}
+        assert biases == {"fail", "ok"}, f"expected both edge biases, got {biases}"
+        assert any(n["fail"] > n["ok"] for n in graph["nodes"]), "no failure-biased nodes"
+        assert any(n["ok"] > n["fail"] for n in graph["nodes"]), "no success-biased nodes"
 
     def test_scattertext_json_structure(self):
         grid = json.loads((WEBSITE / "charts/scattertext_style.json").read_text())
