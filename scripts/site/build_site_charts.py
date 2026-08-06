@@ -828,6 +828,62 @@ def _trace_rows() -> list[dict]:
     return build_trace_records(load_corpus(corpus_path))
 
 
+def _trace_graph() -> tuple[list[dict], list[dict]]:
+    """Shared phrase-net analysis: (nodes, edges) for both SVG and JSON output."""
+    rows = _trace_rows()
+    if not rows:
+        return [], []
+    edges = differential_bigrams(rows, alpha=0.01, min_fail=3, min_z=0.5,
+                                 max_edges=400)
+    prompt_vocab = load_prompt_vocab()
+    cycles = find_cycles(edges, max_len=6)
+    cycle_edges = set()
+    for c in cycles:
+        for i in range(len(c)):
+            cycle_edges.add((c[i], c[(i + 1) % len(c)]))
+    stats: dict[str, dict] = {}
+    for e in edges:
+        for key in ("a", "b"):
+            node = e[key]
+            s = stats.setdefault(node, {"fail": 0, "ok": 0})
+            s["fail"] += e["fail"]
+            s["ok"] += e["ok"]
+    nodes = [
+        {
+            "id": w,
+            "fail": s["fail"],
+            "ok": s["ok"],
+            "share": s["fail"] / max(s["fail"] + s["ok"], 1),
+            "leak": w in prompt_vocab,
+        }
+        for w, s in sorted(stats.items())
+    ]
+    node_by_id = {n["id"]: n for n in nodes}
+    out_edges = [
+        {
+            "from": e["a"],
+            "to": e["b"],
+            "z": e["z"],
+            "fail": e["fail"],
+            "ok": e["ok"],
+            "in_cycle": (e["a"], e["b"]) in cycle_edges,
+        }
+        for e in edges
+    ]
+    return nodes, out_edges
+
+
+def _blend(lo, hi, t):
+    return lo * (1 - float(t)) + hi * float(t)
+
+
+def _trace_node_rgb(share: float) -> str:
+    lo = np.array([0.12, 0.62, 0.35])
+    hi = np.array([0.84, 0.27, 0.27])
+    rgb = _blend(lo, hi, max(0.0, min(1.0, share)))
+    return "#" + "".join(f"{int(round(c * 255)):02x}" for c in rgb)
+
+
 def chart_trace_logodds(out_name: str) -> None:
     """Fightin' Words log-odds bars: top fail-biased and success-biased words."""
     rows = _trace_rows()
@@ -837,25 +893,30 @@ def chart_trace_logodds(out_name: str) -> None:
     words = log_odds_ratio(fail_counts, ok_counts, alpha=0.01, min_count=5)
     fail_biased = [w for w in words if w["z"] > 0][-30:][::-1]
     ok_biased = [w for w in words if w["z"] <= 0][:30][::-1]
-    fig, (ax_f, ax_o) = plt.subplots(1, 2, figsize=(14, 8.5))
+    fig, (ax_f, ax_o) = plt.subplots(1, 2, figsize=(15, 10.5))
     for ax, items, color, title in (
         (ax_f, fail_biased, BAD, "Most likely in FAILED traces"),
         (ax_o, ok_biased, GOOD, "Most likely in CORRECT traces"),
     ):
         y = np.arange(len(items))
-        ax.barh(y, [w["z"] for w in items], color=color, height=0.7, zorder=3)
+        ax.barh(y, [w["z"] for w in items], color=color, height=0.68, zorder=3)
         for yi, w in zip(y, items):
-            ax.text(w["z"], yi + 0.28, f"fail {w['fail']} · ok {w['ok']}",
-                    va="center", fontsize=6.8, color="#555555")
+            ax.text(w["z"] + max(0.06 * abs(w["z"]), 0.04), yi, f"{w['fail']} · {w['ok']}",
+                    va="center", ha="left", fontsize=8.5, color="#333333")
         ax.set_yticks(y)
-        ax.set_yticklabels([w["word"] for w in items], fontsize=8)
+        ax.set_yticklabels([w["word"] for w in items], fontsize=9.5)
+        ax.set_ylim(-0.6, len(items) - 0.4)
+        ax.set_xlim(0, max(w["z"] for w in items) * 1.22)
         ax.axvline(0.0, color="gray", lw=0.8)
-        ax.set_title(title, fontsize=11, fontweight="bold")
-        ax.grid(axis="x", alpha=0.3)
+        ax.set_title(title, fontsize=12.5, fontweight="bold", pad=10)
+        ax.set_xlabel("Log-odds ratio z (fail vs correct)", fontsize=11)
+        ax.grid(axis="x", alpha=0.35)
+        ax.tick_params(axis="y", length=0)
     fig.suptitle(
         "Log-odds ratio with uninformative Dirichlet prior (a = 0.01)\n"
-        "z = log((f+a)/(F-f+a)) − log((o+a)/(O-o+a)) — Fightin' Words (Monroe et al., 2008)",
-        fontsize=12, fontweight="bold",
+        "z = log((f+a)/(F-f+a)) − log((o+a)/(O-o+a)) — Fightin' Words (Monroe et al., 2008)\n"
+        "bar labels show fail · correct raw counts",
+        fontsize=12.5, fontweight="bold",
     )
     _save(fig, out_name)
 
@@ -870,46 +931,73 @@ def chart_trace_scatter(out_name: str) -> None:
     fail_counts, ok_counts = word_counts(rows)
     words = log_odds_ratio(fail_counts, ok_counts, alpha=0.01, min_count=5)
     z_by_word = {w["word"]: w["z"] for w in words}
-    fig, ax = plt.subplots(figsize=(10.5, 9.5))
+    fig, ax = plt.subplots(figsize=(12, 10.5))
     xs = [max(p["freq_ok"], 0.5) for p in points]
     ys = [max(p["freq_fail"], 0.5) for p in points]
-    sizes = [14 + 6 * np.log1p(p["fail"] + p["ok"]) for p in points]
+    sizes = [16 + 7 * np.log1p(p["fail"] + p["ok"]) for p in points]
     zs = [z_by_word.get(p["word"], 0.0) for p in points]
     colors = [BAD if z > 0.5 else GOOD if z < -0.5 else "#b9c4d6" for z in zs]
     ax.scatter(xs, ys, s=sizes, c=colors, alpha=0.55, edgecolors="none",
-               rasterized=True)
+               rasterized=True, zorder=2)
     lim = [0.3, 10 ** 4]
-    ax.plot(lim, lim, color="gray", lw=1, ls="--", alpha=0.7)
+    ax.plot(lim, lim, color="gray", lw=1, ls="--", alpha=0.7, zorder=1)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(*lim)
     ax.set_ylim(*lim)
-    ax.set_xlabel("Frequency per million tokens — CORRECT traces", fontsize=11)
-    ax.set_ylabel("Frequency per million tokens — FAILED traces", fontsize=11)
+    ax.set_xlabel("Frequency per million tokens — CORRECT traces", fontsize=12)
+    ax.set_ylabel("Frequency per million tokens — FAILED traces", fontsize=12)
     ax.set_title(
         "Scattertext-style word geography\n"
         "top-left = failure hallmarks · bottom-right = success drivers",
-        fontsize=12, fontweight="bold",
+        fontsize=13, fontweight="bold",
     )
     ranked = sorted(points, key=lambda p: abs(z_by_word.get(p["word"], 0.0)),
-                    reverse=True)[:24]
+                    reverse=True)
+    placed: list[tuple[float, float]] = []
+    chosen = []
+    min_sep = 0.45
     for p in ranked:
         z = z_by_word.get(p["word"], 0.0)
-        dx = -2 if p["freq_fail"] > p["freq_ok"] else 4
-        ax.annotate(p["word"], (max(p["freq_ok"], 0.5), max(p["freq_fail"], 0.5)),
-                    fontsize=7.5, xytext=(dx, 4), textcoords="offset points",
-                    color=NAVY, alpha=0.85,
-                    bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.55))
+        if abs(z) < 0.8:
+            break
+        cx, cy = np.log10(max(p["freq_ok"], 0.5)), np.log10(max(p["freq_fail"], 0.5))
+        if placed and min(np.hypot(cx - qx, cy - qy) for qx, qy in placed) < min_sep:
+            continue
+        placed.append((cx, cy))
+        chosen.append(p)
+        if len(chosen) >= 18:
+            break
+    for p in chosen:
+        z = z_by_word.get(p["word"], 0.0)
+        x, y = max(p["freq_ok"], 0.5), max(p["freq_fail"], 0.5)
+        dx = -3 if p["freq_fail"] > p["freq_ok"] else 4
+        ax.annotate(
+            p["word"], (x, y),
+            fontsize=9, fontweight="bold", color=NAVY,
+            xytext=(dx, 5), textcoords="offset points",
+            arrowprops=dict(arrowstyle="-", color="#8a94a6", lw=0.8,
+                            shrinkA=0, shrinkB=3),
+            bbox=dict(boxstyle="round,pad=0.18", fc="white", ec="#d0d6e0",
+                      lw=0.7, alpha=0.9),
+            zorder=5,
+        )
+    handles = [
+        plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc=BAD, mec="none", alpha=0.7,
+                   label="Failure-biased (z > 0.5)"),
+        plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc="#b9c4d6", mec="none", alpha=0.7,
+                   label="Neutral (−0.5 ≤ z ≤ 0.5)"),
+        plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc=GOOD, mec="none", alpha=0.7,
+                   label="Success-biased (z < −0.5)"),
+    ]
+    ax.legend(handles=handles, loc="upper right", fontsize=10, framealpha=0.95,
+              title="Word bias", title_fontsize=10.5)
     _save(fig, out_name)
 
 
 def chart_phrase_net(out_name: str) -> None:
     """Differential directed bigram graph of failed traces with loops highlighted."""
-    rows = _trace_rows()
-    if not rows:
-        return
-    edges = differential_bigrams(rows, alpha=0.01, min_fail=3, min_z=0.5,
-                                 max_edges=400)
+    nodes, edges = _trace_graph()
     if not edges:
         print("  skip phrase net (no differential edges)")
         return
@@ -917,34 +1005,15 @@ def chart_phrase_net(out_name: str) -> None:
 
     G = nx.DiGraph()
     for e in edges:
-        G.add_edge(e["a"], e["b"], weight=e["z"])
-    prompt_vocab = load_prompt_vocab()
-    cycles = find_cycles(edges, max_len=6)
-    cycle_edges = set()
-    for c in cycles:
-        for i in range(len(c)):
-            cycle_edges.add((c[i], c[(i + 1) % len(c)]))
-    stats = {}
-    for e in edges:
-        for key in ("a", "b"):
-            node = e[key]
-            s = stats.setdefault(node, {"fail": 0, "ok": 0})
-            s["fail"] += e["fail"]
-            s["ok"] += e["ok"]
+        G.add_edge(e["from"], e["to"], weight=e["z"])
+    cycle_edges = {(e["from"], e["to"]) for e in edges if e["in_cycle"]}
+    stats = {n["id"]: n for n in nodes}
     pos = nx.spring_layout(G, seed=42, k=0.5)
     zs = [e["z"] for e in edges]
     zmin, zmax = min(zs), max(zs)
     fig, ax = plt.subplots(figsize=(15, 11))
-    sizes = []
-    for node in G.nodes():
-        s = stats[node]
-        sizes.append(200 + 70 * np.log1p(s["fail"]))
-    rgb = np.zeros((len(G.nodes()), 3))
-    for i, node in enumerate(G.nodes()):
-        s = stats[node]
-        share = s["fail"] / max(s["fail"] + s["ok"], 1)
-        rgb[i] = _blend(np.array([0.12, 0.62, 0.35]),
-                        np.array([0.84, 0.27, 0.27]), share)
+    sizes = [200 + 70 * np.log1p(stats[n]["fail"]) for n in G.nodes()]
+    rgb = np.array([_hex_to_rgb(_trace_node_rgb(stats[n]["share"])) for n in G.nodes()])
     nx.draw_networkx_nodes(G, pos, ax=ax, node_size=sizes, node_color=rgb,
                            edgecolors="#333333", linewidths=0.8)
     plain = [(a, b) for a, b in G.edges() if (a, b) not in cycle_edges]
@@ -957,7 +1026,7 @@ def chart_phrase_net(out_name: str) -> None:
         nx.draw_networkx_edges(G, pos, ax=ax, edgelist=edge_list, width=widths,
                                edge_color=color, alpha=alpha, arrowstyle="-|>",
                                arrowsize=13, connectionstyle="arc3,rad=0.12")
-    leak_nodes = [n for n in G.nodes() if n in prompt_vocab]
+    leak_nodes = [n for n in G.nodes() if stats[n]["leak"]]
     if leak_nodes:
         nx.draw_networkx_nodes(G, pos, ax=ax, nodelist=leak_nodes,
                                node_size=[sizes[list(G.nodes()).index(n)]
@@ -965,19 +1034,36 @@ def chart_phrase_net(out_name: str) -> None:
                                node_color="none", edgecolors="#d4a017",
                                linewidths=2.0, node_shape="D")
     nx.draw_networkx_labels(G, pos, labels={n: n for n in G.nodes()}, ax=ax,
-                            font_size=7.5, font_color=NAVY)
+                            font_size=8.5, font_color=NAVY)
     ax.set_title(
         f"Differential phrase net — bi-grams over-represented in failed traces\n"
         f"({G.number_of_nodes()} words, {G.number_of_edges()} edges, "
-        f"{len(cycles)} structural loops in red)",
-        fontsize=12, fontweight="bold",
+        f"{len(cycle_edges)} cycle edges in red)",
+        fontsize=13, fontweight="bold",
     )
     ax.axis("off")
     _save(fig, out_name)
 
 
-def _blend(lo, hi, t):
-    return lo * (1 - float(t)) + hi * float(t)
+def chart_phrase_net_data(out_json: str) -> None:
+    """Emit the phrase-net graph as JSON for the interactive vis-network widget."""
+    nodes, edges = _trace_graph()
+    if not edges:
+        print(f"  skip phrase net JSON (no differential edges): {out_json}")
+        return
+    payload = {
+        "generated": "build_site_charts.py chart_phrase_net_data",
+        "nodes": nodes,
+        "edges": edges,
+    }
+    out = CHARTS_DIR / out_json
+    out.write_text(json.dumps(payload), encoding="utf-8")
+    print(f"  chart data: {out.name} ({len(nodes)} nodes, {len(edges)} edges)")
+
+
+def _hex_to_rgb(hex_color: str) -> np.ndarray:
+    hex_color = hex_color.lstrip("#")
+    return np.array([int(hex_color[i:i + 2], 16) for i in (0, 2, 4)]) / 255.0
 
 
 # ---------------------------------------------------------------------------
@@ -1067,6 +1153,7 @@ def main() -> None:
     chart_trace_logodds("logodds_dirichlet.svg")
     chart_trace_scatter("scattertext_style.svg")
     chart_phrase_net("phrase_net_differential.svg")
+    chart_phrase_net_data("phrase_net_differential.json")
 
     print("Accuracy progress:")
     chart_progress("accuracy_progress.svg")

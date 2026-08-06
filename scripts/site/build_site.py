@@ -150,6 +150,27 @@ def inject_mc_chart(body: str, svg_rel: str, alt: str) -> str:
     return body[:idx] + embed + body[idx:]
 
 
+PHRASE_NET_IMG_RE = re.compile(r"!\[[^\]]*\]\(\.\./charts/phrase_net_differential\.svg\)")
+
+PHRASE_NET_WIDGET = (
+    ROOT / "website/assets/html/phrase-net.html"
+).read_text(encoding="utf-8")
+
+
+def inject_phrase_net_widget(body: str) -> str:
+    """Replace the static phrase-net figure with the interactive vis-network widget
+    plus the static SVG rendering beneath it (no-JS fallback and print version)."""
+    static = "![Differential phrase net — static rendering](../charts/phrase_net_differential.svg)"
+    widget = (
+        '<script src="../assets/js/vis-network.min.js"></script>\n\n'
+        + PHRASE_NET_WIDGET
+        + '\n\n<figcaption>The interactive differential phrase net — drag nodes, zoom, and '
+        'hover for raw counts and log-odds. A static rendering follows as a print/no-JS fallback.</figcaption>\n\n'
+        + static
+    )
+    return PHRASE_NET_IMG_RE.sub(lambda _m: widget, body)
+
+
 def demote_heads(text: str, levels: int = 1) -> str:
     def _demote(m: re.Match) -> str:
         return "#" * (len(m.group(1)) + levels) + m.group(2)
@@ -554,6 +575,9 @@ def main() -> None:
         if rel in MC_EMBEDS:
             svg_rel, alt = MC_EMBEDS[rel]
             body = inject_mc_chart(body, svg_rel, alt)
+        # Trace-language page: swap the static phrase net for the interactive widget
+        if rel == "montecarlo/trace-language.qmd":
+            body = inject_phrase_net_widget(body)
         write_page(target, title, body, description=desc)
 
     print("Aggregates:")
