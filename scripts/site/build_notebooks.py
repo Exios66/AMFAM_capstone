@@ -20,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from pathlib import Path
 
@@ -55,6 +56,18 @@ print("openrouter api_key set:", bool(api_key))
 """
 
 
+def _src_lines(src: str) -> list[str]:
+    """nbformat v4 stores cell sources as a list of lines, each ending in a
+    newline. Quarto's notebook reader mis-parses single-string sources: it
+    strips the in-cell newlines, flattening every cell into one run-on block
+    (headings swallow their paragraphs, lists lose their numbers, code loses
+    its line breaks). Emitting the spec-standard list form renders cleanly."""
+    lines = src.split("\n")
+    if lines and lines[-1] == "":
+        lines = lines[:-1]
+    return [line + "\n" for line in lines]
+
+
 def code(src: str) -> dict:
     return {
         "cell_type": "code",
@@ -62,20 +75,44 @@ def code(src: str) -> dict:
         "id": uuid.uuid4().hex,
         "metadata": {},
         "outputs": [],
-        "source": src,
+        "source": _src_lines(src),
     }
 
 
 def md(src: str) -> dict:
-    return {"cell_type": "markdown", "id": uuid.uuid4().hex, "metadata": {}, "source": src}
+    return {
+        "cell_type": "markdown",
+        "id": uuid.uuid4().hex,
+        "metadata": {},
+        "source": _src_lines(src),
+    }
 
 
 def raw(src: str) -> dict:
-    return {"cell_type": "raw", "id": uuid.uuid4().hex, "metadata": {}, "source": src}
+    return {"cell_type": "raw", "id": uuid.uuid4().hex, "metadata": {}, "source": _src_lines(src)}
 
 
-def notebook(title: str, cells: list[dict]) -> dict:
-    frontmatter = raw(f"---\ntitle: {title!r}\n---\n")
+def notebook(title: str, cells: list[dict], description: str = "") -> dict:
+    fm = [f"title: {title!r}"]
+    if description:
+        fm.append(f"description: {description!r}")
+    frontmatter = raw("---\n" + "\n".join(fm) + "\n---\n")
+    cells = list(cells)
+    if cells and cells[0]["cell_type"] == "markdown":
+        # The raw frontmatter cell titles the rendered page; the opening
+        # markdown cell repeats that H1 (needed when the notebook is opened in
+        # Jupyter). Drop it on the site build so the page shows one title, and
+        # prepend a "static render" framing note.
+        joined = "".join(cells[0]["source"])
+        joined = re.sub(r"^#\s+.+?\n(?:\n)?", "", joined, count=1)
+        note = (
+            "::: {.callout-note}\n"
+            "**Static render.** These pages ship with execution disabled — nothing is "
+            "run and no API credits are spent. Download the notebook and run it locally "
+            "(notebook 01 spends a single OpenRouter classification) to see real outputs.\n"
+            ":::\n\n"
+        )
+        cells[0]["source"] = _src_lines(note + joined)
     return {
         "cells": [frontmatter, *cells],
         "metadata": {
@@ -94,6 +131,7 @@ def notebook(title: str, cells: list[dict]) -> dict:
 def notebook_01() -> dict:
     return notebook(
         "01 · Environment setup & single-image classification",
+        "Configure credentials, load + normalize a document image, and run a single OpenRouter classification — the full first step of the pipeline, reusing the repo's `src/` library.",
         [
             md(
                 "# 01 · Environment setup & single-image classification\n"
@@ -306,6 +344,7 @@ print("usage:", data.get("usage"))
 def notebook_02() -> dict:
     return notebook(
         "02 · Balanced sampling, Braintrust upload & queuing a run",
+        "Deterministic class-balanced sampling with pixel-hash de-duplication, idempotent Braintrust dataset upload, and queuing an eval run.",
         [
             md(
                 "# 02 · Balanced sampling, Braintrust upload & queuing a run\n"
@@ -518,6 +557,7 @@ print(f"      --manifest reports/manifests/{experiment_name}.jsonl")
 def notebook_03() -> dict:
     return notebook(
         "03 · Watchers, evaluators & launching a full experiment",
+        "Preflight checks, the three registered evaluators, manifest watchers, crash-proof resume, and the post-run scoring/reporting chain.",
         [
             md(
                 "# 03 · Watchers, evaluators & launching a full experiment\n"
@@ -724,6 +764,7 @@ print("$ python scripts/braintrust/braintrust_metrics_visual.py qwen3.7-flash_v1
 def notebook_04() -> dict:
     return notebook(
         "04 · Interactive data layer: cost calculator & experiment explorer",
+        "Read-only tour of the interactive data layer — experiments, per-class accuracy, confusion matrices, and cost models — every number traceable to committed reports.",
         [
             md(
                 "# 04 · Interactive data layer: cost calculator & experiment explorer\n"
