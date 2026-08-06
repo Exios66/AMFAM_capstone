@@ -122,11 +122,12 @@ byModel = d3.rollups(filtered, v => d3.mean(v, r => r.accuracy || 0), r => r.mod
 Plot.plot({
   marks: [
     Plot.barX(byModel, {x: "accuracy", y: "model", sort: {x: "y", reverse: true}, fill: "#2a9d8f", title: d => (d.accuracy * 100).toFixed(1) + "%"}),
-    Plot.text(byModel, {x: "accuracy", y: "model", text: d => (d.accuracy * 100).toFixed(1) + "%", dx: 4, textAnchor: "start", fontSize: 11})
+    Plot.text(byModel, {x: "accuracy", y: "model", text: d => (d.accuracy * 100).toFixed(1) + "%", dx: 6, textAnchor: "start", fontSize: 11})
   ],
   height: byModel.length * 42 + 40,
   marginLeft: 180,
-  x: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean exact-match accuracy"},
+  marginRight: 80,
+  x: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean exact-match accuracy", domain: [0, Math.max(...byModel.map(d => d.accuracy)) * 1.12]},
   y: {label: null}
 })
 ```
@@ -181,13 +182,21 @@ pcaRows = Object.entries(perClass[pcaKey] || {}).map(([cls, v]) => ({cls, accura
 ```
 
 ```{ojs}
+abbrOf = (s) => (s === "scientific_publication" ? "sci_pub" : s === "scientific_report" ? "sci_rep" : (s || "").slice(0, 6))
+```
+
+```{ojs}
 Plot.plot({
   marks: [
     Plot.barY(pcaRows, {x: "cls", y: "accuracy", fill: (d) => d.accuracy >= 0.9 ? "#2a9d8f" : d.accuracy >= 0.7 ? "#e9c46a" : "#e76f51", sort: {x: "y"}, title: d => `${d.cls}: ${(d.accuracy * 100).toFixed(1)}% (${d.correct}/${d.total})`}),
     Plot.ruleY([0])
   ],
   height: 420,
-  x: {label: null, tickRotate: -35},
+  insetTop: 10,
+  insetBottom: 4,
+  marginBottom: 60,
+  style: {fontSize: 12},
+  x: {label: null, tickRotate: -40, tickSize: 4, tickFormat: d => abbrOf(d), tickPadding: 6},
   y: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Accuracy"}
 })
 ```
@@ -213,11 +222,15 @@ confRows = {
 Plot.plot({
   marks: [
     Plot.cell(confRows, {x: "predicted", y: "expected", fill: "count", title: d => `${d.expected} → ${d.predicted}: ${d.count}`}),
-    Plot.text(confRows, {x: "predicted", y: "expected", text: "count", fontSize: 8})
+    Plot.text(confRows, {x: "predicted", y: "expected", text: "count", fontSize: 9, fill: d => d.count > 0 ? "#222" : "transparent"})
   ],
   height: 640,
-  x: {label: "Predicted", tickRotate: -40},
-  y: {label: "Expected"},
+  insetTop: 10,
+  marginBottom: 70,
+  marginLeft: 95,
+  style: {fontSize: 12},
+  x: {label: "Predicted", tickRotate: -45, tickSize: 4, tickFormat: d => abbrOf(d), tickPadding: 6},
+  y: {label: "Expected", tickFormat: d => abbrOf(d)},
   color: {scheme: "YlOrRd", legend: true, type: "linear"}
 })
 ```
@@ -231,4 +244,14 @@ The table, charts, and CSV export always reflect the current filters. All values
 .sum-grid .k { display: block; font-size: 0.8rem; color: #777; }
 .sum-grid .v { font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) { .sum-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.observablehq { margin: 0.4rem 0; }
+.observablehq > form, .observablehq > div:has(> form) { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.observablehq input[type="range"] { min-width: min(420px, 60vw); }
+.observablehq .observablehq-input { margin: 0; }
+.observablehq table { width: 100%; border-collapse: collapse; }
+.observablehq table th, .observablehq table td { padding: 0.35rem 0.7rem; white-space: nowrap; }
+.observablehq table td:nth-child(n+4) { white-space: normal; }
+.observablehq input[type="text"], .observablehq select { padding: 0.25rem 0.5rem; border: 1px solid #d5dce8; border-radius: 6px; }
+.observablehq { font-size: 0.95rem; }
 </style>

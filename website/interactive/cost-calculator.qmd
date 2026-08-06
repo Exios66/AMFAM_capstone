@@ -103,7 +103,8 @@ Plot.plot({
   ],
   height: compare.length * 42 + 40,
   marginLeft: 220,
-  x: {grid: true, tickFormat: "$~s", label: "Projected total cost (USD)"},
+  marginRight: 90,
+  x: {grid: true, tickFormat: "$~s", label: "Projected total cost (USD)", domain: [0, Math.max(...compare.map(d => d.actual)) * 1.15]},
   y: {label: null},
   color: {legend: false}
 })

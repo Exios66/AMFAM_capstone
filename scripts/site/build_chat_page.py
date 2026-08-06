@@ -182,9 +182,14 @@ def build():
     def _model_text(t):
         return next(tn["text"] for tn in t["turns"] if tn["who"] == "model")
 
-    illus = {i: _model_text(t) for i, t in zip("abc", ILLUSTRATIVE_THREADS)}
+    illus = {i: html_lib.escape(_model_text(t)) for i, t in zip("abc", ILLUSTRATIVE_THREADS)}
 
-    html = f"""::: {{=html}}
+    html = f"""---
+title: "Conversation Traces"
+subtitle: "Real model reasoning traces — the full 14-check scratchpad, from OK to MISS"
+---
+
+::: {{=html}}
 <div class="chat-intro">
   <p>Every conversation below is a <strong>real trace</strong> pulled from a logged OpenRouter run on the
   Braintrust project — the model's own <code>&lt;scratchpad&gt;</code> reasoning and its
@@ -300,7 +305,7 @@ renderChat();
 ## Correct vs. misclassified
 
 The four correct traces below were chosen to span four very different document classes; the misses are the
-model's actual failures on the same slice — including two `invoice &rarr; budget` errors in which the model
+model's actual failures on the same slice — including two `invoice → budget` errors in which the model
 committed to the wrong check. Each card shows the document image and the model's own reasoning.
 
 ::: {{=html}}
