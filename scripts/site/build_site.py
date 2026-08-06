@@ -88,6 +88,9 @@ def _img_replacement(match: re.Match) -> str:
         return f"![{alt or 'ALE curves'}](../charts/ale_correctness.svg)"
     if "stop_word_scatter" in stem:
         return f"![{alt or 'Stop-word trigger geography'}](../charts/stop_word_scatter.svg)"
+    for tl_stem in ("phrase_net_differential", "logodds_dirichlet", "scattertext_style"):
+        if tl_stem in stem:
+            return f"![{alt}](../charts/{tl_stem}.svg)"
     return f"*{alt} — chart not reproduced on the site; see the repository's `reports/`.*"
 
 
@@ -105,6 +108,9 @@ def _png_link_replacement(match: re.Match) -> str:
         return f"[{text}](../charts/ale_correctness.svg)"
     if "stop_word_scatter" in stem:
         return f"[{text}](../charts/stop_word_scatter.svg)"
+    for tl_stem in ("phrase_net_differential", "logodds_dirichlet", "scattertext_style"):
+        if tl_stem in stem:
+            return f"[{text}](../charts/{tl_stem}.svg)"
     return f"[{text}]({GITHUB_BLOB}{path.replace('../../', '')})"
 
 
@@ -287,6 +293,12 @@ DOC_PAGES = [
         WEBSITE / "montecarlo/ale-stopword.qmd",
         "ALE + Stop-Word Analysis",
         "What reasoning features drive accuracy — and which trigger words make the model stop too early.",
+    ),
+    (
+        ROOT / "reports/trace_language/trace_language_report.md",
+        WEBSITE / "montecarlo/trace-language.qmd",
+        "Trace-Language Analysis",
+        "Differential phrase nets, log-odds with a Dirichlet prior, and a scattertext-style word grid over failed vs correct reasoning traces.",
     ),
     (
         ROOT / "reports/monte_carlo/verification_results.md",

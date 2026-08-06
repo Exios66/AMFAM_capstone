@@ -1,0 +1,155 @@
+// ---------------------------------------------------------------------------
+// Theme switcher — Light / Dark / Osaka-Jade / Synthwave84
+// Persists the choice in localStorage; falls back to the OS color-scheme
+// preference. Applied as `data-site-theme` + `data-bs-theme` on <html>.
+// (The pre-parse FOUC guard lives in assets/html/theme-head.html.)
+// ---------------------------------------------------------------------------
+(function () {
+  "use strict";
+
+  var THEMES = [
+    { id: "light", icon: "bi-sun", label: "Light" },
+    { id: "dark", icon: "bi-moon-stars", label: "Dark" },
+    { id: "osaka-jade", icon: "bi-gem", label: "Osaka-Jade" },
+    { id: "synthwave84", icon: "bi-lightning-charge-fill", label: "Synthwave84" }
+  ];
+  var KEY = "site-theme";
+
+  function currentTheme() {
+    return document.documentElement.getAttribute("data-site-theme") || "light";
+  }
+
+  function themeMeta(id) {
+    for (var i = 0; i < THEMES.length; i++) {
+      if (THEMES[i].id === id) return THEMES[i];
+    }
+    return THEMES[0];
+  }
+
+  function apply(theme, save) {
+    var dark = theme !== "light";
+    document.documentElement.setAttribute("data-site-theme", theme);
+    document.documentElement.setAttribute("data-bs-theme", dark ? "dark" : "light");
+    if (save !== false) {
+      try { localStorage.setItem(KEY, theme); } catch (e) { /* private mode */ }
+    }
+    // Update dropdown UI
+    document.querySelectorAll(".theme-option").forEach(function (el) {
+      var active = el.getAttribute("data-theme") === theme;
+      el.classList.toggle("active", active);
+      if (active) el.setAttribute("aria-current", "true");
+      else el.removeAttribute("aria-current");
+    });
+    var meta = themeMeta(theme);
+    var label = document.querySelector(".theme-switch .theme-name");
+    if (label) label.textContent = meta.label;
+    var icon = document.querySelector(".theme-switch .theme-icon");
+    if (icon) icon.className = "bi theme-icon " + meta.icon;
+    document.dispatchEvent(new CustomEvent("site-theme-change", { detail: { theme: theme } }));
+  }
+
+  function buildSwitcher() {
+    var rightList = document.querySelector(".navbar-nav.ms-auto") ||
+                    document.querySelector(".navbar-nav:last-of-type");
+    if (!rightList) return;
+
+    var li = document.createElement("li");
+    li.className = "nav-item dropdown theme-switch";
+    li.setAttribute("aria-label", "Color theme");
+
+    var toggle = document.createElement("a");
+    toggle.className = "nav-link dropdown-toggle theme-toggle";
+    toggle.href = "#";
+    toggle.setAttribute("role", "button");
+    toggle.setAttribute("data-bs-toggle", "dropdown");
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-label", "Switch color theme");
+
+    var icon = document.createElement("i");
+    icon.className = "bi theme-icon";
+    icon.setAttribute("aria-hidden", "true");
+
+    var name = document.createElement("span");
+    name.className = "theme-name";
+
+    toggle.appendChild(icon);
+    toggle.appendChild(name);
+    li.appendChild(toggle);
+
+    var menu = document.createElement("ul");
+    menu.className = "dropdown-menu dropdown-menu-end theme-menu";
+
+    THEMES.forEach(function (t) {
+      var liOpt = document.createElement("li");
+      var a = document.createElement("a");
+      a.className = "dropdown-item theme-option";
+      a.href = "#";
+      a.setAttribute("data-theme", t.id);
+      a.setAttribute("role", "menuitemradio");
+      a.setAttribute("aria-checked", "false");
+      var i = document.createElement("i");
+      i.className = "bi " + t.icon;
+      i.setAttribute("aria-hidden", "true");
+      var span = document.createElement("span");
+      span.textContent = t.label;
+      a.appendChild(i);
+      a.appendChild(span);
+      liOpt.appendChild(a);
+      menu.appendChild(liOpt);
+    });
+
+    li.appendChild(menu);
+    rightList.appendChild(li);
+
+    // Delegate clicks (works for keyboard + mouse; prevents page jump)
+    menu.addEventListener("click", function (e) {
+      var opt = e.target.closest(".theme-option");
+      if (!opt) return;
+      e.preventDefault();
+      apply(opt.getAttribute("data-theme"), true);
+      // Keep the dropdown open label state tidy — bootstrap handles close
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        var opts = Array.prototype.slice.call(document.querySelectorAll(".theme-option"));
+        var cur = document.querySelector(".theme-option.active");
+        if (!cur) return;
+        var idx = opts.indexOf(cur);
+        var next = e.key === "ArrowLeft"
+          ? opts[(idx - 1 + opts.length) % opts.length]
+          : opts[(idx + 1) % opts.length];
+        if (next) {
+          e.preventDefault();
+          next.click();
+        }
+      }
+    });
+
+    apply(currentTheme(), false);
+  }
+
+  // Add scope attributes to generated tables (pandoc does not emit them)
+  function fixTableScopes() {
+    document.querySelectorAll("main table").forEach(function (tbl) {
+      var headerRow = tbl.querySelector("thead tr");
+      if (!headerRow) return;
+      headerRow.querySelectorAll("th").forEach(function (th) { th.setAttribute("scope", "col"); });
+      tbl.querySelectorAll("tbody tr").forEach(function (tr) {
+        var th = tr.querySelector("th");
+        if (th) th.setAttribute("scope", "row");
+      });
+    });
+  }
+
+  function init() {
+    buildSwitcher();
+    fixTableScopes();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

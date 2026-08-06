@@ -14,12 +14,13 @@ execute:
 website:
   title: "RVL-CDIP Document Classifier"
   description: "16-class document intelligence on RVL-CDIP — OpenRouter vision models, 27 prompt versions, Braintrust evals, and Monte Carlo analysis."
+  favicon: assets/img/favicon.svg
   search:
     location: navbar
     type: overlay
     limit: 50
     copy-button: false
-    show-item-context: false
+    show-item-context: true
     keyboard-shortcut:
       - f
       - /
@@ -81,6 +82,7 @@ website:
           - montecarlo/failure-pipeline.qmd
           - montecarlo/exemplar-mining.qmd
           - montecarlo/ale-stopword.qmd
+          - montecarlo/trace-language.qmd
           - montecarlo/verification.qmd
           - montecarlo/corpus-summary.qmd
       - text: Notebooks
@@ -160,6 +162,7 @@ website:
           - montecarlo/failure-pipeline.qmd
           - montecarlo/exemplar-mining.qmd
           - montecarlo/ale-stopword.qmd
+          - montecarlo/trace-language.qmd
           - montecarlo/verification.qmd
           - montecarlo/corpus-summary.qmd
       - section: "Notebooks"
@@ -189,8 +192,9 @@ format:
   html:
     theme:
       - cosmo
-    css:
-      - assets/css/custom.css
+      - assets/css/custom.scss
+    include-in-header:
+      - assets/html/theme-head.html
     toc: true
     toc-depth: 3
     toc-location: right
@@ -200,6 +204,7 @@ format:
       - issues: https://github.com/Exios66/AMFAM_capstone/issues/new
     number-sections: true
     smooth-scroll: true
+    anchor-sections: true
     code-copy: true
     code-overflow: scroll
     code-tools: true

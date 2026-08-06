@@ -10,19 +10,19 @@ subtitle: "Real model reasoning traces — the full 14-check scratchpad, from OK
   final <code>&lt;label&gt;</code>, exactly as it was returned. Use the arrows to step through them.</p>
 </div>
 
-<div class="chat-demo" id="chatDemo">
+<div class="chat-demo" id="chatDemo" aria-label="Conversation trace player" role="region">
   <div class="chat-toolbar">
     <button class="chat-btn" id="chatPrev" aria-label="Previous example">&#8592; Previous</button>
-    <span class="chat-count" id="chatCount">1 / 12</span>
+    <span class="chat-count" id="chatCount" aria-live="polite">1 / 12</span>
     <button class="chat-btn" id="chatNext" aria-label="Next example">Next &#8594;</button>
   </div>
   <div class="chat-card chat-card-thread">
     <div class="chat-card-top">
-      <span class="chat-badge" id="chatBadge"></span>
-      <span class="chat-card-title" id="chatTitle"></span>
+      <span class="chat-badge" id="chatBadge" aria-live="polite"></span>
+      <span class="chat-card-title" id="chatTitle" aria-live="polite"></span>
       <span class="chat-card-meta" id="chatMeta"></span>
     </div>
-    <div class="chat-history" id="chatHistory"></div>
+    <div class="chat-history" id="chatHistory" aria-label="Model conversation transcript"></div>
     <div class="chat-expand-row">
       <button class="chat-btn chat-expand-btn" id="chatExpand">Expand full response</button>
     </div>
@@ -65,7 +65,7 @@ function renderChat() {
     if (t.image) {
       const img = document.createElement('img');
       img.src = t.image;
-      img.alt = 'document image';
+      img.alt = (c.expected || c.title || 'document') + ' document image';
       img.className = 'msg-img';
       bubble.appendChild(img);
     }
@@ -130,7 +130,7 @@ committed to the wrong check. Each card shows the document image and the model's
     <span class="chat-card-title">budget</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesu_u_m_v_umv76d00_ti16560767_0770.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesu_u_m_v_umv76d00_ti16560767_0770.tif.png" alt="budget document example" />
   <div class="chat-card-reason"><pre>pre-scan: no mail-client header, no masthead/running head. Just a Bates number &quot;T11656-0767&quot; and a title &quot;PHILIP MORRIS LOBBYIST LISTING 1994&quot; with date &quot;August 11, 1994&quot;.
 1. file_folder: not this check — the page contai…</pre></div>
 </div>
@@ -140,7 +140,7 @@ committed to the wrong check. Each card shows the document image and the model's
     <span class="chat-card-title">news_article</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesm_m_y_n_myn02f00_ton01401.07.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesm_m_y_n_myn02f00_ton01401.07.tif.png" alt="news article document example" />
   <div class="chat-card-reason"><pre>pre-scan: Handwritten note at top: &quot;The Wall Street Journal / May 22, 1979, page 22, col. c&quot;. Main content is a newspaper clipping. No mail-client header. No journal running head (it&#x27;s a newspaper).
 check 1 (file_folder)…</pre></div>
 </div>
@@ -150,7 +150,7 @@ check 1 (file_folder)…</pre></div>
     <span class="chat-card-title">file_folder</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesi_i_f_r_ifr3aa00_11239721.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesi_i_f_r_ifr3aa00_11239721.tif.png" alt="file folder document example" />
   <div class="chat-card-reason"><pre>Pre-scan: No mail-client header. No masthead/running head. Text on the right edge is rotated: &quot;T/ATT MICROBIOLOGICAL ASSOCIATES Contract 22-6&quot; and &quot;106/0/8&quot;. Bottom text: &quot;CTR CONTRACTS 019973&quot;.
 
 1. IDENTIFIER-ONLY PAGE …</pre></div>
@@ -161,7 +161,7 @@ check 1 (file_folder)…</pre></div>
     <span class="chat-card-title">specification</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesz_z_e_g_zeg71a00_2057425593_2057425594.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesz_z_e_g_zeg71a00_2057425593_2057425594.tif.png" alt="specification document example" />
   <div class="chat-card-reason"><pre>pre-scan: No mail-client header block. No journal masthead/running head (only &quot;PM MSC&quot;, &quot;NASHUA COI&quot;, &quot;MATERIAL SAFETY DATA SHEET&quot;).
 1. file_folder: not this check — page has extensive body content (sections, tables, dat…</pre></div>
 </div>
@@ -176,7 +176,7 @@ check 1 (file_folder)…</pre></div>
     <span class="chat-card-title">form &rarr; presentation</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesj_j_e_d_jed71e00_03701993_03702011.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesj_j_e_d_jed71e00_03701993_03702011.tif.png" alt="form misclassified as presentation document example" />
   <div class="chat-card-reason"><pre>pre-scan: Bates number &quot;03701993&quot; on the right edge. No mail-client header, no fax transmission header, no masthead.
 check 1 (file_folder): not this check — page contains real content (&quot;CHART 1&quot; with data rows A-Z and nu…</pre></div>
 </div>
@@ -186,7 +186,7 @@ check 1 (file_folder): not this check — page contains real content (&quot;CHAR
     <span class="chat-card-title">invoice &rarr; budget</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesm_m_v_r_mvr50f00_0000227918.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesm_m_v_r_mvr50f00_0000227918.tif.png" alt="invoice misclassified as budget document example" />
   <div class="chat-card-reason"><pre>Check 1 (file_folder): not this check — the page contains substantial content including company names, dates, client numbers, a specific test description (&quot;Head-On Filter Test&quot;), and a dollar amount ($34,440.00). It is n…</pre></div>
 </div>
 <div class="chat-card chat-card-miss">
@@ -195,7 +195,7 @@ check 1 (file_folder): not this check — page contains real content (&quot;CHAR
     <span class="chat-card-title">invoice &rarr; budget</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesw_w_c_e_wce83f00_0001140924.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesw_w_c_e_wce83f00_0001140924.tif.png" alt="invoice misclassified as budget document example" />
   <div class="chat-card-reason"><pre>pre-scan: no mail-client header block. no newspaper/magazine masthead or journal running head.
 1. file_folder: not this check — the page contains a detailed table with financial data, totals, and signature lines, not jus…</pre></div>
 </div>
@@ -205,7 +205,7 @@ check 1 (file_folder): not this check — page contains real content (&quot;CHAR
     <span class="chat-card-title">invoice &rarr; budget</span>
     <span class="chat-card-meta">v17.2 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesy_y_n_j_ynj47c00_2084022615.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesy_y_n_j_ynj47c00_2084022615.tif.png" alt="invoice misclassified as budget document example" />
   <div class="chat-card-reason"><pre>pre-scan: no mail-client header block. &quot;LEO BURNETT U.S.A.&quot; is a company logo/header, not a newspaper/magazine masthead or journal running head.
 1. file_folder: not this check — page has body content (table, headers, cli…</pre></div>
 </div>
@@ -215,7 +215,7 @@ check 1 (file_folder): not this check — page contains real content (&quot;CHAR
     <span class="chat-card-title">form &rarr; presentation</span>
     <span class="chat-card-meta">v11.8 &middot; qwen/qwen3.7-flash</span>
   </div>
-  <img class="chat-card-img" src="chat_images/test_imagesj_j_e_d_jed71e00_03701993_03702011.tif.png" alt="document example" />
+  <img class="chat-card-img" src="chat_images/test_imagesj_j_e_d_jed71e00_03701993_03702011.tif.png" alt="form misclassified as presentation document example" />
   <div class="chat-card-reason"><pre>file_folder: no — the page contains a structured data table (alphabetical list with numerical values) and a large image block, not just an ID/stamp.
 handwritten: no — the content is typed/printed; the numbers are machine…</pre></div>
 </div>

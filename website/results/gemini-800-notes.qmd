@@ -1,10 +1,9 @@
 ---
 title: 'Gemini 2.5 Flash — 800 Images'
-subtitle: '50/class slice: 72.9% accuracy, per-class table, top confusion pairs, cost projections.'
+description: '50/class slice: 72.9% accuracy, per-class table, top confusion pairs, cost projections.'
 toc: true
 toc-depth: 3
 ---
-
 ## Experiment: `google/gemini-2.5-flash` — 800 Images (50 per class × 16 classes)
 
 **Experiment ID:** `main-1785272634`
@@ -30,45 +29,45 @@ toc-depth: 3
 
 | Class | Correct | Total | Accuracy |
 | ------- | --------: | ------: | ---------: |
-| `resume` | 49 | 50 | **98%** |
-| `memo` | 48 | 50 | **96%** |
-| `news_article` | 47 | 50 | **94%** |
-| `scientific_publication` | 47 | 50 | **94%** |
-| `email` | 46 | 50 | **92%** |
-| `advertisement` | 44 | 50 | 88% |
-| `invoice` | 43 | 50 | 86% |
-| `questionnaire` | 42 | 50 | 84% |
-| `letter` | 38 | 50 | 76% |
-| `scientific_report` | 38 | 50 | 76% |
-| `handwritten` | 33 | 50 | 66% |
-| `file_folder` | 27 | 49 | 55% |
-| `budget` | 25 | 49 | 51% |
-| `specification` | 23 | 50 | 46% |
-| `presentation` | 18 | 50 | 36% |
-| `form` | 15 | 50 | **30%** |
+| resume | 49 | 50 | 98% |
+| memo | 48 | 50 | 96% |
+| news_article | 47 | 50 | 94% |
+| scientific_publication | 47 | 50 | 94% |
+| email | 46 | 50 | 92% |
+| advertisement | 44 | 50 | 88% |
+| invoice | 43 | 50 | 86% |
+| questionnaire | 42 | 50 | 84% |
+| letter | 38 | 50 | 76% |
+| scientific_report | 38 | 50 | 76% |
+| handwritten | 33 | 50 | 66% |
+| file_folder | 27 | 49 | 55% |
+| budget | 25 | 49 | 51% |
+| specification | 23 | 50 | 46% |
+| presentation | 18 | 50 | 36% |
+| form | 15 | 50 | 30% |
 
 ### Top Confused Pairs
 
 | Expected | Predicted As | Count |
 | ---------- | ------------- | ------: |
-| `specification` | `scientific_report` | 25 |
-| `form` | `memo` | 13 |
-| `budget` | `invoice` | 12 |
-| `form` | `letter` | 11 |
-| `presentation` | `news_article` | 11 |
-| `presentation` | `scientific_report` | 11 |
-| `letter` | `memo` | 8 |
-| `scientific_report` | `scientific_publication` | 8 |
-| `file_folder` | `handwritten` | 7 |
-| `file_folder` | `scientific_report` | 7 |
-| `form` | `scientific_report` | 7 |
+| specification | scientific_report | 25 |
+| form | memo | 13 |
+| budget | invoice | 12 |
+| form | letter | 11 |
+| presentation | news_article | 11 |
+| presentation | scientific_report | 11 |
+| letter | memo | 8 |
+| scientific_report | scientific_publication | 8 |
+| file_folder | handwritten | 7 |
+| file_folder | scientific_report | 7 |
+| form | scientific_report | 7 |
 
-::: {.callout-warning title="Key Findings"}
+### Key Findings
+
 - **`scientific_report` is massively over-predicted** — 64 false positives from 7 different classes
-- **Bottom 3 classes** (`form` 30%, `presentation` 36%, `specification` 46%) account for ~50% of all errors
+- **Bottom 3 classes** (form 30%, presentation 36%, specification 46%) account for ~50% of all errors
 - Fax cover sheets labeled as `form` are consistently predicted as `memo` or `letter`
-- `specification` vs `scientific_report` is the **single worst confusion pair** (25 errors)
-:::
+- `specification` vs `scientific_report` is the single worst confusion pair (25 errors)
 
 ### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
 

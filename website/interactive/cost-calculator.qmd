@@ -104,6 +104,7 @@ Plot.plot({
   height: compare.length * 42 + 40,
   marginLeft: 220,
   marginRight: 90,
+  style: {backgroundColor: "white", color: "#222"},
   x: {grid: true, tickFormat: "$~s", label: "Projected total cost (USD)", domain: [0, Math.max(...compare.map(d => d.actual)) * 1.15]},
   y: {label: null},
   color: {legend: false}
@@ -123,11 +124,11 @@ Prices are per-million-token USD **derived from OpenRouter-reported metrics** (p
 
 <style>
 .cost-sheet { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; max-width: 640px; margin: 1rem 0; }
-.cost-sheet .k { font-weight: 600; color: #555; }
+.cost-sheet .k { font-weight: 600; color: var(--text-muted); }
 .cost-sheet .v { font-variant-numeric: tabular-nums; }
-.cost-sheet .tot { border-top: 1px solid #ddd; padding-top: 0.4rem; }
+.cost-sheet .tot { border-top: 1px solid var(--border); padding-top: 0.4rem; }
 .cost-table { border-collapse: collapse; width: 100%; margin-top: 0.75rem; }
-.cost-table th, .cost-table td { border: 1px solid #ddd; padding: 0.35rem 0.6rem; text-align: right; }
-.cost-table th { background: #f5f5f5; }
+.cost-table th, .cost-table td { border: 1px solid var(--border); padding: 0.35rem 0.6rem; text-align: right; }
+.cost-table th { background: var(--surface-3); }
 .cost-table tr td:first-child { text-align: left; }
 </style>

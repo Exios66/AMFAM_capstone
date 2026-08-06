@@ -1,36 +1,29 @@
 ---
 title: 'Confidence-Gated Escalation'
-subtitle: 'Routing the low-confidence tail to a stronger model: accuracy-vs-cost Pareto curve.'
+description: 'Routing the low-confidence tail to a stronger model: accuracy-vs-cost Pareto curve.'
 toc: true
 toc-depth: 3
 ---
-
 - **Escalated model accuracy**: 90% (assumed)
-- **Escalated cost multiplier**: 3.0×
+- **Escalated cost multiplier**: 3.0x
 
-| α (escalate) | escalated | kept | accuracy | 95% *CI* | cost factor |
+| alpha | escalated | kept | accuracy | 95% *CI* | cost factor |
 |---:|---:|---:|---:|---:|---:|
-| 1% | 15 | 1,497 | 0.826 | 0.810–0.841 | 1.02× |
-| 2% | 30 | 1,482 | 0.831 | 0.816–0.846 | 1.04× |
-| 5% | 76 | 1,436 | 0.845 | 0.830–0.859 | 1.10× |
-| 10% | 151 | 1,361 | 0.864 | 0.850–0.878 | 1.20× |
-| 15% | 227 | 1,285 | 0.879 | 0.865–0.893 | 1.30× |
-| 20% | 302 | 1,210 | 0.891 | 0.877–0.904 | 1.40× |
-| 30% | 454 | 1,058 | 0.895 | 0.882–0.908 | 1.60× |
-| 40% | 605 | 907 | **0.919** | 0.909–0.928 | 1.80× |
-| 50% | 756 | 756 | 0.909 | 0.899–0.919 | 2.00× |
+| 1% | 15 | 1497 | 0.826 | 0.810-0.841 | 1.02x |
+| 2% | 30 | 1482 | 0.831 | 0.816-0.846 | 1.04x |
+| 5% | 76 | 1436 | 0.845 | 0.830-0.859 | 1.10x |
+| 10% | 151 | 1361 | 0.864 | 0.850-0.878 | 1.20x |
+| 15% | 227 | 1285 | 0.879 | 0.865-0.893 | 1.30x |
+| 20% | 302 | 1210 | 0.891 | 0.877-0.904 | 1.40x |
+| 30% | 454 | 1058 | 0.895 | 0.882-0.908 | 1.60x |
+| 40% | 605 | 907 | 0.919 | 0.909-0.928 | 1.80x |
+| 50% | 756 | 756 | 0.909 | 0.899-0.919 | 2.00x |
 
 ![Confidence-gated escalation: accuracy vs cost Pareto curve](../charts/routing_escalation.svg)
 
-::: {.callout-important title="Optimal Escalation Point"}
-The accuracy peak is at **α ≈ 40%** (0.919); beyond that, escalating more images adds cost
-without accuracy (the tail stops being "low-confidence-wrong"). At **α = 10%**, accuracy
-0.864 at just **1.2× cost** — the **best accuracy-per-cost point**.
-:::
-
 ## Sensitivity to the escalated-model accuracy assumption
 
-| α | accuracy @ acc −5 *pp* | accuracy @ acc | accuracy @ acc +5 *pp* |
+| alpha | accuracy @ acc-5 *pp* | accuracy @ acc | accuracy @ acc+5 *pp* |
 |---:|---:|---:|---:|
 | 1% | 0.826 | 0.826 | 0.827 |
 | 2% | 0.830 | 0.831 | 0.832 |
@@ -44,17 +37,8 @@ without accuracy (the tail stops being "low-confidence-wrong"). At **α = 10%**,
 
 ## Baseline (no escalation)
 
-Observed single-pass accuracy: **0.821** at cost 1.0×.
+Observed single-pass accuracy: **0.821** at cost 1.0x.
 
 ## How to use
 
-Pick the smallest α whose accuracy meets the target; escalate the filenames in
-`escalation_candidates.txt` (top α fraction) through the stronger model and compare
-the measured vs simulated accuracy.
-
-::: {.callout-warning title="Measured Negative Result"}
-The measured escalation slice **did not reproduce** the simulated gain: base 0.667 →
-escalated 0.625 on 48 low-confidence images. The same model at higher reasoning
-effort did not help — escalation requires a genuinely stronger model. See
-[verification](verification.qmd) for the measured comparison.
-:::
+Pick the smallest alpha whose accuracy meets the target; escalate the filenames in ``escalation_candidates.txt`` (top alpha fraction) through the stronger model and compare the measured vs simulated accuracy.

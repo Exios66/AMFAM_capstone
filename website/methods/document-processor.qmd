@@ -1,26 +1,20 @@
 ---
 title: 'Document Processor Module'
-subtitle: 'PDF/TIFF → 300 DPI grayscale PNG + spatial OCR (Tesseract + Poppler) for LLM processing.'
+description: 'PDF/TIFF → 300 DPI grayscale PNG + spatial OCR (Tesseract + Poppler) for LLM processing.'
 toc: true
 toc-depth: 3
 ---
-
-::: {.callout-note title="Module Overview"}
-A document processing system that converts PDF files to **300 DPI optimized images** and
-extracts text with **spatial coordinates** for downstream LLM processing. Outputs grayscale
-PNGs with original dimension retention and JSON results with `[x, y, x₁, y₁]` bounding boxes
-for each word token.
-:::
+A document processing system that converts PDF files to 300 DPI optimized images and extracts text with spatial coordinates for downstream LLM processing.
 
 ## Features
 
-- **Dual Input Support** — accepts both local PDF files and byte streams
-- **PDF-to-Image Conversion** — multi-page PDF to individual page images at 300 DPI
-- **Image Optimization** — grayscale conversion with original dimension retention
-- **File Output** — saves optimized images and JSON results to disk
-- **Spatial OCR Extraction** — text extraction with `[x, y, x₁, y₁]` bounding boxes
-- **Batch Processing** — process entire directories of PDF files
-- **Performance Optimized** — target latency of 4–8s for single-page, 15–20s for multi-page documents
+- **Dual Input Support**: Accepts both local PDF files and byte streams
+- **PDF-to-Image Conversion**: Multi-page PDF to individual page images at 300 DPI
+- **Image Optimization**: Grayscale conversion with original dimension retention
+- **File Output**: Saves optimized images and JSON results to disk
+- **Spatial OCR Extraction**: Text extraction with [x, y, x1, y1] bounding boxes
+- **Batch Processing**: Process entire directories of PDF files
+- **Performance Optimized**: Target latency of 4-8s for single-page, 15-20s for multi-page documents
 
 ## Output Structure
 
@@ -81,17 +75,12 @@ output_directory/
 
 ### System Dependencies
 
-::: {.callout-note title="Required System Binaries"}
-Both **Tesseract OCR** and **Poppler** must be installed on your system for the document
-processor to function. These are system-level dependencies, not Python packages.
-:::
-
 1. **Tesseract OCR Engine**
    - Windows: https://github.com/UB-Mannheim/tesseract/wiki
    - macOS: `brew install tesseract`
    - Linux: `sudo apt-get install tesseract-ocr`
 
-2. **Poppler** (for `pdf2image`)
+2. **Poppler** (for pdf2image)
    - Windows: http://blog.alivate.com.au/poppler-windows/
    - macOS: `brew install poppler`
    - Linux: `sudo apt-get install poppler-utils`
@@ -203,7 +192,7 @@ result = processor.process_pdf(
 ### Image Files
 
 - **Format**: PNG
-- **Color**: Grayscale (`L` mode)
+- **Color**: Grayscale (L mode)
 - **Resolution**: 300 DPI
 - **Dimensions**: Original page dimensions (no resizing)
 - **Naming**: `{document_name}_page_{page_num:04d}.png`
@@ -217,10 +206,10 @@ result = processor.process_pdf(
 
 ## Bounding Box Format
 
-Each word includes a bounding box in `[x, y, x₁, y₁]` format:
+Each word includes a bounding box in `[x, y, x1, y1]` format:
 
-- `x, y` — top-left corner coordinates (pixels)
-- `x₁, y₁` — bottom-right corner coordinates (pixels)
+- `x, y`: Top-left corner coordinates (pixels)
+- `x1, y1`: Bottom-right corner coordinates (pixels)
 
 This format is suitable for downstream multimodal learning and LLM processing.
 
@@ -228,8 +217,8 @@ This format is suitable for downstream multimodal learning and LLM processing.
 
 The system is optimized for target latencies:
 
-- **Single-page PDF**: 4–8 seconds
-- **Multi-page PDF**: 15–20 seconds
+- **Single-page PDF**: 4-8 seconds
+- **Multi-page PDF**: 15-20 seconds
 
 Performance optimizations:
 - Thread count: 4 for PDF conversion
@@ -266,7 +255,6 @@ except Exception as e:
 
 ## Troubleshooting
 
-::: {.callout-warning title="Common Issues"}
 ### Tesseract Not Found
 
 ```python
@@ -285,27 +273,26 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 - Reduce DPI for faster processing (lower quality)
 - Ensure sufficient system resources (CPU/RAM)
 - Process documents in smaller batches
-:::
 
 ## Use Cases
 
-- **Document Classification** — prepare data for LayoutLM or similar models
-- **Information Extraction** — create datasets with spatial text features
-- **Document Understanding** — analyze document structure and layout
-- **LLM Processing** — generate structured input for multimodal LLMs
-- **Dataset Creation** — build training datasets with images and annotations
+- **Document Classification**: Prepare data for LayoutLM or similar models
+- **Information Extraction**: Create datasets with spatial text features
+- **Document Understanding**: Analyze document structure and layout
+- **LLM Processing**: Generate structured input for multimodal LLMs
+- **Dataset Creation**: Build training datasets with images and annotations
 
 ## Architecture
 
 ### Processing Pipeline
 
 1. **Input**: PDF file (path or bytes)
-2. **Conversion**: PDF → page images at 300 DPI
-3. **Optimization**: convert to grayscale, retain dimensions
-4. **Save Images**: write optimized images to disk
-5. **OCR**: extract text with bounding boxes
-6. **Save JSON**: write structured results to disk
-7. **Output**: processing summary with file paths
+2. **Conversion**: PDF → Page images at 300 DPI
+3. **Optimization**: Convert to grayscale, retain dimensions
+4. **Save Images**: Write optimized images to disk
+5. **OCR**: Extract text with bounding boxes
+6. **Save JSON**: Write structured results to disk
+7. **Output**: Processing summary with file paths
 
 ### Class Structure
 
@@ -344,7 +331,7 @@ for result in results:
         json_path = result['json_file']
         with open(json_path, 'r') as f:
             data = json.load(f)
-
+        
         # Use data for LLM processing
         # data['pages'] contains word tokens with bounding boxes
         # data['document_info'] contains metadata
@@ -353,12 +340,12 @@ for result in results:
 ## File Naming Conventions
 
 ### Images
-- **Pattern**: `{document_name}_page_{page_num:04d}.png`
-- **Example**: `invoice_page_0001.png`, `invoice_page_0002.png`
+- Pattern: `{document_name}_page_{page_num:04d}.png`
+- Example: `invoice_page_0001.png`, `invoice_page_0002.png`
 
 ### JSON
-- **Pattern**: `{document_name}_ocr_results.json`
-- **Example**: `invoice_ocr_results.json`
+- Pattern: `{document_name}_ocr_results.json`
+- Example: `invoice_ocr_results.json`
 
 ## Performance Monitoring
 

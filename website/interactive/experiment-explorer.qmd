@@ -128,7 +128,8 @@ Plot.plot({
   marginLeft: 180,
   marginRight: 80,
   x: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean exact-match accuracy", domain: [0, Math.max(...byModel.map(d => d.accuracy)) * 1.12]},
-  y: {label: null}
+  y: {label: null},
+  style: {backgroundColor: "white", color: "#222"}
 })
 ```
 
@@ -147,7 +148,8 @@ Plot.plot({
     Plot.ruleY([0])
   ],
   y: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean accuracy"},
-  x: {label: "Prompt version"}
+  x: {label: "Prompt version"},
+  style: {backgroundColor: "white", color: "#222"}
 })
 ```
 
@@ -167,7 +169,8 @@ Plot.plot({
     Plot.ruleY([0])
   ],
   x: {label: "Sample size (images)", grid: true},
-  y: {tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean accuracy"}
+  y: {tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean accuracy"},
+  style: {backgroundColor: "white", color: "#222"}
 })
 ```
 
@@ -195,7 +198,7 @@ Plot.plot({
   insetTop: 10,
   insetBottom: 4,
   marginBottom: 60,
-  style: {fontSize: 12},
+  style: {fontSize: 12, backgroundColor: "white", color: "#222"},
   x: {label: null, tickRotate: -40, tickSize: 4, tickFormat: d => abbrOf(d), tickPadding: 6},
   y: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Accuracy"}
 })
@@ -228,7 +231,7 @@ Plot.plot({
   insetTop: 10,
   marginBottom: 70,
   marginLeft: 95,
-  style: {fontSize: 12},
+  style: {fontSize: 12, backgroundColor: "white", color: "#222"},
   x: {label: "Predicted", tickRotate: -45, tickSize: 4, tickFormat: d => abbrOf(d), tickPadding: 6},
   y: {label: "Expected", tickFormat: d => abbrOf(d)},
   color: {scheme: "YlOrRd", legend: true, type: "linear"}
@@ -241,7 +244,7 @@ The table, charts, and CSV export always reflect the current filters. All values
 
 <style>
 .sum-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; margin: 1rem 0; }
-.sum-grid .k { display: block; font-size: 0.8rem; color: #777; }
+.sum-grid .k { display: block; font-size: 0.8rem; color: var(--text-muted); }
 .sum-grid .v { font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 @media (max-width: 900px) { .sum-grid { grid-template-columns: repeat(3, 1fr); } }
 
@@ -252,6 +255,6 @@ The table, charts, and CSV export always reflect the current filters. All values
 .observablehq table { width: 100%; border-collapse: collapse; }
 .observablehq table th, .observablehq table td { padding: 0.35rem 0.7rem; white-space: nowrap; }
 .observablehq table td:nth-child(n+4) { white-space: normal; }
-.observablehq input[type="text"], .observablehq select { padding: 0.25rem 0.5rem; border: 1px solid #d5dce8; border-radius: 6px; }
+.observablehq input[type="text"], .observablehq select { padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; }
 .observablehq { font-size: 0.95rem; }
 </style>

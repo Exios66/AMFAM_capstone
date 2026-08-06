@@ -829,9 +829,11 @@ plt.show()
 print(f"{'model':<34} {'$/image':>9} {'800':>8} {'25,000':>9} {'320,000':>10}")
 print("-" * 74)
 for m in sorted(cost_models["models"], key=lambda m: m["actual_cost_per_image"]):
-    p = m.get("projections", {})
+    p = m.get("projections", {}) or {}
+    proj = {label: p.get(str(n)) or (m["actual_cost_per_image"] * n)
+            for label, n in (("800", 800), ("25,000", 25000), ("320,000", 320000))}
     print(f"{m['model']:<34} {m['actual_cost_per_image']:>9.4f} "
-          f"{p.get(800, 0):>8.2f} {p.get(25000, 0):>9.2f} {p.get(320000, 0):>10.2f}")
+          f"{proj['800']:>8.2f} {proj['25,000']:>9.2f} {proj['320,000']:>10.2f}")
 """
             ),
             md(

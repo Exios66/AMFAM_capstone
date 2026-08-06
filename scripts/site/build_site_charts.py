@@ -33,6 +33,15 @@ from ale_stopword_visual import (  # noqa: E402
     accumulated_local_effects,
     build_rows as _build_rows,
 )
+from trace_language_viz import (  # noqa: E402
+    build_trace_records,
+    differential_bigrams,
+    find_cycles,
+    load_prompt_vocab,
+    log_odds_ratio,
+    scatter_frequencies,
+    word_counts,
+)
 
 sys.path.insert(0, str(ROOT))
 from src.constants import DOCUMENT_CLASSES  # noqa: E402
@@ -807,6 +816,171 @@ def chart_corpus_summary(md_path: Path, out_name: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Trace-language visualizations (differential phrase net, log-odds, scatter)
+# ---------------------------------------------------------------------------
+
+def _trace_rows() -> list[dict]:
+    """Reasoning-covered corpus rows for the trace-language charts."""
+    corpus_path = MC_DIR / "corpus.jsonl"
+    if not corpus_path.exists():
+        print(f"  skip trace-language (corpus missing: {corpus_path})")
+        return []
+    return build_trace_records(load_corpus(corpus_path))
+
+
+def chart_trace_logodds(out_name: str) -> None:
+    """Fightin' Words log-odds bars: top fail-biased and success-biased words."""
+    rows = _trace_rows()
+    if not rows:
+        return
+    fail_counts, ok_counts = word_counts(rows)
+    words = log_odds_ratio(fail_counts, ok_counts, alpha=0.01, min_count=5)
+    fail_biased = [w for w in words if w["z"] > 0][-30:][::-1]
+    ok_biased = [w for w in words if w["z"] <= 0][:30][::-1]
+    fig, (ax_f, ax_o) = plt.subplots(1, 2, figsize=(14, 8.5))
+    for ax, items, color, title in (
+        (ax_f, fail_biased, BAD, "Most likely in FAILED traces"),
+        (ax_o, ok_biased, GOOD, "Most likely in CORRECT traces"),
+    ):
+        y = np.arange(len(items))
+        ax.barh(y, [w["z"] for w in items], color=color, height=0.7, zorder=3)
+        for yi, w in zip(y, items):
+            ax.text(w["z"], yi + 0.28, f"fail {w['fail']} · ok {w['ok']}",
+                    va="center", fontsize=6.8, color="#555555")
+        ax.set_yticks(y)
+        ax.set_yticklabels([w["word"] for w in items], fontsize=8)
+        ax.axvline(0.0, color="gray", lw=0.8)
+        ax.set_title(title, fontsize=11, fontweight="bold")
+        ax.grid(axis="x", alpha=0.3)
+    fig.suptitle(
+        "Log-odds ratio with uninformative Dirichlet prior (a = 0.01)\n"
+        "z = log((f+a)/(F-f+a)) − log((o+a)/(O-o+a)) — Fightin' Words (Monroe et al., 2008)",
+        fontsize=12, fontweight="bold",
+    )
+    _save(fig, out_name)
+
+
+def chart_trace_scatter(out_name: str) -> None:
+    """Scattertext-style log-log grid of word frequency in correct vs failed traces."""
+    rows = _trace_rows()
+    if not rows:
+        return
+    points, _, _ = scatter_frequencies(rows)
+    points = sorted(points, key=lambda p: p["fail"] + p["ok"], reverse=True)[:2500]
+    fail_counts, ok_counts = word_counts(rows)
+    words = log_odds_ratio(fail_counts, ok_counts, alpha=0.01, min_count=5)
+    z_by_word = {w["word"]: w["z"] for w in words}
+    fig, ax = plt.subplots(figsize=(10.5, 9.5))
+    xs = [max(p["freq_ok"], 0.5) for p in points]
+    ys = [max(p["freq_fail"], 0.5) for p in points]
+    sizes = [14 + 6 * np.log1p(p["fail"] + p["ok"]) for p in points]
+    zs = [z_by_word.get(p["word"], 0.0) for p in points]
+    colors = [BAD if z > 0.5 else GOOD if z < -0.5 else "#b9c4d6" for z in zs]
+    ax.scatter(xs, ys, s=sizes, c=colors, alpha=0.55, edgecolors="none",
+               rasterized=True)
+    lim = [0.3, 10 ** 4]
+    ax.plot(lim, lim, color="gray", lw=1, ls="--", alpha=0.7)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(*lim)
+    ax.set_ylim(*lim)
+    ax.set_xlabel("Frequency per million tokens — CORRECT traces", fontsize=11)
+    ax.set_ylabel("Frequency per million tokens — FAILED traces", fontsize=11)
+    ax.set_title(
+        "Scattertext-style word geography\n"
+        "top-left = failure hallmarks · bottom-right = success drivers",
+        fontsize=12, fontweight="bold",
+    )
+    ranked = sorted(points, key=lambda p: abs(z_by_word.get(p["word"], 0.0)),
+                    reverse=True)[:24]
+    for p in ranked:
+        z = z_by_word.get(p["word"], 0.0)
+        dx = -2 if p["freq_fail"] > p["freq_ok"] else 4
+        ax.annotate(p["word"], (max(p["freq_ok"], 0.5), max(p["freq_fail"], 0.5)),
+                    fontsize=7.5, xytext=(dx, 4), textcoords="offset points",
+                    color=NAVY, alpha=0.85,
+                    bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.55))
+    _save(fig, out_name)
+
+
+def chart_phrase_net(out_name: str) -> None:
+    """Differential directed bigram graph of failed traces with loops highlighted."""
+    rows = _trace_rows()
+    if not rows:
+        return
+    edges = differential_bigrams(rows, alpha=0.01, min_fail=3, min_z=0.5,
+                                 max_edges=400)
+    if not edges:
+        print("  skip phrase net (no differential edges)")
+        return
+    import networkx as nx
+
+    G = nx.DiGraph()
+    for e in edges:
+        G.add_edge(e["a"], e["b"], weight=e["z"])
+    prompt_vocab = load_prompt_vocab()
+    cycles = find_cycles(edges, max_len=6)
+    cycle_edges = set()
+    for c in cycles:
+        for i in range(len(c)):
+            cycle_edges.add((c[i], c[(i + 1) % len(c)]))
+    stats = {}
+    for e in edges:
+        for key in ("a", "b"):
+            node = e[key]
+            s = stats.setdefault(node, {"fail": 0, "ok": 0})
+            s["fail"] += e["fail"]
+            s["ok"] += e["ok"]
+    pos = nx.spring_layout(G, seed=42, k=0.5)
+    zs = [e["z"] for e in edges]
+    zmin, zmax = min(zs), max(zs)
+    fig, ax = plt.subplots(figsize=(15, 11))
+    sizes = []
+    for node in G.nodes():
+        s = stats[node]
+        sizes.append(200 + 70 * np.log1p(s["fail"]))
+    rgb = np.zeros((len(G.nodes()), 3))
+    for i, node in enumerate(G.nodes()):
+        s = stats[node]
+        share = s["fail"] / max(s["fail"] + s["ok"], 1)
+        rgb[i] = _blend(np.array([0.12, 0.62, 0.35]),
+                        np.array([0.84, 0.27, 0.27]), share)
+    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=sizes, node_color=rgb,
+                           edgecolors="#333333", linewidths=0.8)
+    plain = [(a, b) for a, b in G.edges() if (a, b) not in cycle_edges]
+    looped = [(a, b) for a, b in G.edges() if (a, b) in cycle_edges]
+    for edge_list, color, alpha in ((plain, "#888888", 0.45), (looped, BAD, 1.0)):
+        if not edge_list:
+            continue
+        widths = [0.8 + 4.5 * (G[a][b]["weight"] - zmin) / (zmax - zmin)
+                  for a, b in edge_list]
+        nx.draw_networkx_edges(G, pos, ax=ax, edgelist=edge_list, width=widths,
+                               edge_color=color, alpha=alpha, arrowstyle="-|>",
+                               arrowsize=13, connectionstyle="arc3,rad=0.12")
+    leak_nodes = [n for n in G.nodes() if n in prompt_vocab]
+    if leak_nodes:
+        nx.draw_networkx_nodes(G, pos, ax=ax, nodelist=leak_nodes,
+                               node_size=[sizes[list(G.nodes()).index(n)]
+                                          for n in leak_nodes],
+                               node_color="none", edgecolors="#d4a017",
+                               linewidths=2.0, node_shape="D")
+    nx.draw_networkx_labels(G, pos, labels={n: n for n in G.nodes()}, ax=ax,
+                            font_size=7.5, font_color=NAVY)
+    ax.set_title(
+        f"Differential phrase net — bi-grams over-represented in failed traces\n"
+        f"({G.number_of_nodes()} words, {G.number_of_edges()} edges, "
+        f"{len(cycles)} structural loops in red)",
+        fontsize=12, fontweight="bold",
+    )
+    ax.axis("off")
+    _save(fig, out_name)
+
+
+def _blend(lo, hi, t):
+    return lo * (1 - float(t)) + hi * float(t)
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -888,6 +1062,11 @@ def main() -> None:
         ROOT / "reports" / "monte_carlo" / "corpus.summary.md",
         "corpus_summary.svg",
     )
+
+    print("Trace-language (log-odds, scatter, phrase net):")
+    chart_trace_logodds("logodds_dirichlet.svg")
+    chart_trace_scatter("scattertext_style.svg")
+    chart_phrase_net("phrase_net_differential.svg")
 
     print("Accuracy progress:")
     chart_progress("accuracy_progress.svg")
