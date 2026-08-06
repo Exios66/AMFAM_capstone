@@ -834,7 +834,7 @@ def _trace_graph() -> tuple[list[dict], list[dict]]:
     if not rows:
         return [], []
     edges = differential_bigrams(rows, alpha=0.01, min_fail=3, min_z=0.5,
-                                 max_edges=400)
+                                 max_edges=300)
     prompt_vocab = load_prompt_vocab()
     cycles = find_cycles(edges, max_len=6)
     cycle_edges = set()
@@ -1033,8 +1033,15 @@ def chart_phrase_net(out_name: str) -> None:
                                           for n in leak_nodes],
                                node_color="none", edgecolors="#d4a017",
                                linewidths=2.0, node_shape="D")
-    nx.draw_networkx_labels(G, pos, labels={n: n for n in G.nodes()}, ax=ax,
-                            font_size=8.5, font_color=NAVY)
+    # Label only the most frequent failure words so the static rendering stays
+    # legible; the interactive widget carries full word-by-word detail.
+    label_rank = sorted(G.nodes(), key=lambda n: stats[n]["fail"], reverse=True)
+    label_top = set(label_rank[:60])
+    labeled = {n: n for n in G.nodes() if n in label_top}
+    nx.draw_networkx_labels(G, pos, labels=labeled, ax=ax,
+                            font_size=9, font_color=NAVY,
+                            bbox=dict(boxstyle="round,pad=0.15", fc="white",
+                                      ec="#c8cfdd", lw=0.5, alpha=0.85))
     ax.set_title(
         f"Differential phrase net — bi-grams over-represented in failed traces\n"
         f"({G.number_of_nodes()} words, {G.number_of_edges()} edges, "

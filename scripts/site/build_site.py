@@ -202,13 +202,16 @@ def format_body_apa(text: str) -> str:
 
 
 def write_page(target: Path, title: str, body: str, *, subtitle: str = "",
-               description: str = "", toc: bool = True, toc_depth: int = 3) -> None:
+               description: str = "", toc: bool = True, toc_depth: int = 3,
+               resources: list[str] | None = None) -> None:
     target.parent.mkdir(parents=True, exist_ok=True)
     parts = ["---", f"title: {title!r}"]
     if subtitle:
         parts.append(f"subtitle: {subtitle!r}")
     if description:
         parts.append(f"description: {description!r}")
+    if resources:
+        parts += ["resources:", *(f"  - {r!r}" for r in resources)]
     parts += ["toc: true" if toc else "toc: false", f"toc-depth: {toc_depth}", "---", ""]
     target.write_text("\n".join(parts) + body, encoding="utf-8")
     print(f"  wrote {target.relative_to(WEBSITE)}")
@@ -578,6 +581,12 @@ def main() -> None:
         # Trace-language page: swap the static phrase net for the interactive widget
         if rel == "montecarlo/trace-language.qmd":
             body = inject_phrase_net_widget(body)
+            write_page(
+                target, title, body, description=desc,
+                resources=["../assets/js/vis-network.min.js",
+                           "../charts/phrase_net_differential.json"],
+            )
+            continue
         write_page(target, title, body, description=desc)
 
     print("Aggregates:")
