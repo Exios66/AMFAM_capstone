@@ -1,0 +1,137 @@
+{
+  "appendix/misclassifications.qmd": {
+    "misclassifications.html": "4007b189"
+  },
+  "methods/classes.qmd": {
+    "classes.html": "7246ce4d"
+  },
+  "methods/overview.qmd": {
+    "overview.html": "060c73fd"
+  },
+  "methods/cli-commands.qmd": {
+    "cli-commands.html": "fb85d2b7"
+  },
+  "methods/document-processor.qmd": {
+    "document-processor.html": "b586e9a1"
+  },
+  "methods/prompt-rules-provenance.qmd": {
+    "prompt-rules-provenance.html": "fc67504c"
+  },
+  "cost/cost-estimation.qmd": {
+    "cost-estimation.html": "67cf9e4e"
+  },
+  "cost/cost-projections.qmd": {
+    "cost-projections.html": "9bc0556e"
+  },
+  "index.qmd": {
+    "index.html": "9fc53131"
+  },
+  "montecarlo/overview.qmd": {
+    "overview.html": "a86e0745"
+  },
+  "montecarlo/ale-stopword.qmd": {
+    "ale-stopword.html": "638f33b0"
+  },
+  "montecarlo/routing-abstention.qmd": {
+    "routing-abstention.html": "a37269d7"
+  },
+  "montecarlo/exemplar-mining.qmd": {
+    "exemplar-mining.html": "fce18279"
+  },
+  "montecarlo/prompt-ablation.qmd": {
+    "prompt-ablation.html": "1094d4be"
+  },
+  "montecarlo/verification.qmd": {
+    "verification.html": "24bdce4d"
+  },
+  "montecarlo/ensemble-voting.qmd": {
+    "ensemble-voting.html": "fa3a6582"
+  },
+  "montecarlo/corpus-summary.qmd": {
+    "corpus-summary.html": "cd8586ee"
+  },
+  "montecarlo/failure-pipeline.qmd": {
+    "failure-pipeline.html": "9fefb4c9"
+  },
+  "results/confusion-matrices.qmd": {
+    "confusion-matrices.html": "7dc0d20c"
+  },
+  "results/gemini-160-notes.qmd": {
+    "gemini-160-notes.html": "64760ce8"
+  },
+  "results/gemini-800-notes.qmd": {
+    "gemini-800-notes.html": "e80285b9"
+  },
+  "results/headline-results.qmd": {
+    "headline-results.html": "bd09aeff"
+  },
+  "results/experiment-reports.qmd": {
+    "experiment-reports.html": "89ad6f51"
+  },
+  "results/experiment-log.qmd": {
+    "experiment-log.html": "914513da"
+  },
+  "prompts/prompt-changelog.qmd": {
+    "prompt-changelog.html": "495eef54"
+  },
+  "prompts/enhancements.qmd": {
+    "enhancements.html": "a388c95a"
+  },
+  "notebooks/03_watchers_evaluators_full_experiment.ipynb": {
+    "03_watchers_evaluators_full_experiment.html": "23aa7f22"
+  },
+  "notebooks/02_balanced_sampling_and_braintrust_upload.ipynb": {
+    "02_balanced_sampling_and_braintrust_upload.html": "4ce6fbce"
+  },
+  "notebooks/01_env_setup_and_single_image.ipynb": {
+    "01_env_setup_and_single_image.html": "fb857433"
+  },
+  "memos/hasty-stop-words.qmd": {
+    "hasty-stop-words.html": "2ca67a12"
+  },
+  "memos/cost-per-image.qmd": {
+    "cost-per-image.html": "16f2fc41"
+  },
+  "memos/exemplar-mining.qmd": {
+    "exemplar-mining.html": "273f51b6"
+  },
+  "memos/model-comparison.qmd": {
+    "model-comparison.html": "a56332b2"
+  },
+  "memos/generalization-falloff.qmd": {
+    "generalization-falloff.html": "49bb0edc"
+  },
+  "memos/ensemble-voting.qmd": {
+    "ensemble-voting.html": "6288be30"
+  },
+  "memos/confidence-routing.qmd": {
+    "confidence-routing.html": "139472c2"
+  },
+  "memos/accuracy-arc.qmd": {
+    "accuracy-arc.html": "ede3e953"
+  },
+  "memos/failure-pipeline.qmd": {
+    "failure-pipeline.html": "2a940f05"
+  },
+  "memos/hardest-classes.qmd": {
+    "hardest-classes.html": "d4f4fca2"
+  },
+  "interactive/cost-calculator.qmd": {
+    "cost-calculator.html": "c7d3787f"
+  },
+  "interactive/experiment-explorer.qmd": {
+    "experiment-explorer.html": "6ca2ca82"
+  },
+  "manuscript.qmd": {
+    "manuscript.html": "8d331ef4"
+  },
+  "chats.qmd": {
+    "chats.html": "3a49510c"
+  },
+  "notebooks/04_interactive_cost_and_experiments.ipynb": {
+    "04_interactive_cost_and_experiments.html": "5e995b0a"
+  },
+  "montecarlo/trace-language.qmd": {
+    "trace-language.html": "668d5b40"
+  }
+}

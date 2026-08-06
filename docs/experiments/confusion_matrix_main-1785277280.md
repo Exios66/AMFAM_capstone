@@ -1,7 +1,7 @@
 # Confusion Matrix — main-1785277280
 
 **Overall Accuracy:** 83.8% (134/160)  
-**Dataset:** 2550×3300 padded PNGs, 50 per class  
+**Dataset:** 2550×3300 padded PNGs, 10 per class  
 **Model:** `google/gemini-2.5-flash`
 
 ![Confusion Matrix](../../reports/confusion_matrix_main-1785277280.png)

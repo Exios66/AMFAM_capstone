@@ -1,0 +1,125 @@
+
+Live cost estimation for running the document classifier through OpenRouter vision models. All baseline token counts and billed costs are the **OpenRouter-reported metrics** from `docs/experiments/1pic_cost_estimation.md`; input/output per-million-token prices are **derived from those metrics**, so the defaults reflect observed behavior rather than list prices.
+
+```{ojs}
+costModels = FileAttachment("../data/cost-models.json").json()
+models = costModels.models.map(m => ({...m, model_short: m.model_short || m.model.split("/").pop()}))
+```
+
+```{ojs}
+viewof selected = Inputs.select(
+  models,
+  {format: m => `${m.model} — $${m.actual_cost_per_image.toFixed(5)}/image (${m.prompt_tokens.toLocaleString()} in / ${m.completion_tokens.toLocaleString()} out)`,
+   label: "Model",
+   value: models.find(m => /fable/i.test(m.model)) || models[0]})
+selected
+```
+
+```{ojs}
+viewof imageCount = Inputs.number({label: "Number of images", value: 800, min: 1, max: 320000, step: 1})
+viewof cacheHit = Inputs.range([0, 100], {label: "Prompt cache hit rate (%)", value: 0, step: 5})
+viewof resolution = Inputs.select([
+  {name: "Lower res (768px)", mult: 0.6},
+  {name: "Current (1024px)", mult: 1.0},
+  {name: "Higher res (2048px)", mult: 1.6}
+], {label: "Resolution preset", format: r => r.name})
+```
+
+```{ojs}
+m = selected
+resMult = resolution.mult
+promptTokens = Math.round(m.prompt_tokens * resMult)
+completionTokens = m.completion_tokens
+cacheDiscount = cacheHit / 100 * 0.9
+effectiveInput = m.input_price_per_m * (1 - cacheDiscount)
+effectiveOutput = m.output_price_per_m
+expectedPerImage = (promptTokens * effectiveInput + completionTokens * effectiveOutput) / 1e6
+actualPerImage = m.actual_cost_per_image * resMult
+expectedTotal = expectedPerImage * imageCount
+actualTotal = actualPerImage * imageCount
+savings = actualTotal - expectedTotal
+```
+
+## Selected model — live estimate
+
+```{ojs}
+html`<div class="cost-sheet">
+  <div><span class="k">Model</span><span class="v">${m.model}</span></div>
+  <div><span class="k">Prompt tokens / image</span><span class="v">${promptTokens.toLocaleString()}</span></div>
+  <div><span class="k">Completion tokens / image</span><span class="v">${completionTokens.toLocaleString()}</span></div>
+  <div><span class="k">Effective input price (per *M*)</span><span class="v">$${effectiveInput.toFixed(4)}</span></div>
+  <div><span class="k">Output price (per *M*)</span><span class="v">$${effectiveOutput.toFixed(4)}</span></div>
+  <div><span class="k">Expected cost / image</span><span class="v">$${expectedPerImage.toFixed(6)}</span></div>
+  <div><span class="k">Actual billed cost / image</span><span class="v">$${actualPerImage.toFixed(6)}</span></div>
+  <div class="tot"><span class="k">Expected total — ${imageCount.toLocaleString()} images</span><span class="v">$${expectedTotal.toFixed(2)}</span></div>
+  <div class="tot"><span class="k">Actual total — ${imageCount.toLocaleString()} images</span><span class="v">$${actualTotal.toFixed(2)}</span></div>
+  <div class="tot"><span class="k">Expected vs actual gap</span><span class="v">${savings < 0 ? "−" : "+"}$${Math.abs(savings).toFixed(2)}</span></div>
+</div>`
+```
+
+```{ojs}
+scales = [800, 25000, 320000].map(n => {
+  const exp = (promptTokens * effectiveInput + completionTokens * effectiveOutput) / 1e6 * n;
+  const act = actualPerImage * n;
+  return {images: n.toLocaleString(), expected: exp, actual: act};
+})
+```
+
+### Scale-up projections for the selected model
+
+| Images | Expected cost | Actual cost |
+|---|---:|---:|
+| 800 | **$**{scales[0].expected.toFixed(2)} | **$**{scales[0].actual.toFixed(2)} |
+| 25,000 | **$**{scales[1].expected.toFixed(2)} | **$**{scales[1].actual.toFixed(2)} |
+| 320,000 | **$**{scales[2].expected.toFixed(2)} | **$**{scales[2].actual.toFixed(2)} |
+
+## Cross-model comparison at {imageCount.toLocaleString()} images
+
+```{ojs}
+compare = models.map(o => {
+  const pt = Math.round(o.prompt_tokens * resMult);
+  const exp = (pt * effectiveInput + o.completion_tokens * effectiveOutput) / 1e6 * imageCount;
+  const act = o.actual_cost_per_image * resMult * imageCount;
+  return {model: o.model, expected: exp, actual: act, image: o.actual_cost_per_image * resMult};
+})
+```
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.barX(compare, {x: "actual", y: "model", sort: {x: "y", reverse: true}, fill: "#4c78a8", title: d => `$${*d*.actual.toFixed(2)}`}),
+    Plot.text(compare, {x: "actual", y: "model", text: d => `$${*d*.actual.toFixed(2)}`, dx: 4, textAnchor: "start", fontSize: 11})
+  ],
+  height: compare.length * 42 + 40,
+  marginLeft: 220,
+  x: {grid: true, tickFormat: "$~s", label: "Projected total cost (USD)"},
+  y: {label: null},
+  color: {legend: false}
+})
+```
+
+```{ojs}
+html`<table class="cost-table">
+<tr><th>Model</th><th>Expected total</th><th>Actual total</th><th>Per image</th></tr>
+${compare.map(c => `<tr><td>${c.model}</td><td>$${c.expected.toFixed(2)}</td><td>$${c.actual.toFixed(2)}</td><td>$${c.image.toFixed(6)}</td></tr>`).join("")}
+</table>`
+```
+
+::: {.callout-note}
+Prices are per-million-token USD **derived from OpenRouter-reported metrics** (prompt/completion token counts and billed `usage.cost`). The cache slider applies Anthropic's 90% cache-read discount to the effective input price; the resolution preset scales prompt tokens (768px ≈ 0.6×, 2048px ≈ 1.6× of the measured 1024px prompt usage). Defaults reproduce the projection tables in `docs/experiments/1pic_cost_estimation.md`.
+:::
+
+<style>
+.cost-sheet { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 2rem; max-width: 640px; margin: 1rem 0; }
+.cost-sheet .k { font-weight: 600; color: #555; }
+.cost-sheet .v { font-variant-numeric: tabular-nums; }
+.cost-sheet .tot { border-top: 1px solid #ddd; padding-top: 0.4rem; }
+.cost-table { border-collapse: collapse; width: 100%; margin-top: 0.75rem; }
+.cost-table th, .cost-table td { border: 1px solid #ddd; padding: 0.35rem 0.6rem; text-align: right; }
+.cost-table th { background: #f5f5f5; }
+.cost-table tr td:first-child { text-align: left; }
+</style>
+
+
+---
+*Published via [Posit Cloud](https://connect.posit.cloud/jackjburleson/content/019fd440-9bbf-1a22-cf30-a36183d9c7d4) · [GitHub repo](https://github.com/Exios66/AMFAM_capstone)*

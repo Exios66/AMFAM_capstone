@@ -142,10 +142,14 @@ def fetch_experiment_results(target_experiment: Union[str, None] = None) -> tupl
     # Build a lookup of metadata from span rows (keyed by root_span_id)
     # Metadata (reasoning, filename) is logged on child spans via current_span().log()
     span_metadata_by_root = {}
+    detected_model = None
     for row in rows:
         metadata = row.get("metadata") or {}
         root_span_id = row.get("root_span_id", "")
         span_id = row.get("span_id", "")
+        # Capture model name from metadata (check every row)
+        if not detected_model and metadata.get("model"):
+            detected_model = metadata["model"]
         # If this row has metadata with reasoning or filename, index it
         if metadata.get("reasoning") or metadata.get("filename"):
             span_metadata_by_root[root_span_id] = metadata
@@ -200,6 +204,7 @@ def fetch_experiment_results(target_experiment: Union[str, None] = None) -> tupl
 
     experiment_meta = {
         "id": experiment_name,
+        "model": detected_model or "unknown",
         "prompt_tokens_avg": avg(prompt_tokens_list),
         "completion_tokens_avg": avg(completion_tokens_list),
         "reasoning_tokens_avg": avg(reasoning_tokens_list),
@@ -314,7 +319,7 @@ def plot_per_class_accuracy(results: list[dict], experiment_name: str):
 # Confusion Matrix
 # ---------------------------------------------------------------------------
 
-def build_confusion_matrix(results: list[dict], experiment_name: str):
+def build_confusion_matrix(results: list[dict], experiment_name: str, model_name: str = "unknown"):
     """Build and save a confusion matrix heatmap + markdown doc."""
     # Use only classes that appear in the results
     all_classes = sorted(VALID_CLASSES)
@@ -376,9 +381,10 @@ def build_confusion_matrix(results: list[dict], experiment_name: str):
     md = []
     md.append(f"# Confusion Matrix — {experiment_name}")
     md.append(f"")
+    samples_per_class = total // len(labels) if labels else total
     md.append(f"**Overall Accuracy:** {accuracy:.1f}% ({total_correct}/{total})  ")
-    md.append(f"**Dataset:** 2550×3300 padded PNGs, 50 per class  ")
-    md.append(f"**Model:** `google/gemini-2.5-flash`")
+    md.append(f"**Dataset:** {samples_per_class} per class  ")
+    md.append(f"**Model:** `{model_name}`")
     md.append(f"")
     md.append(f"![Confusion Matrix](confusion_matrix_{experiment_name}.png)")
     md.append(f"")
@@ -498,8 +504,22 @@ def extract_misclassification_reasoning(results: list[dict], experiment_name: st
 # Main
 # ---------------------------------------------------------------------------
 
+# Pricing lookup by model (input $/M, output $/M)
+MODEL_PRICING = {
+    "google/gemini-2.5-flash": (0.15, 0.60),
+    "moonshotai/kimi-k3": (0.30, 15.00),
+    "anthropic/claude-opus-4.7": (15.00, 75.00),
+    "anthropic/claude-sonnet-4": (3.00, 15.00),
+    "openai/gpt-5.6-terra": (2.50, 10.00),
+    "x-ai/grok-4.5": (2.00, 6.00),
+    "anthropic/claude-sonnet-5": (3.00, 15.00),
+    "google/gemini-3.6-flash": (0.15, 0.60),
+    "anthropic/claude-opus-5": (15.00, 75.00),
+}
+
+
 def print_doc_section(results: list[dict], experiment_name: str, meta: dict):
-    """Print a markdown section in the same format as docs/10pic_cost_est_prompt_tst.md."""
+    """Print a markdown section for the experiment log."""
     total_correct = sum(1 for r in results if r["correct"])
     total = len(results)
     accuracy = (total_correct / total * 100) if total else 0
@@ -509,23 +529,23 @@ def print_doc_section(results: list[dict], experiment_name: str, meta: dict):
     total_tokens_avg = prompt_avg + completion_avg
     duration_avg = meta["duration_avg"]
     cached_avg = meta["cached_tokens_avg"]
+    model_name = meta.get("model", "unknown")
 
-    # Gemini 2.5 Flash pricing
-    input_price_per_m = 0.15
-    output_price_per_m = 0.60
+    # Look up pricing for this model
+    input_price_per_m, output_price_per_m = MODEL_PRICING.get(
+        model_name, (0.15, 0.60)  # default to Gemini Flash pricing
+    )
 
     images_per_class = total // 16 if total else 0
 
     section = f"""
 ---
 
-## Experiment: `google/gemini-2.5-flash` — {total} Images ({images_per_class} per class × 16 classes)
+## Experiment: `{model_name}` — {total} Images ({images_per_class} per class × 16 classes)
 
 **Experiment ID:** {experiment_name}
-**Dataset:** 2550×3300 padded PNGs, 300 DPI
 **Prompt:** `CLASSIFICATION_PROMPT` from `src/openrouter_classifier.py`
 **Settings:** `max_tokens=1024`, `temperature=0.1`, `reasoning.effort=medium`
-**Image size:** `2550×3300`
 
 ### Results
 
@@ -539,7 +559,7 @@ def print_doc_section(results: list[dict], experiment_name: str, meta: dict):
 | Duration (avg) | {duration_avg:.2f}s |
 | Errors | 0 |
 
-### Cost Projections (Gemini 2.5 Flash, `max_tokens=1024`, 2550×3300 images)
+### Cost Projections (`{model_name}`, `max_tokens=1024`)
 
 **Pricing:** ${input_price_per_m}/M input tokens, ${output_price_per_m}/M output tokens
 
@@ -561,7 +581,8 @@ def main():
     plot_per_class_accuracy(results, experiment_name)
 
     # Build confusion matrix
-    build_confusion_matrix(results, experiment_name)
+    model_name = meta.get("model", "unknown")
+    build_confusion_matrix(results, experiment_name, model_name=model_name)
 
     # Extract misclassification reasoning
     extract_misclassification_reasoning(results, experiment_name)

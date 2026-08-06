@@ -1,0 +1,922 @@
+@charset "UTF-8";
+/*-- scss:defaults --*/
+/*-- scss:rules --*/
+body {
+  background-color: #f6f8fb;
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #212a3a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: 0.002em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  text-wrap: balance;
+  text-rendering: optimizeLegibility;
+  color: #14213d;
+}
+
+h1 {
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.55rem;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.6rem;
+}
+
+h4 {
+  font-size: 1.1rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+h5 {
+  font-size: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+h6 {
+  font-size: 0.92rem;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+  font-style: italic;
+}
+
+a {
+  color: #2d6cdf;
+  text-decoration: none;
+  transition: color 0.12s ease;
+}
+a:hover {
+  text-decoration: underline;
+  color: rgb(30.0429752066, 89.1900826446, 197.1570247934);
+}
+
+p {
+  line-height: 1.7;
+  margin-bottom: 1rem;
+  overflow-wrap: break-word;
+}
+
+main > .quarto-title-block,
+main > p,
+main > div.quarto-callout,
+main > div.sourceCode,
+main > ul, main > ol, main > dl,
+main > table,
+main > blockquote {
+  max-width: 72ch;
+}
+
+main > figure, main > .figure {
+  max-width: 100%;
+}
+
+figure figcaption,
+.figure-caption {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #5a6b85;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-top: 0.5rem;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+blockquote {
+  border-left: 3px solid #cfd8e6;
+  color: #3a4660;
+  font-style: italic;
+  padding: 0.25rem 0 0.25rem 1.2rem;
+  margin-left: 0;
+  margin-bottom: 1rem;
+}
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-outline-primary,
+.navbar .nav-link,
+.navbar .nav-link.dropdown-toggle,
+.github-btn,
+.chat-btn,
+.quarto-btn-toggle,
+.page-navigation .nav-page-link,
+.chat-expand-btn {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  border-radius: 0.4rem !important;
+  line-height: 1.4;
+  transition: all 0.12s ease !important;
+  white-space: nowrap;
+}
+
+.navbar {
+  box-shadow: 0 1px 0 rgba(20, 33, 61, 0.08), 0 2px 10px rgba(20, 33, 61, 0.05);
+  padding: 0.55rem 1rem !important;
+  min-height: auto;
+}
+.navbar .navbar-brand {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 0.25rem 0;
+}
+.navbar .navbar-nav .nav-link {
+  padding: 0.42rem 0.65rem !important;
+  margin: 0 0.1rem;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+.navbar .navbar-nav .nav-link:hover, .navbar .navbar-nav .nav-link.active {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 0.35rem;
+}
+.navbar .navbar-nav .nav-link.dropdown-toggle {
+  padding-right: 1.6rem !important;
+  position: relative;
+}
+.navbar .navbar-nav .nav-link.dropdown-toggle::after {
+  position: absolute;
+  right: 0.55rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+.navbar .navbar-nav.ms-auto .nav-link {
+  padding: 0.42rem 0.55rem !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.15rem;
+}
+.navbar .navbar-nav.ms-auto .nav-link i.bi {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.navbar .navbar-nav.ms-auto .nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.35rem;
+}
+.navbar #quarto-search .form-control,
+.navbar #quarto-search .aa-Autocomplete,
+.navbar #quarto-search .aa-Form {
+  border-radius: 0.4rem;
+}
+
+.dropdown-menu {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.85rem;
+  border: 1px solid #e3e8f0;
+  border-radius: 0.45rem;
+  box-shadow: 0 4px 16px rgba(20, 33, 61, 0.1);
+  padding: 0.35rem 0;
+  margin-top: 0.35rem;
+}
+.dropdown-menu .dropdown-item {
+  padding: 0.45rem 1rem;
+  color: #212a3a;
+  font-weight: 500;
+  border-radius: 0;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+.dropdown-menu .dropdown-item:hover, .dropdown-menu .dropdown-item.active {
+  background: rgba(45, 108, 223, 0.08);
+  color: #2d6cdf;
+}
+.dropdown-menu .dropdown-divider {
+  margin: 0.25rem 0;
+  border-color: #eef2f8;
+}
+
+.navbar-toggler {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.4rem;
+}
+.navbar-toggler .navbar-toggler-icon {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+.quarto-secondary-nav {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #e3e8f0;
+  background: #ffffff;
+}
+.quarto-secondary-nav .quarto-btn-toggle.btn {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem !important;
+  border: 1px solid #d4dce8;
+  border-radius: 0.4rem;
+  background: #ffffff;
+  color: #1b2a4a;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-right: 0.6rem;
+}
+.quarto-secondary-nav .quarto-btn-toggle.btn:hover {
+  border-color: #2d6cdf;
+  color: #2d6cdf;
+  background: rgba(45, 108, 223, 0.04);
+}
+.quarto-secondary-nav .quarto-btn-toggle.btn i.bi {
+  font-size: 0.95rem;
+}
+.quarto-secondary-nav .breadcrumb {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.82rem;
+  margin: 0;
+  padding: 0;
+}
+.quarto-secondary-nav .breadcrumb .breadcrumb-item a {
+  color: #5a6b85;
+}
+.quarto-secondary-nav .breadcrumb .breadcrumb-item a:hover {
+  color: #2d6cdf;
+}
+.quarto-secondary-nav .breadcrumb .breadcrumb-item.active {
+  color: #1b2a4a;
+  font-weight: 600;
+}
+.quarto-secondary-nav .breadcrumb .breadcrumb-item + .breadcrumb-item::before {
+  color: #b0bec5;
+  content: "›";
+  padding: 0 0.4rem;
+}
+
+body.landing .title {
+  display: none;
+}
+
+.hero {
+  background: linear-gradient(135deg, #16213e 0%, #1b2a4a 55%, #24408a 100%);
+  color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 2.8rem 2.4rem;
+  margin: 1.2rem 0 1.8rem;
+  position: relative;
+  overflow: hidden;
+}
+.hero h1, .hero .hero-title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #ffffff;
+  font-size: 2.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.8rem;
+  line-height: 1.15;
+}
+.hero .hero-subtitle {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.88);
+  max-width: 44rem;
+  line-height: 1.65;
+}
+.hero .hero-badges {
+  margin-top: 1.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.hero .hero-badges .badge {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  font-weight: 600;
+  padding: 0.4rem 0.85rem;
+  border-radius: 0.4rem;
+  font-size: 0.82rem;
+  backdrop-filter: blur(4px);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem;
+  margin: 1.2rem 0 1.8rem;
+}
+
+.stat-card {
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-top: 3px solid #2d6cdf;
+  border-radius: 0.6rem;
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 1px 3px rgba(20, 33, 61, 0.05);
+}
+.stat-card .stat-value {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #1b2a4a;
+  line-height: 1.1;
+}
+.stat-card .stat-label {
+  margin-top: 0.4rem;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.85rem;
+  color: #5a6b85;
+  line-height: 1.4;
+}
+.stat-card .stat-foot {
+  margin-top: 0.4rem;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.78rem;
+  color: #8a99b3;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.9rem;
+  margin: 1.2rem 0 1.8rem;
+}
+
+.section-card {
+  display: block;
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-radius: 0.6rem;
+  padding: 1.1rem 1.2rem;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 1px 3px rgba(20, 33, 61, 0.05);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.section-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(20, 33, 61, 0.1);
+  border-color: #2d6cdf;
+  text-decoration: none;
+  color: inherit;
+}
+.section-card .section-card-title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #1b2a4a;
+  margin-bottom: 0.3rem;
+}
+.section-card .section-card-desc {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 0.88rem;
+  color: #5a6b85;
+  line-height: 1.5;
+}
+
+details.trace-group {
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-left: 3px solid #2d6cdf;
+  border-radius: 0.5rem;
+  margin: 0.7rem 0;
+  padding: 0.5rem 0.9rem;
+}
+details.trace-group summary {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  color: #1b2a4a;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  font-size: 0.92rem;
+}
+details.trace-group h3.trace-file {
+  margin-top: 0.7rem;
+  font-size: 0.9rem;
+}
+details.trace-group h3.trace-file code {
+  background: #eef2f8;
+  color: #1b2a4a;
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+  font-size: 0.82em;
+}
+details.trace-group p.trace-meta {
+  font-size: 0.88rem;
+}
+details.trace-group p.trace-meta strong {
+  color: #1b2a4a;
+}
+details.trace-group p.trace-label {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  color: #1b2a4a;
+  margin-top: 0.5rem;
+  font-size: 0.88rem;
+}
+details.trace-group p {
+  margin: 0.4rem 0;
+  font-size: 0.88rem;
+}
+details.trace-group ul {
+  font-size: 0.88rem;
+}
+details.trace-group code {
+  font-size: 0.8em;
+  color: #b3287a;
+  background: #faf3f8;
+  padding: 0 0.15rem;
+}
+
+table {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.85rem;
+}
+table thead th {
+  background: #eef2f8;
+  color: #14213d;
+  font-weight: 700;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+table td, table th {
+  padding: 0.45rem 0.65rem;
+}
+
+.callout {
+  border-radius: 0.45rem;
+  border-left-width: 3px;
+  font-size: 0.92rem;
+}
+.callout .callout-title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+div.sourceCode {
+  border-radius: 0.45rem;
+  border: 1px solid #e3e8f0;
+}
+div.sourceCode pre {
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+code {
+  font-size: 0.85em;
+}
+
+footer.page-footer {
+  margin-top: 2.5rem;
+  border-top: 1px solid #e3e8f0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.82rem;
+  color: #6b7a93;
+  padding: 1rem 0;
+}
+
+figure, img.svg {
+  max-width: 100%;
+}
+
+@media (max-width: 576px) {
+  .hero {
+    padding: 1.8rem 1.1rem;
+  }
+  .hero h1, .hero .hero-title {
+    font-size: 1.7rem;
+  }
+  .navbar {
+    padding: 0.4rem 0.6rem !important;
+  }
+}
+div.quarto-title-block .title, div.quarto-title-block .subtitle, div.quarto-title-block .quarto-title-meta {
+  margin-bottom: 0.4rem;
+}
+div.quarto-title-block .title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+p.rq-block,
+strong.rq-block {
+  display: block;
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+.github-access {
+  margin: 1rem 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.github-access .github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  border: 1px solid #d4dce8;
+  background: #ffffff;
+  color: #1b2a4a;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.github-access .github-btn:hover {
+  border-color: #2d6cdf;
+  box-shadow: 0 2px 8px rgba(20, 33, 61, 0.08);
+  text-decoration: none;
+  color: #2d6cdf;
+}
+.github-access .github-btn i.bi {
+  font-size: 0.9rem;
+}
+
+.memo-sources {
+  margin-top: 1.2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #e3e8f0;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.8rem;
+  color: #6b7a93;
+}
+
+#quarto-sidebar {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.88rem;
+}
+#quarto-sidebar .sidebar-section > .sidebar-item-container .sidebar-item-text {
+  font-weight: 700;
+  color: #1b2a4a;
+  letter-spacing: 0.01em;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+#quarto-sidebar .sidebar-item-text.sidebar-link {
+  padding: 0.28rem 0.5rem;
+  border-radius: 0.35rem;
+  font-size: 0.85rem;
+}
+#quarto-sidebar .sidebar-item-text.sidebar-link.active {
+  background: rgba(45, 108, 223, 0.08);
+  color: #2d6cdf;
+  font-weight: 600;
+}
+#quarto-sidebar .sidebar-item-text.sidebar-link:hover {
+  color: #2d6cdf;
+}
+
+#quarto-margin-sidebar {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+#quarto-margin-sidebar #toc-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5a6b85;
+  font-weight: 700;
+}
+#quarto-margin-sidebar .nav-link {
+  font-size: 0.82rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.3rem;
+}
+#quarto-margin-sidebar .nav-link.active {
+  color: #2d6cdf;
+  font-weight: 600;
+}
+#quarto-margin-sidebar .toc-actions {
+  margin-top: 0.8rem;
+  border-top: 1px solid #e3e8f0;
+  padding-top: 0.5rem;
+}
+#quarto-margin-sidebar .toc-actions .toc-action {
+  font-size: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #5a6b85;
+}
+#quarto-margin-sidebar .toc-actions .toc-action:hover {
+  color: #2d6cdf;
+}
+
+nav.page-navigation {
+  margin-top: 2rem;
+}
+nav.page-navigation .nav-page-link {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  border: 1px solid #e3e8f0;
+  border-radius: 0.45rem;
+  background: #ffffff;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1b2a4a;
+}
+nav.page-navigation .nav-page-link:hover {
+  border-color: #2d6cdf;
+  color: #2d6cdf;
+  text-decoration: none;
+}
+nav.page-navigation .nav-page-link .nav-page-text {
+  font-size: 0.82rem;
+  color: #5a6b85;
+  font-weight: 400;
+}
+nav.page-navigation .nav-page-link .nav-page-arrow {
+  font-size: 1.1rem;
+}
+
+.chat-intro {
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-left: 3px solid #2d6cdf;
+  border-radius: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  margin: 0.9rem 0 1.2rem;
+}
+.chat-intro code {
+  background: #eef2f8;
+  color: #1b2a4a;
+  padding: 0.08rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.82em;
+}
+
+.chat-demo {
+  margin: 0.9rem 0 2rem;
+}
+
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-bottom: 0.8rem;
+}
+
+.chat-btn {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #ffffff;
+  color: #1b2a4a;
+  border: 1px solid #d4dce8;
+  border-radius: 0.4rem;
+  padding: 0.38rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+.chat-btn:hover {
+  border-color: #2d6cdf;
+  color: #2d6cdf;
+  box-shadow: 0 2px 6px rgba(20, 33, 61, 0.08);
+}
+
+.chat-count {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 600;
+  color: #5a6b85;
+  font-size: 0.88rem;
+  min-width: 4rem;
+  text-align: center;
+}
+
+.chat-card {
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 3px rgba(20, 33, 61, 0.05);
+  overflow: hidden;
+}
+.chat-card.chat-card-thread {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.chat-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eef2f8;
+  background: #fafbfe;
+}
+.chat-card-top .chat-card-title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  color: #1b2a4a;
+  font-size: 0.92rem;
+}
+.chat-card-top .chat-card-meta {
+  margin-left: auto;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.78rem;
+  color: #8a99b3;
+}
+
+.chat-badge {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.35rem;
+  text-transform: uppercase;
+}
+
+.chat-badge-ok, .chat-badge {
+  background: #e7f6ec;
+  color: #1d7a3e;
+  border: 1px solid #bfe6cd;
+}
+
+.chat-badge-miss {
+  background: #fdeeee;
+  color: #b03030;
+  border: 1px solid #f2c9c9;
+}
+
+.chat-badge-illu {
+  background: #eef2f8;
+  color: #5a6b85;
+  border: 1px solid #d4dce8;
+}
+
+.chat-history {
+  padding: 1rem;
+  background: #f6f8fb;
+}
+
+.msg {
+  display: flex;
+  margin-bottom: 0.8rem;
+}
+.msg.msg-user, .msg.msg-model {
+  justify-content: flex-start;
+}
+
+.msg-bubble {
+  max-width: 92%;
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  box-shadow: 0 1px 2px rgba(20, 33, 61, 0.04);
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.msg-model .msg-bubble {
+  border-left: 3px solid #2d6cdf;
+}
+
+.msg-user .msg-bubble {
+  border-left: 3px solid #8a99b3;
+  background: #f0f3f9;
+}
+
+.msg-img {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 0.45rem;
+  border: 1px solid #e3e8f0;
+  margin-bottom: 0.45rem;
+}
+
+.msg-pre {
+  margin: 0;
+  padding: 0.3rem 0.15rem;
+  background: transparent;
+  border: none;
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #2a3550;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+.msg-pre.collapsed {
+  max-height: 320px;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.chat-expand-row {
+  text-align: center;
+  padding: 0.5rem 0 0.8rem;
+  background: #f6f8fb;
+}
+.chat-expand-row .chat-expand-btn {
+  display: none;
+}
+
+.chat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+  margin: 0.9rem 0 1.8rem;
+}
+
+.chat-card-ok {
+  border-top: 3px solid #2e8b57;
+}
+
+.chat-card-miss {
+  border-top: 3px solid #c0392b;
+}
+
+.chat-card-img {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-bottom: 1px solid #eef2f8;
+  background: #ffffff;
+}
+
+.chat-card-reason {
+  padding: 0.6rem 0.9rem 0.8rem;
+}
+.chat-card-reason pre {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: #3a4660;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.illus-threads {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.9rem;
+  margin: 0.9rem 0 1.8rem;
+}
+
+.illus-card {
+  background: #ffffff;
+  border: 1px solid #e3e8f0;
+  border-radius: 0.6rem;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 1px 3px rgba(20, 33, 61, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.illus-card .illus-title {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1b2a4a;
+  margin: 0;
+}
+.illus-card .illus-meta {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.76rem;
+  color: #8a99b3;
+  margin: 0;
+}
+.illus-card .illus-msg {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 0.85rem;
+  color: #5a6b85;
+  background: #f0f3f9;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.6rem;
+}
+.illus-card .msg-pre {
+  font-size: 0.74rem;
+  max-height: none;
+  overflow: visible;
+  flex: 1;
+}
