@@ -167,13 +167,13 @@ def build():
         img = r.get("image") or ""
         title = f"{r['expected']} &rarr; {r['predicted']}" if not r["correct"] else r["expected"]
         return f"""<div class="chat-card chat-card-{cls}">
-  <div class="chat-card-top">
-    <span class="chat-badge chat-badge-{cls}">{badge}</span>
-    <span class="chat-card-title">{title}</span>
-    <span class="chat-card-meta">{r.get('prompt_version','')} &middot; {r.get('model','')}</span>
-  </div>
-  <img class="chat-card-img" src="{img}" alt="document example" />
-  <div class="chat-card-reason"><pre>{html_lib.escape(r['reasoning'][:220])}{'…' if len(r['reasoning'])>220 else ''}</pre></div>
+<div class="chat-card-top">
+<span class="chat-badge chat-badge-{cls}">{badge}</span>
+<span class="chat-card-title">{title}</span>
+<span class="chat-card-meta">{r.get('prompt_version','')} &middot; {r.get('model','')}</span>
+</div>
+<img class="chat-card-img" src="{img}" alt="document example" />
+<div class="chat-card-reason"><pre>{html_lib.escape(r['reasoning'][:220])}{'…' if len(r['reasoning'])>220 else ''}</pre></div>
 </div>"""
 
     correct_cards = "\n".join(card(r) for r in real_correct)
@@ -191,28 +191,28 @@ subtitle: "Real model reasoning traces — the full 14-check scratchpad, from OK
 
 ::: {{=html}}
 <div class="chat-intro">
-  <p>Every conversation below is a <strong>real trace</strong> pulled from a logged OpenRouter run on the
-  Braintrust project — the model's own <code>&lt;scratchpad&gt;</code> reasoning and its
-  final <code>&lt;label&gt;</code>, exactly as it was returned. Use the arrows to step through them.</p>
+<p>Every conversation below is a <strong>real trace</strong> pulled from a logged OpenRouter run on the
+Braintrust project — the model's own <code>&lt;scratchpad&gt;</code> reasoning and its
+final <code>&lt;label&gt;</code>, exactly as it was returned. Use the arrows to step through them.</p>
 </div>
 
 <div class="chat-demo" id="chatDemo">
-  <div class="chat-toolbar">
-    <button class="chat-btn" id="chatPrev" aria-label="Previous example">&#8592; Previous</button>
-    <span class="chat-count" id="chatCount">1 / {len(convs)}</span>
-    <button class="chat-btn" id="chatNext" aria-label="Next example">Next &#8594;</button>
-  </div>
-  <div class="chat-card chat-card-thread">
-    <div class="chat-card-top">
-      <span class="chat-badge" id="chatBadge"></span>
-      <span class="chat-card-title" id="chatTitle"></span>
-      <span class="chat-card-meta" id="chatMeta"></span>
-    </div>
-    <div class="chat-history" id="chatHistory"></div>
-    <div class="chat-expand-row">
-      <button class="chat-btn chat-expand-btn" id="chatExpand">Expand full response</button>
-    </div>
-  </div>
+<div class="chat-toolbar">
+<button class="chat-btn" id="chatPrev" aria-label="Previous example">&#8592; Previous</button>
+<span class="chat-count" id="chatCount">1 / {len(convs)}</span>
+<button class="chat-btn" id="chatNext" aria-label="Next example">Next &#8594;</button>
+</div>
+<div class="chat-card chat-card-thread">
+<div class="chat-card-top">
+<span class="chat-badge" id="chatBadge"></span>
+<span class="chat-card-title" id="chatTitle"></span>
+<span class="chat-card-meta" id="chatMeta"></span>
+</div>
+<div class="chat-history" id="chatHistory"></div>
+<div class="chat-expand-row">
+<button class="chat-btn chat-expand-btn" id="chatExpand">Expand full response</button>
+</div>
+</div>
 </div>
 
 <script>

@@ -1,27 +1,27 @@
 <div class="scatter-widget" style="position: relative; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; background: #ffffff; overflow: hidden; margin: 1.2em 0;">
-  <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px;">
-    <input id="scatter-search" type="text" placeholder="Search a word… (Enter to jump)" autocomplete="off"
-           style="flex: 0 1 300px; min-width: 150px; padding: 5px 10px; border: 1px solid #c9d2e0; border-radius: 6px; font-size: 13px; color: #1b2a4a; background: #ffffff;" />
-    <span id="scatter-count" style="color: #5b6577; white-space: nowrap;"></span>
-    <button id="scatter-reset" type="button"
-            style="margin-left: auto; padding: 5px 12px; border: 1px solid #c9d2e0; border-radius: 6px; background: #ffffff; color: #1b2a4a; font-size: 12px; cursor: pointer;">Reset view</button>
-  </div>
-  <div id="scatter-canvas" style="position: relative; width: 100%; background: #ffffff;"></div>
-  <div id="scatter-status" style="position: absolute; top: 52px; left: 14px; z-index: 10; font-size: 13px; color: #5b6577; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 12px; border: 1px solid #d5dbe6; pointer-events: none;">Loading interactive scatter…</div>
-  <div id="scatter-tooltip" style="position: absolute; display: none; z-index: 20; pointer-events: none; max-width: 260px; background: rgba(255,255,255,0.97); border: 1px solid #c9d2e0; border-radius: 8px; padding: 8px 11px; font-size: 12.5px; color: #1b2a4a; line-height: 1.5; box-shadow: 0 4px 14px rgba(27,42,74,0.14);"></div>
-  <div style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;">
-    <span class="sc-chip" data-bias="fail" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e08580;vertical-align:-2px;"></span> failure-biased</span>
-    <span class="sc-chip" data-bias="neutral" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#b9c4d6;vertical-align:-2px;"></span> neutral</span>
-    <span class="sc-chip" data-bias="ok" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#66c4a8;vertical-align:-2px;"></span> success-biased</span>
-    <span class="sc-chip" data-bias="leak" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-radius:2px;vertical-align:-2px;"></span> prompt-leaked</span>
-    <span style="margin-left:auto;color:#5b6577;">scroll to zoom · drag to pan · hover for counts · click to pin label · click legend to filter</span>
-  </div>
-  <style>
-    .scatter-widget svg { font-family: 'DejaVu Sans', sans-serif; display: block; }
-    .scatter-widget .sc-chip.off { opacity: 0.35; }
-    .scatter-widget .sc-tip-word { font-weight: 600; margin-bottom: 2px; }
-    .scatter-widget .sc-tip-leak { font-weight: 600; font-size: 10.5px; color: #a57c12; background: #fdf3d7; border: 1px solid #e6d39a; border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: 1px; }
-  </style>
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px;">
+<input id="scatter-search" type="text" placeholder="Search a word… (Enter to jump)" autocomplete="off"
+       style="flex: 0 1 300px; min-width: 150px; padding: 5px 10px; border: 1px solid #c9d2e0; border-radius: 6px; font-size: 13px; color: #1b2a4a; background: #ffffff;" />
+<span id="scatter-count" style="color: #5b6577; white-space: nowrap;"></span>
+<button id="scatter-reset" type="button"
+        style="margin-left: auto; padding: 5px 12px; border: 1px solid #c9d2e0; border-radius: 6px; background: #ffffff; color: #1b2a4a; font-size: 12px; cursor: pointer;">Reset view</button>
+</div>
+<div id="scatter-canvas" style="position: relative; width: 100%; background: #ffffff;"></div>
+<div id="scatter-status" style="position: absolute; top: 52px; left: 14px; z-index: 10; font-size: 13px; color: #5b6577; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 12px; border: 1px solid #d5dbe6; pointer-events: none;">Loading interactive scatter…</div>
+<div id="scatter-tooltip" style="position: absolute; display: none; z-index: 20; pointer-events: none; max-width: 260px; background: rgba(255,255,255,0.97); border: 1px solid #c9d2e0; border-radius: 8px; padding: 8px 11px; font-size: 12.5px; color: #1b2a4a; line-height: 1.5; box-shadow: 0 4px 14px rgba(27,42,74,0.14);"></div>
+<div style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;">
+<span class="sc-chip" data-bias="fail" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e08580;vertical-align:-2px;"></span> failure-biased</span>
+<span class="sc-chip" data-bias="neutral" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#b9c4d6;vertical-align:-2px;"></span> neutral</span>
+<span class="sc-chip" data-bias="ok" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#66c4a8;vertical-align:-2px;"></span> success-biased</span>
+<span class="sc-chip" data-bias="leak" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-radius:2px;vertical-align:-2px;"></span> prompt-leaked</span>
+<span style="margin-left:auto;color:#5b6577;">scroll to zoom · drag to pan · hover for counts · click to pin label · click legend to filter</span>
+</div>
+<style>
+.scatter-widget svg { font-family: var(--font-sans); display: block; }
+.scatter-widget .sc-chip.off { opacity: 0.35; }
+.scatter-widget .sc-tip-word { font-weight: 600; margin-bottom: 2px; }
+.scatter-widget .sc-tip-leak { font-weight: 600; font-size: 10.5px; color: #a57c12; background: #fdf3d7; border: 1px solid #e6d39a; border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: 1px; }
+</style>
 </div>
 <script>
 (function () {
