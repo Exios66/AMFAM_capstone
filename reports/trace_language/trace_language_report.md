@@ -78,8 +78,8 @@ Fightin' Words (Monroe, Colaresi & Quinn, 2008): `z = log((y_f + a)/(n_f - y_f +
 | word | failed n | correct n | z |
 |---|---:|---:|---:|
 | m-01 | 114 | 0 | 10.08 |
-| tease | 66 | 0 | 9.53 |
 | fedex | 66 | 0 | 9.53 |
+| tease | 66 | 0 | 9.53 |
 | oppose | 64 | 0 | 9.50 |
 | mo1a | 60 | 0 | 9.44 |
 | cpt | 53 | 0 | 9.32 |
@@ -96,17 +96,17 @@ Fightin' Words (Monroe, Colaresi & Quinn, 2008): `z = log((y_f + a)/(n_f - y_f +
 | depository | 41 | 0 | 9.06 |
 | elia | 40 | 0 | 9.03 |
 | salzman | 40 | 0 | 9.03 |
-| avp's | 39 | 0 | 9.01 |
 | tox | 39 | 0 | 9.01 |
 | rata | 39 | 0 | 9.01 |
+| avp's | 39 | 0 | 9.01 |
 | pharm | 39 | 0 | 9.01 |
-| hockett | 38 | 0 | 8.98 |
 | verteiler | 38 | 0 | 8.98 |
-| perfected | 37 | 0 | 8.96 |
+| hockett | 38 | 0 | 8.98 |
 | wow | 37 | 0 | 8.96 |
+| perfected | 37 | 0 | 8.96 |
 | establishment | 36 | 0 | 8.93 |
-| laryngology | 35 | 0 | 8.90 |
 | pmo | 35 | 0 | 8.90 |
+| otology | 35 | 0 | 8.90 |
 
 ### Top 30 words most likely in CORRECT traces
 
@@ -117,11 +117,11 @@ Fightin' Words (Monroe, Colaresi & Quinn, 2008): `z = log((y_f + a)/(n_f - y_f +
 | denied | 0 | 71 | -8.13 |
 | harley | 0 | 71 | -8.13 |
 | davidson | 0 | 72 | -8.14 |
-| faktuur | 0 | 73 | -8.16 |
 | hoyt | 0 | 73 | -8.16 |
+| faktuur | 0 | 73 | -8.16 |
 | grocery | 0 | 74 | -8.17 |
-| bmj | 0 | 75 | -8.18 |
 | newsweek | 0 | 75 | -8.18 |
+| bmj | 0 | 75 | -8.18 |
 | rods | 0 | 77 | -8.21 |
 | hsr | 0 | 79 | -8.24 |
 | grams | 0 | 84 | -8.30 |
@@ -129,8 +129,8 @@ Fightin' Words (Monroe, Colaresi & Quinn, 2008): `z = log((y_f + a)/(n_f - y_f +
 | sirs | 0 | 88 | -8.34 |
 | thursday | 0 | 90 | -8.37 |
 | tom | 0 | 92 | -8.39 |
-| bcc | 0 | 93 | -8.40 |
 | borriston | 0 | 93 | -8.40 |
+| bcc | 0 | 93 | -8.40 |
 | intermediate | 0 | 94 | -8.41 |
 | bruce | 0 | 95 | -8.42 |
 | pharmacology | 0 | 96 | -8.43 |

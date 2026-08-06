@@ -496,7 +496,8 @@ def plot_scattertext(points: list[dict], words: list[dict], out_path: Path,
 # ---------------------------------------------------------------------------
 
 def write_loop_report(cycles: list[list[str]], records: list[dict],
-                      edges: list[dict], stats: dict, out_path: Path) -> None:
+                      edges: list[dict], stats: dict, out_path: Path,
+                      suffix: str = "") -> None:
     """Structural-loop inventory: every detected cycle with an example trace."""
     edge_by_pair = {(e["a"], e["b"]): e for e in edges}
     md = [
@@ -540,8 +541,8 @@ def write_loop_report(cycles: list[list[str]], records: list[dict],
     md += [
         "",
         "Cycle edges are highlighted in red on "
-        "`phrase_net_differential.png`. Rotational duplicates are merged; "
-        "direction is preserved (a reversed cycle is a different loop).",
+        f"`phrase_net_differential{suffix}.png`. Rotational duplicates are "
+        "merged; direction is preserved (a reversed cycle is a different loop).",
         "",
     ]
     out_path.write_text("\n".join(md), encoding="utf-8")
@@ -550,7 +551,8 @@ def write_loop_report(cycles: list[list[str]], records: list[dict],
 
 def write_report(records: list[dict], words: list[dict], edges: list[dict],
                  cycles: list[list[str]], stats: dict, prompt_vocab: frozenset[str],
-                 alpha: float, scope: str, out_dir: Path, top_n: int) -> None:
+                 alpha: float, scope: str, out_dir: Path, top_n: int,
+                 suffix: str = "") -> None:
     failed = [r for r in records if not r["correct"]]
     ok = [r for r in records if r["correct"]]
     leaked_edges = [e for e in edges if e["a"] in prompt_vocab and e["b"] in prompt_vocab]
@@ -566,7 +568,7 @@ def write_report(records: list[dict], words: list[dict], edges: list[dict],
         "",
         "## Differential Phrase Nets",
         "",
-        "![Differential phrase net](phrase_net_differential.png)",
+        f"![Differential phrase net](phrase_net_differential{suffix}.png)",
         "",
         "Directed bi-gram graph of the reasoning traces, restricted to edges "
         "whose prevalence in **failed** traces exceeds their prevalence in "
@@ -594,7 +596,8 @@ def write_report(records: list[dict], words: list[dict], edges: list[dict],
         "",
         f"{len(cycles)} cycles detected (length ≤ 6). Full inventory with "
         "example traces: "
-        "[phrase_net_loops.md](../../reports/trace_language/phrase_net_loops.md).",
+        f"[phrase_net_loops{suffix}.md](../../reports/trace_language/"
+        f"phrase_net_loops{suffix}.md).",
         "",
         "| Cycle | Length |",
         "|---|---:|",
@@ -614,7 +617,7 @@ def write_report(records: list[dict], words: list[dict], edges: list[dict],
         "",
         "## Log-Odds Ratio (Uninformative Dirichlet Prior)",
         "",
-        "![Log-odds bar chart](logodds_dirichlet.png)",
+        f"![Log-odds bar chart](logodds_dirichlet{suffix}.png)",
         "",
         "Fightin' Words (Monroe, Colaresi & Quinn, 2008): "
         "`z = log((y_f + a)/(n_f - y_f + a)) - log((y_o + a)/(n_o - y_o + a))` "
@@ -645,7 +648,7 @@ def write_report(records: list[dict], words: list[dict], edges: list[dict],
         "",
         "## Scattertext-style Frequency Scatter",
         "",
-        "![Scattertext-style scatter](scattertext_style.png)",
+        f"![Scattertext-style scatter](scattertext_style{suffix}.png)",
         "",
         "Every word on a log-log grid of frequency-per-million-tokens in "
         "correct (x) vs failed (y) traces. The **top-left corner** isolates "
@@ -655,7 +658,7 @@ def write_report(records: list[dict], words: list[dict], edges: list[dict],
         "across both classes).",
         "",
     ]
-    path = out_dir / "trace_language_report.md"
+    path = out_dir / f"trace_language_report{suffix}.md"
     path.write_text("\n".join(md), encoding="utf-8")
     print(f"Report saved: {path}")
 
@@ -712,18 +715,20 @@ def main() -> None:
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     scope = args.scope
+    suffix = "" if scope == "all" else f"_{scope}"
     fail_counts, ok_counts = word_counts(rows)
     words = log_odds_ratio(fail_counts, ok_counts, alpha=args.alpha,
                            min_count=args.min_count)
     print(f"Log-odds ranked {len(words)} words "
           f"(prior a={args.alpha}, min {args.min_count} occurrences)")
-    plot_logodds(words, args.out_dir / "logodds_dirichlet.png", scope,
+    plot_logodds(words, args.out_dir / f"logodds_dirichlet{suffix}.png", scope,
                  top_n=args.top_n, alpha=args.alpha)
 
     points, n_fail, n_ok = scatter_frequencies(rows)
     print(f"Scattertext grid: {len(points)} words "
           f"({n_fail} failed tokens, {n_ok} correct tokens)")
-    plot_scattertext(points, words, args.out_dir / "scattertext_style.png", scope)
+    plot_scattertext(points, words,
+                     args.out_dir / f"scattertext_style{suffix}.png", scope)
 
     prompt_vocab = load_prompt_vocab()
     edges = differential_bigrams(
@@ -732,7 +737,6 @@ def main() -> None:
     )
     print(f"Differential phrase net: {len(edges)} failure-biased bi-grams")
     if edges:
-        suffix = "" if scope == "all" else f"_{scope}"
         plot_phrase_net(edges, prompt_vocab,
                         args.out_dir / f"phrase_net_differential{suffix}.png",
                         scope, rows)
@@ -745,9 +749,9 @@ def main() -> None:
           f"stuck-phrase rate: failed {stats['failed_rate']:.1%} vs "
           f"correct {stats['ok_rate']:.1%}")
     write_loop_report(cycles, rows, edges, stats,
-                      args.out_dir / "phrase_net_loops.md")
+                      args.out_dir / f"phrase_net_loops{suffix}.md", suffix)
     write_report(rows, words, edges, cycles, stats, prompt_vocab, args.alpha,
-                 scope, args.out_dir, args.top_n)
+                 scope, args.out_dir, args.top_n, suffix)
     print("Done.")
 
 
