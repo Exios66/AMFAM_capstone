@@ -1009,6 +1009,42 @@ def chart_trace_scatter(out_name: str) -> None:
     _save(fig, out_name)
 
 
+def chart_trace_scatter_data(out_json: str) -> None:
+    """Emit the scattertext grid as JSON for the interactive d3 widget.
+
+    Uses the exact same pipeline as ``chart_trace_scatter`` (same top-2500
+    ranking, same log-odds thresholds and prompt-vocab lookup) so the
+    interactive rendering and the static SVG agree point-for-point.
+    """
+    rows = _trace_rows()
+    if not rows:
+        return
+    points, _, _ = scatter_frequencies(rows)
+    points = sorted(points, key=lambda p: p["fail"] + p["ok"], reverse=True)[:2500]
+    fail_counts, ok_counts = word_counts(rows)
+    words = log_odds_ratio(fail_counts, ok_counts, alpha=0.01, min_count=5)
+    z_by_word = {w["word"]: w["z"] for w in words}
+    prompt_vocab = load_prompt_vocab()
+    payload = {
+        "generated": "build_site_charts.py chart_trace_scatter_data",
+        "points": [
+            {
+                "word": p["word"],
+                "fail": p["fail"],
+                "ok": p["ok"],
+                "freq_fail": max(p["freq_fail"], 0.5),
+                "freq_ok": max(p["freq_ok"], 0.5),
+                "z": z_by_word.get(p["word"], 0.0),
+                "leak": p["word"] in prompt_vocab,
+            }
+            for p in points
+        ],
+    }
+    out = CHARTS_DIR / out_json
+    out.write_text(json.dumps(payload), encoding="utf-8")
+    print(f"  chart data: {out.name} ({len(payload['points'])} points)")
+
+
 def chart_phrase_net(out_name: str) -> None:
     """Differential directed bigram graph of failed traces with loops highlighted."""
     nodes, edges = _trace_graph()
@@ -1199,6 +1235,7 @@ def main() -> None:
     print("Trace-language (log-odds, scatter, phrase net):")
     chart_trace_logodds("logodds_dirichlet.svg")
     chart_trace_scatter("scattertext_style.svg")
+    chart_trace_scatter_data("scattertext_style.json")
     chart_phrase_net("phrase_net_differential.svg")
     chart_phrase_net_data("phrase_net_differential.json")
 

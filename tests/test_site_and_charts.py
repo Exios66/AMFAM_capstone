@@ -194,7 +194,9 @@ class TestQuartoAssets:
     def test_interactive_widget_assets_exist(self):
         expected = [
             WEBSITE / "assets/js/vis-network.min.js",
+            WEBSITE / "assets/js/d3.v7.min.js",
             WEBSITE / "charts/phrase_net_differential.json",
+            WEBSITE / "charts/scattertext_style.json",
             WEBSITE / "assets/js/theme-switch.js",
             WEBSITE / "assets/html/theme-head.html",
             WEBSITE / "assets/css/custom.scss",
@@ -213,6 +215,22 @@ class TestQuartoAssets:
             assert node_keys <= set(node), f"node missing keys: {node}"
         for edge in graph["edges"]:
             assert edge_keys <= set(edge), f"edge missing keys: {edge}"
+
+    def test_scattertext_json_structure(self):
+        grid = json.loads((WEBSITE / "charts/scattertext_style.json").read_text())
+        points = grid.get("points")
+        assert isinstance(points, list) and points
+        assert 2000 <= len(points) <= 3000, f"unexpected point count: {len(points)}"
+        keys = {"word", "fail", "ok", "freq_fail", "freq_ok", "z", "leak"}
+        for p in points:
+            assert keys <= set(p), f"point missing keys: {p}"
+            assert isinstance(p["word"], str) and p["word"]
+            assert p["fail"] >= 0 and p["ok"] >= 0
+            # raw per-million frequencies; the widget clamps to the 0.3–10^4
+            # grid at render time (out-of-grid words pin to the edge)
+            assert 0 < p["freq_fail"] < 1e6 and 0 < p["freq_ok"] < 1e6
+        assert any(p["leak"] for p in points), "no prompt-leaked words marked"
+        assert any(p["z"] > 0.5 for p in points) and any(p["z"] < -0.5 for p in points)
 
     def test_phrase_net_widget_tooltips_are_dom_elements(self):
         # vis-network 9.1.9 renders STRING tooltips via innerText, so HTML

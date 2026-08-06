@@ -171,6 +171,28 @@ def inject_phrase_net_widget(body: str) -> str:
     return PHRASE_NET_IMG_RE.sub(lambda _m: widget, body)
 
 
+SCATTER_IMG_RE = re.compile(r"!\[[^\]]*\]\(\.\./charts/scattertext_style\.svg\)")
+
+SCATTER_WIDGET = (
+    ROOT / "website/assets/html/scattertext-widget.html"
+).read_text(encoding="utf-8")
+
+
+def inject_scatter_widget(body: str) -> str:
+    """Replace the static scattertext figure with the interactive d3 widget plus the
+    static SVG rendering beneath it (no-JS fallback and print version)."""
+    static = "![Scattertext-style scatter — static rendering](../charts/scattertext_style.svg)"
+    widget = (
+        '<script src="../assets/js/d3.v7.min.js"></script>\n\n'
+        + SCATTER_WIDGET
+        + '\n\n<figcaption>The interactive scattertext-style scatter — hover for counts, '
+        'search and click to pin word labels, toggle legend chips to filter bias, and '
+        'drag/zoom the grid. A static rendering follows as a print/no-JS fallback.</figcaption>\n\n'
+        + static
+    )
+    return SCATTER_IMG_RE.sub(lambda _m: widget, body)
+
+
 def demote_heads(text: str, levels: int = 1) -> str:
     def _demote(m: re.Match) -> str:
         return "#" * (len(m.group(1)) + levels) + m.group(2)
@@ -578,13 +600,17 @@ def main() -> None:
         if rel in MC_EMBEDS:
             svg_rel, alt = MC_EMBEDS[rel]
             body = inject_mc_chart(body, svg_rel, alt)
-        # Trace-language page: swap the static phrase net for the interactive widget
+        # Trace-language page: swap the static phrase net and scattertext figures
+        # for the interactive widgets (static SVGs remain as fallbacks)
         if rel == "montecarlo/trace-language.qmd":
             body = inject_phrase_net_widget(body)
+            body = inject_scatter_widget(body)
             write_page(
                 target, title, body, description=desc,
                 resources=["../assets/js/vis-network.min.js",
-                           "../charts/phrase_net_differential.json"],
+                           "../assets/js/d3.v7.min.js",
+                           "../charts/phrase_net_differential.json",
+                           "../charts/scattertext_style.json"],
             )
             continue
         write_page(target, title, body, description=desc)
