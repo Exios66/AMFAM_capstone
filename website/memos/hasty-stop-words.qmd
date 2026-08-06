@@ -32,7 +32,9 @@ date: "2026-08-05"
 
 **Conclusion.** Hasty stopping is a measurable, correctable failure mode. The fix is prompt-side: reinforce that the 14-check cascade must run to completion regardless of early-evidence matches, and add explicit "do not commit on the presence of X alone" rules for the top trigger words.
 
+::: {.memo-sources}
 *Sources:* `reports/monte_carlo/ale_stopword_report.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

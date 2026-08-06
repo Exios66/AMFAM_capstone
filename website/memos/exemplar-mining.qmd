@@ -32,7 +32,9 @@ The 4 selected exemplars each teach a clean disambiguation:
 
 **Conclusion.** The simulated exemplar gain did not materialize when measured — a textbook simulated-vs-measured gap. The mined traces are high-clarity, but adding them as in-context examples at 48-row scale neither recovered near-misses nor preserved prior correct answers. **Exemplars are not a free accuracy lever here; the prompt-rules approach remains the primary fix.**
 
+::: {.memo-sources}
 *Sources:* `reports/monte_carlo/exemplar_candidates.md` · `reports/monte_carlo/verification_results.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

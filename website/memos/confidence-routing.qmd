@@ -31,7 +31,9 @@ The accuracy peak is at **α ≈ 40%** (0.919); beyond that, escalating more ima
 
 **Conclusion.** Routing the low-confidence tail to a stronger model is the best accuracy/cost lever in the study: +4.3 pp at 1.2× (α = 10%) or up to +9.8 pp at 1.8× (α = 40%), conditional on the escalated model being genuinely stronger.
 
+::: {.memo-sources}
 *Sources:* `reports/monte_carlo/routing_abstention.md` · `reports/monte_carlo/escalation_candidates.txt` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

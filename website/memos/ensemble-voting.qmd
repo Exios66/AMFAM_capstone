@@ -31,7 +31,9 @@ The curve is concave and flattening: K=3 gives 1.5 pp for 3×, K=7 gives 2.9 pp 
 
 **Conclusion.** Ensembling recovers real accuracy but at a steep price and with diminishing returns; it helps most where errors are non-systematic and least where the model is deterministically wrong (the near-synonym pairs).
 
+::: {.memo-sources}
 *Sources:* `reports/monte_carlo/ensemble_accuracy_vs_k.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

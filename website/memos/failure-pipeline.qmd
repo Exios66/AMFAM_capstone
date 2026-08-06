@@ -34,7 +34,9 @@ Adding a fallback key reduces failure ~24×; raising max_tries beyond 3 adds not
 
 **Conclusion.** The pipeline is production-safe for failures: even at 320K images, expected failures ≈ 364 with P(>5%) ≈ 0. Per-row failure rows are handled as explicit misses (the `failure` Braintrust scorer), so they do not silently contaminate accuracy.
 
+::: {.memo-sources}
 *Sources:* `reports/monte_carlo/failure_pipeline.md` · `src/evaluation.py` (ManifestStore resume) · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

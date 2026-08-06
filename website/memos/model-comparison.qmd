@@ -30,7 +30,9 @@ The gap is **prompt-family × model interaction**, not raw capability: qwen3.7-f
 
 **Conclusion.** For this 16-class cascade, qwen3.7-flash + v11.8/v17.x is the best accuracy and cost choice; the other models bracket a 12–29 pp accuracy range that prompt family largely explains.
 
+::: {.memo-sources}
 *Sources:* `docs/experiments/experiment_log.md` · `reports/report_*_v11_8_*.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

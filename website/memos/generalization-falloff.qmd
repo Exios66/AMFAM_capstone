@@ -31,7 +31,9 @@ The drop is a slice-content effect, not a prompt failure: the 480-image slice *c
 
 **Conclusion.** The prompt-engineering gain generalizes but is **attenuated by slice noise**: +13.0 pp over v0 on shared 800-run images (0.732 → 0.862) yet −16.8 pp between the curated 160 and the noisy 1,120. Expect ~82–87% on production-like slices, not 99%.
 
+::: {.memo-sources}
 *Sources:* `docs/experiments/experiment_log.md` · `reports/report_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

@@ -33,7 +33,9 @@ The **paired bootstrap ablation** (`reports/monte_carlo/prompt_ablation.md`) con
 
 **Conclusion.** Prompt engineering accounts for essentially the entire measured gain from ~80% → ~99% on the curated slice. It is also the cheapest lever — no new model spend, only prompt text. The same edits transfer (with attenuation) to noisier slices; see the [generalization memo](generalization-falloff.qmd).
 
+::: {.memo-sources}
 *Sources:* `docs/experiments/experiment_log.md` · `reports/monte_carlo/prompt_ablation.md` · `src/prompts.py` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 

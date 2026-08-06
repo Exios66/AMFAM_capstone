@@ -34,7 +34,9 @@ Three classes are the persistent over-attractors and one pair is the hardest dis
 
 **Conclusion.** Effort should concentrate on (1) the form over-attractor (check-10 ordering vs the analytical-content checks), (2) the budget↔invoice estimate/billing boundary, and (3) letter↔memo correspondence headers — in that order. Full reasoning traces for all 195 errors (70 pairs) are browsable in the [misclassification appendix](../appendix/misclassifications.html).
 
+::: {.memo-sources}
 *Sources:* `reports/monte_carlo/corpus.summary.md` · `reports/misclassification_reasoning_*_1600_balanced_1120.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
 
 ---
 
