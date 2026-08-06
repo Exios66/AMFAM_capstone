@@ -28,8 +28,12 @@ website:
   navbar:
     background: dark
     left:
-      - href: index.qmd
-        text: Overview
+      - text: Overview
+        menu:
+          - href: index.qmd
+            text: Overview
+          - href: manuscript.qmd
+            text: Manuscript
       - text: Methods & Reference
         menu:
           - methods/overview.qmd
@@ -71,8 +75,6 @@ website:
           - interactive/experiment-explorer.qmd
       - text: Chat Examples
         href: chats.qmd
-      - text: Manuscript
-        href: manuscript.qmd
       - text: Monte Carlo
         menu:
           - montecarlo/overview.qmd
@@ -110,6 +112,8 @@ website:
         contents:
           - href: index.qmd
             text: Home
+          - href: manuscript.qmd
+            text: Manuscript
           - text: "Headline results"
             href: results/headline-results.qmd
           - text: "Misclassification appendix"
@@ -177,9 +181,6 @@ website:
           - interactive/experiment-explorer.qmd
       - text: "Chat Examples"
         href: chats.qmd
-      - section: "Manuscript"
-        contents:
-          - manuscript.qmd
   page-navigation: true
   page-footer:
     left: "RVL-CDIP Document Classifier — AMFAM capstone project"

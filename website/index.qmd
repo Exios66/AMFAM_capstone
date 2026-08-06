@@ -4,13 +4,29 @@ subtitle: "A prompt-engineering lab over the RVL-CDIP benchmark — 16-class doc
 author:
   - name: "Jack J. Burleson"
     url: "https://github.com/Exios66"
+    email: "jjburleson@wisc.edu"
+    affiliations:
+      - ref: uw
   - name: "Grant Mooslin"
     url: "https://github.com/gmooslin"
+    affiliations:
+      - ref: uw
+  - name: "Siddharth Suresh"
+    roles: "Project Advisor"
+    affiliations:
+      - ref: uw
+affiliations:
+  - id: uw
+    name: "The University of Wisconsin Madison"
 date: "2026-08-05"
 keywords: "RVL-CDIP, document classification, prompt engineering, OpenRouter, Braintrust, vision language models, exact-match evaluation, Monte Carlo, ensemble voting, cost analysis"
 format:
   html:
     body-classes: landing
+    toc: true
+    toc-location: left
+    code-fold: true
+    code-copy: true
 ---
 
 <div class="github-access">
