@@ -65,3 +65,6 @@ website/_site/
 
 # Wiki build clone
 .wiki-build/
+
+# Generated CSS (compiled from SCSS)
+website/assets/css/custom.css
