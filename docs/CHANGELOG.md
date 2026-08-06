@@ -292,6 +292,30 @@ exemplar verbosity. v18 is retained for reference but should not be promoted.
 
 **Token profile:** +1,714 chars vs v17.2 (50,678 → 52,392 chars; +3.4%).
 
+### gemini-3.5-flash-lite v0 baseline on the AMFAMv4 agent org (160 images, max reasoning)
+
+First run logged to the **AMFAMv4** org (agent account, `AGENT_BRAINTRUST_API_KEY`,
+project `c1bcbd2a-3da3-4b00-9271-ca543458f37e`): v0 prompt × `google/gemini-3.5-flash-lite`
+at max reasoning (temp 0.2), 160 images, research-funding OpenRouter key, `--agent`
+(registers only the `exact_match` scorer). `fixed_size_sampled` was ported
+AMFAM v2 → AMFAMv4 via `copy_datasets_to_new_env.py` (160 rows, verified unique).
+
+| Metric | Value |
+|---|---|
+| exact_match | 116/160 (72.5%) |
+| failures | 0/160 |
+| total cost | $0.34 (avg $0.0021/image) |
+| runner_up coverage | 0/160 (gemini 3.5 reasoning yields no parsable runner-up) |
+
+Braintrust-verified: 160 eval rows + 160 `exact_match` score spans in AMFAMv4.
+Weak classes mirror the v0-era failure pairs: `budget` 3/10, `handwritten` 3/10
+(5 of 10 handwritten→letter), `presentation`/`resume` 5/10, `resume→form` 4.
+The run's exit-time SDK attachment flush hit an S3 timeout and raised — all rows
+and scores were already logged by then (the manifest is the durable record), so
+nothing was lost. (Experiment `gemini-3.5-flash-lite_v0_reasoning_160`,
+manifest `reports/manifests/gemini-3.5-flash-lite_v0_reasoning_160.jsonl`,
+report `reports/report_gemini-3.5-flash-lite_v0_reasoning_160.md`.)
+
 ### gemini-2.5-flash-lite cross-model check (160 images, max reasoning, no Braintrust scorers)
 
 Ran v18 on the 160-image `fixed_size_sampled` slice with `google/gemini-2.5-flash-lite`

@@ -181,7 +181,18 @@ Images are always converted to grayscale PNG at 1024x1024 (with white padding pr
 
 ## Cost & Accuracy Metrics
 
-**Accuracy** is `exact_match`: `output.strip().lower() == expected_class`. Scored as 1.0 or 0.0 per row. Failed/errored rows (output starts with `ERROR: `) count as misses and are tracked by a separate `failure` scorer. A third scorer, `cost`, records each row's actual billed USD from OpenRouter's `usage.cost`. These are the only three scorers registered on the Braintrust eval (`exact_match`, `failure`, `cost`); near-miss (runner-up) is computed locally by `score_manifest.py` from the runner-up line the manifest records.
+**Accuracy** is `exact_match`: `output.strip().lower() == expected_class`. Scored as 1.0 or 0.0 per row. Failed/errored rows (output starts with `ERROR: `) count as misses and are tracked by a separate `failure` scorer. A third scorer, `cost`, records each row's actual billed USD from OpenRouter's `usage.cost`. These are the only three scorers registered on the Braintrust eval (`exact_match`, `failure`, `cost`); near-miss (runner-up) is computed locally by `score_manifest.py` from the runner-up line the manifest records. **They are a subset of what we track — see "Scoring every run on the full metric set" below.**
+
+**Scoring every run on the full metric set (mandatory).** The three Braintrust-registered scorers are only what is tracked *physically inside the Braintrust experiment* — never treat them as the complete score of a run. Every eval run, no matter how its scorers were registered (`--scorers exact_match,failure,cost`, `--scorers none`, `--no-scorers`, or `--agent` which registers only `exact_match`), must be scored on the **full metric set**, derived locally from the manifest (`reports/manifests/*.jsonl`) plus the reasoning traces, runner-up lines, and span metadata fetched from Braintrust:
+
+- `exact_match` accuracy, per-class accuracy, and the confusion matrix
+- `failure` rate — rows whose output starts with the `ERROR: ` sentinel
+- `near-miss` rate — `runner_up == expected` while the predicted class ≠ expected; parsed from the reasoning trace's runner-up line via `extract_runner_up()` (`src/openrouter_classifier.py`), **not** a Braintrust scorer
+- Runner-up coverage — share of completed rows with a parsable runner-up line
+- `cost` — actual billed USD from span metadata (`usage.cost`) *and* the expected list-price projection from measured token counts
+- Token/timing metrics — avg prompt / cached / completion / reasoning / total tokens, time-to-first-token, and duration, from span metrics
+
+Produce them with `score_manifest.py` (works purely from the manifest; `--no-backfill` skips its read-only Braintrust metadata fetch) or the full report chain (`summarize_braintrust_experiment.py`, `braintrust_report.py`, `braintrust_report_manifest.py`). **Do not declare a run scored — and do not report its accuracy, cost, near-miss, or token metrics in the changelog, experiment log, or site — based only on the scorers registered in the Braintrust experiment.** Parsing the reasoning and outputs for the full metric set is part of scoring every run.
 
 **Cost calculation** (`braintrust_report.py:compute_cost`):
 - **Expected cost** = `(sum(prompt_tokens) * input_price + sum(completion_tokens) * output_price) / 1e6` — list-price projection from measured token counts
@@ -231,7 +242,7 @@ A brand-new Braintrust account (saved in `.env` as `AGENT_BRAINTRUST_API_KEY`) t
 
 **Key Braintrust concepts used**:
 - **Datasets** — rows with `input` (image base64 + filename), `expected` (ground-truth class). Stored in a Braintrust project. Multiple named datasets coexist (`fixed_size_sampled`, `fixed_size_sampled_v2`, `_v3`, `_v4`, `_480`, smoke sets).
-- **Experiments** — a named run of a prompt+model against a dataset. Each row produces `output` (predicted class), `scores` (exact_match, failure, cost), and `metadata` (reasoning trace, model, prompt_version, runner_up, cost). Experiment names follow: `{model}_{prompt_version}_reasoning`. Near-miss (runner_up == expected while predicted != expected) is computed locally by `score_manifest.py` from the runner-up line, not by a Braintrust scorer.
+- **Experiments** — a named run of a prompt+model against a dataset. Each row produces `output` (predicted class), `scores` (exact_match, failure, cost), and `metadata` (reasoning trace, model, prompt_version, runner_up, cost). Experiment names follow: `{model}_{prompt_version}_reasoning`. Near-miss (runner_up == expected while predicted != expected) is computed locally by `score_manifest.py` from the runner-up line, not by a Braintrust scorer. The `scores` listed here are only the physically-registered subset — every run is scored on the **full metric set** (near-miss, runner-up coverage, token/timing metrics, expected cost) derived from the manifest + reasoning; see "Scoring every run on the full metric set" above.
 - **Projects** — the container for experiments and datasets. Current: `AMFAM v2`.
 - **Manifests** — JSONL checkpoint files in `reports/manifests/` enable resumable eval runs after interruption. `ManifestStore` (`src/evaluation.py`) tracks per-row status; `--manifest` flag on `braintrust_openrouter_input.py`. Each completed record carries a `tag` (`OK`/`MISS!`/`ERROR!`) plus `runner_up` and `cost`; `score_manifest.load_manifest()` derives the tag in-memory when absent.
 
@@ -354,6 +365,17 @@ For idempotent re-runs (smoke datasets), pass `id=<deterministic_hash>` to `data
 ### Agent workflow after running a new experiment
 
 1. Run eval → summarize → report → metrics_visual (auto-appends to `experiment_log.md`)
-2. If the experiment used a **new prompt version**: update `docs/CHANGELOG.md` with the version's changes, rationale, and results table row
-3. If the experiment produced **meaningful accuracy improvements or regressions**: update `CHANGELOG.md` under `## Unreleased`
-4. If the experiment introduced **new failure modes or fixes**: document them in `CHANGELOG.md`
+2. **Score the run on the full metric set** — never rely on the scorers registered in the Braintrust experiment alone. Derive `exact_match`, per-class accuracy, failure, near-miss, runner-up coverage, cost (actual + expected), and token/timing metrics from the manifest + reasoning via `score_manifest.py` (or the report chain) as described in "Scoring every run on the full metric set". Report only those derived numbers.
+3. **Cook the run into the Monte Carlo corpus** — rebuild it so the new rows join every downstream analysis (see "Polling for new runs & samples" below).
+4. If the experiment used a **new prompt version**: update `docs/CHANGELOG.md` with the version's changes, rationale, and results table row
+5. If the experiment produced **meaningful accuracy improvements or regressions**: update `CHANGELOG.md` under `## Unreleased`
+6. If the experiment introduced **new failure modes or fixes**: document them in `CHANGELOG.md`
+
+### Polling for new runs & samples (always on)
+
+Agents must **always poll for new Braintrust logs, new eval runs, and new data samples** and cook them into the Monte Carlo corpus — the corpus is only as good as the last run you folded in:
+
+- **What to poll** — `reports/manifests/*.jsonl` (completed eval runs land here as JSONL checkpoints, resumable runs included), the Braintrust project (`AMFAM v2`) for new experiments/traces, and any new dataset slices, smoke sets, or eval-union samples that produced runs. Poll at the start of any eval/analysis/scoring/reporting task, after every eval run completes, and before producing any Monte Carlo, trace-language, A/B-widget, or site-chart output that consumes the corpus.
+- **How to cook** — rebuild the joint corpus with `scripts/braintrust/monte_carlo_corpus.py`: it reads every manifest in `reports/manifests/` and backfills reasoning traces + span metadata from Braintrust (read-only fetch, no scorer credits). `--rebuild` forces a full rebuild, `--no-backfill` skips the metadata fetch, `--cache <path>` sets the output (default `reports/monte_carlo/corpus.jsonl`). A rebuilt corpus should be re-summarized and its derived artifacts regenerated so nothing downstream runs stale.
+- **What consumes it** — `monte_carlo_*.py` scripts, `src/monte_carlo.py` (`load_corpus`), `trace_language_viz.py`, `build_site_charts.py` (ALE / corpus-summary / trace-language charts), and `build_model_ab.py` all read `reports/monte_carlo/corpus.jsonl` — a stale corpus silently starves every one of them.
+- **Never** report corpus-derived findings (Monte Carlo numbers, trace-language statistics, prompt-enhancement recommendations, A/B comparisons) from a corpus that predates the latest completed runs; rebuild first, then analyze.

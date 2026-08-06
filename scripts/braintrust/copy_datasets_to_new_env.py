@@ -21,6 +21,7 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
@@ -34,6 +35,34 @@ from src.openrouter_classifier import VALID_CLASSES
 
 API_BASE = "https://api.braintrust.dev"
 MAX_UPLOAD_TRIES = 8
+
+LOCK_FILE = Path(os.environ.get("TMPDIR", "/tmp")) / "braintrust_copy_datasets.lock"
+
+
+class CopyLock:
+    """Single-flight guard: concurrent copy runs would interleave inserts and
+    duplicate rows in the destination datasets. Only one copy process may run
+    at a time; a second invocation exits with an error instead of racing."""
+
+    def __enter__(self) -> None:
+        try:
+            self.fd = os.open(LOCK_FILE, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(self.fd, str(os.getpid()).encode())
+        except FileExistsError:
+            sys.exit(
+                f"Error: another copy_datasets_to_new_env.py is already running "
+                f"(lockfile {LOCK_FILE}). Kill it first or wait for it to finish."
+            )
+
+    def __exit__(self, *_exc) -> None:
+        try:
+            os.close(self.fd)
+        except OSError:
+            pass
+        try:
+            LOCK_FILE.unlink()
+        except OSError:
+            pass
 
 
 def load_dataset_rows(source_project: str, dataset_name: str, api_key: str) -> list[dict]:
@@ -218,28 +247,29 @@ def main() -> None:
         sys.exit("No source API key found: pass --source-api-key or set BRAINTRUST_SOURCE_API_KEY")
     source_project = args.source_project or cfg.project_name
 
-    if args.delete_existing:
-        from src.braintrust_utils import delete_dataset_by_name
-        for dataset_name in args.datasets:
-            deleted = delete_dataset_by_name(dest_key, args.dest_project_id, dataset_name)
-            print(f"Deleted existing {dataset_name} in destination: {deleted}")
+    with CopyLock():
+        if args.delete_existing:
+            from src.braintrust_utils import delete_dataset_by_name
+            for dataset_name in args.datasets:
+                deleted = delete_dataset_by_name(dest_key, args.dest_project_id, dataset_name)
+                print(f"Deleted existing {dataset_name} in destination: {deleted}")
 
-    summary = []
-    for dataset_name in args.datasets:
-        summary.append(copy_dataset(
-            source_project,
-            dataset_name,
-            source_key,
-            dest_key,
-            args.dest_project_id,
-            args.dest_project_name,
-            args.dest_org,
-            verify=not args.no_verify,
-        ))
-    print("\nCopy summary:")
-    for s in summary:
-        print(f"  {s['dataset']}: {s['inserted']} inserted, {s['failed']} failed, "
-              f"{s.get('verify_failed', 0)} unreadable")
+        summary = []
+        for dataset_name in args.datasets:
+            summary.append(copy_dataset(
+                source_project,
+                dataset_name,
+                source_key,
+                dest_key,
+                args.dest_project_id,
+                args.dest_project_name,
+                args.dest_org,
+                verify=not args.no_verify,
+            ))
+        print("\nCopy summary:")
+        for s in summary:
+            print(f"  {s['dataset']}: {s['inserted']} inserted, {s['failed']} failed, "
+                  f"{s.get('verify_failed', 0)} unreadable")
 
 
 if __name__ == "__main__":

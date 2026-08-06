@@ -1,0 +1,210 @@
+{
+  "experiment": "qwen3.7-flash_v18.1_high_320",
+  "dataset": "fixed_size_sampled_320",
+  "model": "qwen/qwen3.7-flash",
+  "prompt_version": "v18.1",
+  "max_tokens": 4096,
+  "reasoning_effort": "high",
+  "total_rows": 319,
+  "completed": 317,
+  "error": 2,
+  "empty": 0,
+  "failed_rows": 2,
+  "failure_rate": 0.006269592476489028,
+  "exact_match": 269,
+  "exact_match_accuracy": 0.8432601880877743,
+  "near_miss": 33,
+  "near_miss_accuracy": 0.10344827586206896,
+  "near_miss_share_of_misses": 0.6875,
+  "near_miss_filenames": [
+    "rvl_cdip__budget__0007.png",
+    "rvl_cdip__budget__0014.png",
+    "rvl_cdip__file_folder__0004.png",
+    "rvl_cdip__file_folder__0008.png",
+    "rvl_cdip__file_folder__0011.png",
+    "rvl_cdip__form__0001.png",
+    "rvl_cdip__form__0018.png",
+    "rvl_cdip__invoice__0003.png",
+    "rvl_cdip__invoice__0006.png",
+    "rvl_cdip__invoice__0008.png",
+    "rvl_cdip__invoice__0014.png",
+    "rvl_cdip__invoice__0015.png",
+    "rvl_cdip__invoice__0017.png",
+    "rvl_cdip__letter__0007.png",
+    "rvl_cdip__letter__0008.png",
+    "rvl_cdip__letter__0010.png",
+    "rvl_cdip__news_article__0008.png",
+    "rvl_cdip__news_article__0014.png",
+    "rvl_cdip__news_article__0018.png",
+    "rvl_cdip__news_article__0020.png",
+    "rvl_cdip__presentation__0017.png",
+    "rvl_cdip__presentation__0018.png",
+    "rvl_cdip__scientific_publication__0006.png",
+    "rvl_cdip__scientific_publication__0016.png",
+    "rvl_cdip__scientific_report__0002.png",
+    "rvl_cdip__scientific_report__0003.png",
+    "rvl_cdip__scientific_report__0008.png",
+    "rvl_cdip__scientific_report__0009.png",
+    "rvl_cdip__scientific_report__0016.png",
+    "rvl_cdip__specification__0004.png",
+    "rvl_cdip__specification__0006.png",
+    "rvl_cdip__specification__0013.png",
+    "rvl_cdip__specification__0019.png"
+  ],
+  "runner_up_coverage": 295,
+  "total_cost_usd": 0.122149,
+  "cost_coverage": 317,
+  "avg_cost_per_image_usd": 0.00038533,
+  "per_class": {
+    "advertisement": {
+      "total": 20,
+      "correct": 18,
+      "errors": 0,
+      "accuracy": 0.9
+    },
+    "budget": {
+      "total": 20,
+      "correct": 17,
+      "errors": 0,
+      "accuracy": 0.85
+    },
+    "email": {
+      "total": 20,
+      "correct": 20,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "file_folder": {
+      "total": 20,
+      "correct": 16,
+      "errors": 0,
+      "accuracy": 0.8
+    },
+    "form": {
+      "total": 19,
+      "correct": 15,
+      "errors": 1,
+      "accuracy": 0.7894736842105263
+    },
+    "handwritten": {
+      "total": 20,
+      "correct": 18,
+      "errors": 0,
+      "accuracy": 0.9
+    },
+    "invoice": {
+      "total": 20,
+      "correct": 14,
+      "errors": 0,
+      "accuracy": 0.7
+    },
+    "letter": {
+      "total": 20,
+      "correct": 15,
+      "errors": 0,
+      "accuracy": 0.75
+    },
+    "memo": {
+      "total": 20,
+      "correct": 20,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "news_article": {
+      "total": 20,
+      "correct": 16,
+      "errors": 0,
+      "accuracy": 0.8
+    },
+    "presentation": {
+      "total": 20,
+      "correct": 17,
+      "errors": 0,
+      "accuracy": 0.85
+    },
+    "questionnaire": {
+      "total": 20,
+      "correct": 16,
+      "errors": 1,
+      "accuracy": 0.8
+    },
+    "resume": {
+      "total": 20,
+      "correct": 20,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "scientific_publication": {
+      "total": 20,
+      "correct": 18,
+      "errors": 0,
+      "accuracy": 0.9
+    },
+    "scientific_report": {
+      "total": 20,
+      "correct": 14,
+      "errors": 0,
+      "accuracy": 0.7
+    },
+    "specification": {
+      "total": 20,
+      "correct": 15,
+      "errors": 0,
+      "accuracy": 0.75
+    }
+  },
+  "error_filenames": [
+    "rvl_cdip__form__0006.png",
+    "rvl_cdip__questionnaire__0003.png"
+  ],
+  "miss_filenames": [
+    "rvl_cdip__advertisement__0003.png",
+    "rvl_cdip__advertisement__0015.png",
+    "rvl_cdip__budget__0007.png",
+    "rvl_cdip__budget__0013.png",
+    "rvl_cdip__budget__0014.png",
+    "rvl_cdip__file_folder__0004.png",
+    "rvl_cdip__file_folder__0006.png",
+    "rvl_cdip__file_folder__0008.png",
+    "rvl_cdip__file_folder__0011.png",
+    "rvl_cdip__form__0001.png",
+    "rvl_cdip__form__0004.png",
+    "rvl_cdip__form__0018.png",
+    "rvl_cdip__handwritten__0003.png",
+    "rvl_cdip__handwritten__0006.png",
+    "rvl_cdip__invoice__0003.png",
+    "rvl_cdip__invoice__0006.png",
+    "rvl_cdip__invoice__0008.png",
+    "rvl_cdip__invoice__0014.png",
+    "rvl_cdip__invoice__0015.png",
+    "rvl_cdip__invoice__0017.png",
+    "rvl_cdip__letter__0002.png",
+    "rvl_cdip__letter__0007.png",
+    "rvl_cdip__letter__0008.png",
+    "rvl_cdip__letter__0009.png",
+    "rvl_cdip__letter__0010.png",
+    "rvl_cdip__news_article__0008.png",
+    "rvl_cdip__news_article__0014.png",
+    "rvl_cdip__news_article__0018.png",
+    "rvl_cdip__news_article__0020.png",
+    "rvl_cdip__presentation__0013.png",
+    "rvl_cdip__presentation__0017.png",
+    "rvl_cdip__presentation__0018.png",
+    "rvl_cdip__questionnaire__0005.png",
+    "rvl_cdip__questionnaire__0010.png",
+    "rvl_cdip__questionnaire__0016.png",
+    "rvl_cdip__scientific_publication__0006.png",
+    "rvl_cdip__scientific_publication__0016.png",
+    "rvl_cdip__scientific_report__0002.png",
+    "rvl_cdip__scientific_report__0003.png",
+    "rvl_cdip__scientific_report__0008.png",
+    "rvl_cdip__scientific_report__0009.png",
+    "rvl_cdip__scientific_report__0012.png",
+    "rvl_cdip__scientific_report__0016.png",
+    "rvl_cdip__specification__0004.png",
+    "rvl_cdip__specification__0006.png",
+    "rvl_cdip__specification__0013.png",
+    "rvl_cdip__specification__0017.png",
+    "rvl_cdip__specification__0019.png"
+  ]
+}
