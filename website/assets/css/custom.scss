@@ -73,11 +73,21 @@ $code-color: #b3287a;
 
   --navbar-bg: #16213e;
   --navbar-border: rgba(255, 255, 255, 0.08);
+  --navbar-text: rgba(255, 255, 255, 0.88);
+  --navbar-text-active: #ffffff;
+  --navbar-hover-bg: rgba(255, 255, 255, 0.08);
+  --navbar-icon-hover-bg: rgba(255, 255, 255, 0.1);
+  --navbar-toggler-border: rgba(255, 255, 255, 0.2);
+  --navbar-shadow: 0 1px 0 rgba(20, 33, 61, 0.08), 0 2px 10px var(--shadow-sm);
 
   --hero-grad-1: #16213e;
   --hero-grad-2: #1b2a4a;
   --hero-grad-3: #24408a;
   --hero-glow: rgba(120, 160, 255, 0.28);
+  --hero-text: #ffffff;
+  --hero-text-muted: rgba(255, 255, 255, 0.88);
+  --hero-badge-bg: rgba(255, 255, 255, 0.14);
+  --hero-badge-border: rgba(255, 255, 255, 0.28);
 
   --chart-frame: #ffffff;
 
@@ -113,9 +123,27 @@ html[data-site-theme="dark"],
 html[data-site-theme="osaka-jade"],
 html[data-site-theme="synthwave84"] {
   color-scheme: dark;
-  --chart-frame: #ffffff;
   --shadow-sm: rgba(0, 0, 0, 0.3);
   --shadow-hover: rgba(0, 0, 0, 0.5);
+  --chart-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+  // Navbar: dark shadow instead of a light hairline, so the chrome sinks into
+  // the dark canvas instead of glowing off it.
+  --navbar-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 3px 14px var(--shadow-hover);
+
+  // Pandoc syntax-highlight palette (the compiled highlight stylesheet ships
+  // light-theme colors only; per-theme values replace the old hardcoded set).
+  --syn-comment: #7d8ea8;
+  --syn-keyword: #ff8ac2;
+  --syn-string: #8ce99a;
+  --syn-number: #ffd43b;
+  --syn-func: #74c0fc;
+  --syn-attr: #63e6be;
+  --syn-preproc: #ffa94d;
+  --syn-annot: #9775fa;
+  --syn-error: #ff6b6b;
+  --syn-op: #c9b8f0;
+
   --bs-body-bg: var(--canvas);
   --bs-body-color: var(--text-body);
   --bs-body-color-rgb: var(--body-rgb);
@@ -158,12 +186,16 @@ html[data-site-theme="dark"] {
   --selection-bg: rgba(91, 140, 255, 0.28);
 
   --navbar-bg: #0d1526;
-  --navbar-border: rgba(255, 255, 255, 0.06);
+  --navbar-border: #22304f;
 
   --hero-grad-1: #0a1120;
   --hero-grad-2: #14213d;
   --hero-grad-3: #1b2f6b;
   --hero-glow: rgba(91, 140, 255, 0.22);
+
+  // SVG charts carry a baked-in white canvas; frame them on a dark surface
+  // with a dark shadow so they sit in the page instead of glowing white.
+  --chart-frame: #15203c;
 
   --ok-bg: #0f2a1b; --ok-fg: #4ade80; --ok-border: #1f5a3c;
   --miss-bg: #33141a; --miss-fg: #ff8a8a; --miss-border: #5c232e;
@@ -200,12 +232,21 @@ html[data-site-theme="osaka-jade"] {
   --selection-bg: rgba(46, 230, 168, 0.26);
 
   --navbar-bg: #071310;
-  --navbar-border: rgba(46, 230, 168, 0.14);
+  --navbar-border: #1d4236;
 
   --hero-grad-1: #04100c;
   --hero-grad-2: #0b231b;
   --hero-grad-3: #0f3a2c;
   --hero-glow: rgba(46, 230, 168, 0.2);
+
+  --chart-frame: #0e231d;
+  --chart-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+  // Jade-flavored syntax accents
+  --syn-comment: #6f9a8b;
+  --syn-keyword: #5cf0bf;
+  --syn-func: #4fd8e8;
+  --syn-op: #9dc9b8;
 
   --ok-bg: #0d2a1e; --ok-fg: #34d399; --ok-border: #1f4a38;
   --miss-bg: #2b1416; --miss-fg: #ff9e9e; --miss-border: #5c2326;
@@ -242,12 +283,21 @@ html[data-site-theme="synthwave84"] {
   --selection-bg: rgba(255, 46, 151, 0.3);
 
   --navbar-bg: #170b2e;
-  --navbar-border: rgba(0, 240, 255, 0.18);
+  --navbar-border: #43298f;
 
   --hero-grad-1: #12081f;
   --hero-grad-2: #241242;
   --hero-grad-3: #4a1a7a;
   --hero-glow: rgba(255, 46, 151, 0.25);
+
+  --chart-frame: #261349;
+  --chart-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+
+  // Synthwave-flavored syntax accents
+  --syn-keyword: #ff66b5;
+  --syn-string: #00f0ff;
+  --syn-comment: #9d86c9;
+  --syn-func: #c792ea;
 
   --ok-bg: #1d1533; --ok-fg: #4ade80; --ok-border: #3a2a5e;
   --miss-bg: #331530; --miss-fg: #ff8a8a; --miss-border: #5c2350;
@@ -403,8 +453,9 @@ figure figcaption,
   padding: 0 1rem;
 }
 
-// Charts are matplotlib SVGs with a baked-in white canvas: keep them framed
-// white in every theme so the data stays high-contrast.
+// SVG charts are matplotlib SVGs with a baked-in white canvas: in dark themes
+// they sit on a dark frame (--chart-frame) with a dark shadow so the data
+// stays high-contrast while the frame blends into the page.
 html[data-bs-theme="dark"] main figure,
 html[data-bs-theme="dark"] main .figure {
   background: var(--chart-frame);
@@ -412,6 +463,7 @@ html[data-bs-theme="dark"] main .figure {
   border-radius: 0.5rem;
   padding: 0.6rem;
   margin-bottom: 1.4rem;
+  box-shadow: var(--chart-shadow);
 
   figcaption, .figure-caption {
     color: var(--text-muted);
@@ -476,7 +528,7 @@ blockquote {
 .navbar {
   background: var(--navbar-bg);
   border-bottom: 1px solid var(--navbar-border);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08), 0 2px 10px var(--shadow-sm);
+  box-shadow: var(--navbar-shadow);
   padding: 0.55rem 1rem !important;
   min-height: auto;
 
@@ -492,12 +544,12 @@ blockquote {
   .navbar-nav .nav-link {
     padding: 0.42rem 0.65rem !important;
     margin: 0 0.1rem;
-    color: rgba(255, 255, 255, 0.88) !important;
+    color: var(--navbar-text) !important;
 
     &:hover,
     &.active {
-      color: #ffffff !important;
-      background: rgba(255, 255, 255, 0.08);
+      color: var(--navbar-text-active) !important;
+      background: var(--navbar-hover-bg);
       border-radius: 0.35rem;
     }
   }
@@ -531,7 +583,7 @@ blockquote {
     }
 
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: var(--navbar-icon-hover-bg);
       border-radius: 0.35rem;
     }
   }
@@ -606,7 +658,7 @@ blockquote {
 // Hamburger / mobile toggle
 .navbar-toggler {
   padding: 0.35rem 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--navbar-toggler-border);
   border-radius: 0.4rem;
 
   .navbar-toggler-icon {
@@ -686,7 +738,7 @@ body.landing {
 
 .hero {
   background: linear-gradient(135deg, var(--hero-grad-1) 0%, var(--hero-grad-2) 55%, var(--hero-grad-3) 100%);
-  color: #ffffff;
+  color: var(--hero-text);
   border-radius: 0.75rem;
   padding: 2.8rem 2.4rem;
   margin: 1.2rem 0 1.8rem;
@@ -706,7 +758,7 @@ body.landing {
 
   h1, .hero-title {
     font-family: $font-family-sans-serif;
-    color: #ffffff;
+    color: var(--hero-text);
     font-size: clamp(1.7rem, 2.4rem + 1vw, 2.8rem);
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -717,7 +769,7 @@ body.landing {
   .hero-subtitle {
     font-family: $font-family-serif;
     font-size: clamp(1rem, 1.1rem + 0.2vw, 1.15rem);
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--hero-text-muted);
     max-width: 44rem;
     line-height: 1.65;
   }
@@ -730,9 +782,9 @@ body.landing {
 
     .badge {
       font-family: $font-family-sans-serif;
-      background: rgba(255, 255, 255, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      color: #ffffff;
+      background: var(--hero-badge-bg);
+      border: 1px solid var(--hero-badge-border);
+      color: var(--hero-text);
       font-weight: 600;
       padding: 0.4rem 0.85rem;
       border-radius: 0.4rem;
@@ -948,34 +1000,35 @@ code:not(.sourceCode) {
 
 // Pandoc syntax-highlighting colors — light theme (defaults are fine) but
 // must be re-mapped for the three dark themes (the compiled highlight
-// stylesheet ships light colors only).
+// stylesheet ships light colors only). Values come from the per-theme
+// --syn-* tokens (shared dark defaults, jade/synthwave accents).
 html[data-bs-theme="dark"] code.sourceCode span.co,
 html[data-bs-theme="dark"] code.sourceCode span.cv,
 html[data-bs-theme="dark"] code.sourceCode span.ch,
 html[data-bs-theme="dark"] code.sourceCode span.do,
-html[data-bs-theme="dark"] code.sourceCode span.wa { color: #7d8ea8; }
+html[data-bs-theme="dark"] code.sourceCode span.wa { color: var(--syn-comment); }
 html[data-bs-theme="dark"] code.sourceCode span.kw,
-html[data-bs-theme="dark"] code.sourceCode span.cf { color: #ff8ac2; }
+html[data-bs-theme="dark"] code.sourceCode span.cf { color: var(--syn-keyword); }
 html[data-bs-theme="dark"] code.sourceCode span.st,
 html[data-bs-theme="dark"] code.sourceCode span.sc,
 html[data-bs-theme="dark"] code.sourceCode span.ss,
-html[data-bs-theme="dark"] code.sourceCode span.fl { color: #8ce99a; }
+html[data-bs-theme="dark"] code.sourceCode span.fl { color: var(--syn-string); }
 html[data-bs-theme="dark"] code.sourceCode span.dv,
 html[data-bs-theme="dark"] code.sourceCode span.bn,
-html[data-bs-theme="dark"] code.sourceCode span.dt { color: #ffd43b; }
+html[data-bs-theme="dark"] code.sourceCode span.dt { color: var(--syn-number); }
 html[data-bs-theme="dark"] code.sourceCode span.fu,
-html[data-bs-theme="dark"] code.sourceCode span.in { color: #74c0fc; }
+html[data-bs-theme="dark"] code.sourceCode span.in { color: var(--syn-func); }
 html[data-bs-theme="dark"] code.sourceCode span.at,
 html[data-bs-theme="dark"] code.sourceCode span.bu,
 html[data-bs-theme="dark"] code.sourceCode span.cn,
-html[data-bs-theme="dark"] code.sourceCode span.va { color: #63e6be; }
-html[data-bs-theme="dark"] code.sourceCode span.pp { color: #ffa94d; }
-html[data-bs-theme="dark"] code.sourceCode span.an { color: #9775fa; }
+html[data-bs-theme="dark"] code.sourceCode span.va { color: var(--syn-attr); }
+html[data-bs-theme="dark"] code.sourceCode span.pp { color: var(--syn-preproc); }
+html[data-bs-theme="dark"] code.sourceCode span.an { color: var(--syn-annot); }
 html[data-bs-theme="dark"] code.sourceCode span.ex,
 html[data-bs-theme="dark"] code.sourceCode span.er,
-html[data-bs-theme="dark"] code.sourceCode span.al { color: #ff6b6b; }
+html[data-bs-theme="dark"] code.sourceCode span.al { color: var(--syn-error); }
 html[data-bs-theme="dark"] code.sourceCode span.im,
-html[data-bs-theme="dark"] code.sourceCode span.op { color: #c9b8f0; }
+html[data-bs-theme="dark"] code.sourceCode span.op { color: var(--syn-op); }
 
 // --- Footers & misc --------------------------------------------------------
 footer.page-footer {
