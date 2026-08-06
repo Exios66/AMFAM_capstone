@@ -1008,7 +1008,7 @@ def chart_phrase_net(out_name: str) -> None:
         G.add_edge(e["from"], e["to"], weight=e["z"])
     cycle_edges = {(e["from"], e["to"]) for e in edges if e["in_cycle"]}
     stats = {n["id"]: n for n in nodes}
-    pos = nx.spring_layout(G, seed=42, k=0.5)
+    pos = nx.spring_layout(G, seed=42, k=0.85)
     zs = [e["z"] for e in edges]
     zmin, zmax = min(zs), max(zs)
     fig, ax = plt.subplots(figsize=(15, 11))
@@ -1036,8 +1036,24 @@ def chart_phrase_net(out_name: str) -> None:
     # Label only the most frequent failure words so the static rendering stays
     # legible; the interactive widget carries full word-by-word detail.
     label_rank = sorted(G.nodes(), key=lambda n: stats[n]["fail"], reverse=True)
-    label_top = set(label_rank[:60])
-    labeled = {n: n for n in G.nodes() if n in label_top}
+    placed_boxes: list[tuple[float, float, float, float]] = []
+    labeled: dict[str, str] = {}
+    px_per_unit = 0.006
+    label_h = 0.014
+    pad = 0.004
+    for node in label_rank:
+        px, py = pos[node]
+        w = len(node) * px_per_unit
+        box = (px - w / 2 - pad, py - label_h - pad, px + w / 2 + pad, py + pad)
+        if any(
+            box[0] < bx1 and box[2] > bx0 and box[1] < by1 and box[3] > by0
+            for bx0, by0, bx1, by1 in placed_boxes
+        ):
+            continue
+        placed_boxes.append(box)
+        labeled[node] = node
+        if len(labeled) >= 45:
+            break
     nx.draw_networkx_labels(G, pos, labels=labeled, ax=ax,
                             font_size=9, font_color=NAVY,
                             bbox=dict(boxstyle="round,pad=0.15", fc="white",
