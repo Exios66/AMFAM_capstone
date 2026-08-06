@@ -1,0 +1,296 @@
+"""Posit-site integrity, Quarto asset, and SVG legibility tests.
+
+All checks run offline against committed files — no network, no model credits.
+
+- ``TestSvgLegibility`` — every committed chart/figure SVG is well-formed and
+  free of text-text collisions (estimated glyph boxes, anchor-aware, rotated /
+  off-canvas / duplicate text excluded as phantom geometry).
+- ``TestQuartoAssets`` — ``_quarto.yml`` pages exist, front-matter ``resources``
+  resolve, interactive widget assets (vis-network, theme switcher) exist, and
+  the committed site JSON data layer has the expected structure.
+- ``TestSiteIntegrity`` — internal markdown links resolve, cited bibliography
+  keys exist, and SCSS theme tokens are balanced.
+"""
+
+import json
+import re
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import pytest
+import yaml
+
+ROOT = Path(__file__).resolve().parents[1]
+WEBSITE = ROOT / "website"
+
+SVG_PATHS = sorted(WEBSITE.glob("charts/*.svg")) + sorted(WEBSITE.glob("figures/*.svg"))
+QMD_PATHS = sorted(WEBSITE.rglob("*.qmd"))
+
+OVERLAP_THRESHOLD = 0.45
+CHAR_WIDTH_FACTOR = 0.58
+
+
+# ---------------------------------------------------------------------------
+# SVG text-collision scanner (calibrated against the committed corpus: zero
+# genuine collisions; rotated axis titles, off-canvas mirrored ticks, and
+# duplicate same-position text are phantom geometry).
+# ---------------------------------------------------------------------------
+
+_FS_PATTERNS = (
+    re.compile(r'font-size="([\d.]+)(?:px)?"'),
+    re.compile(r"font: ?([\d.]+)px"),
+)
+
+
+def _svg_texts(svg: str) -> tuple[float, float, list[dict]]:
+    canvas = re.search(r'viewBox="([\d.]+) ([\d.]+) ([\d.]+) ([\d.]+)"', svg)
+    W, H = (float(canvas.group(3)), float(canvas.group(4))) if canvas else (640.0, 480.0)
+    texts = []
+    for m in re.finditer(r"<text[^>]*>(.*?)</text>", svg, re.S):
+        outer = m.group(0)
+        xm = re.search(r'x="(-?[\d.]+)"', outer)
+        ym = re.search(r'y="(-?[\d.]+)"', outer)
+        if not xm or not ym:
+            continue
+        fs = 10.0
+        for pat in _FS_PATTERNS:
+            fm = pat.search(outer)
+            if fm:
+                fs = float(fm.group(1))
+                break
+        am = re.search(r'text-anchor="(\w+)"|text-anchor:\s*(\w+)', outer)
+        anchor = (am.group(1) or am.group(2)) if am else "start"
+        rm = re.search(r"rotate\((-?[\d.]+)", outer)
+        deg = float(rm.group(1)) if rm else 0.0
+        inner = m.group(1)
+        tspans = re.findall(
+            r'<tspan[^>]*x="(-?[\d.]+)"[^>]*y="(-?[\d.]+)"[^>]*>(.*?)</tspan>', inner, re.S
+        )
+        if not tspans:
+            content = re.sub(r"<[^>]+>", "", inner)
+            tspans = [(xm.group(1), ym.group(1), content)]
+        for tx, ty, content in tspans:
+            content = (
+                content.replace("&#39;", "'").replace("&amp;", "&")
+                .replace("&gt;", ">").replace("&lt;", "<").strip()
+            )
+            if not content:
+                continue
+            texts.append(dict(x=float(tx), y=float(ty), fs=fs, anchor=anchor, rot=deg, text=content))
+    return W, H, texts
+
+
+def _text_box(t: dict) -> tuple[float, float, float, float]:
+    w = len(t["text"]) * t["fs"] * CHAR_WIDTH_FACTOR
+    h = t["fs"] * 1.25
+    x, y = t["x"], t["y"]
+    if t["anchor"] == "middle":
+        x -= w / 2
+    elif t["anchor"] == "end":
+        x -= w
+    return (x, y - h, x + w, y + 0.2 * h)
+
+
+def _box_overlap(a, b):
+    ax0, ay0, ax1, ay1 = a
+    bx0, by0, bx1, by1 = b
+    ox = min(ax1, bx1) - max(ax0, bx0)
+    oy = min(ay1, by1) - max(ay0, by0)
+    if ox <= 0 or oy <= 0:
+        return 0.0
+    return ox * oy / min((ax1 - ax0) * (ay1 - ay0), (bx1 - bx0) * (by1 - by0))
+
+
+def _svg_collisions(svg: str) -> list[tuple[float, str, float, float, str, float, float]]:
+    W, H, texts = _svg_texts(svg)
+    texts = [
+        t for t in texts
+        if abs(t["rot"]) <= 0.5 and 0 <= t["x"] < W and 0 <= t["y"] < H
+    ]
+    seen, uniq = set(), []
+    for t in texts:
+        key = (round(t["x"], 1), round(t["y"], 1), t["text"])
+        if key in seen:
+            continue
+        seen.add(key)
+        uniq.append(t)
+    collisions = []
+    for i in range(len(uniq)):
+        for j in range(i + 1, len(uniq)):
+            ov = _box_overlap(_text_box(uniq[i]), _text_box(uniq[j]))
+            if ov > OVERLAP_THRESHOLD:
+                a, b = uniq[i], uniq[j]
+                collisions.append((ov, a["text"], a["x"], a["y"], b["text"], b["x"], b["y"]))
+    return collisions
+
+
+class TestSvgLegibility:
+    @pytest.mark.parametrize("path", SVG_PATHS, ids=lambda p: p.name)
+    def test_svg_is_wellformed(self, path):
+        ET.fromstring(path.read_text(encoding="utf-8"))
+
+    @pytest.mark.parametrize("path", SVG_PATHS, ids=lambda p: p.name)
+    def test_svg_has_viewbox(self, path):
+        svg = path.read_text(encoding="utf-8")
+        m = re.search(r'viewBox="(-?[\d.]+) (-?[\d.]+) (-?[\d.]+) (-?[\d.]+)"', svg)
+        assert m, "missing viewBox"
+        w, h = float(m.group(3)), float(m.group(4))
+        assert w > 0 and h > 0
+
+    @pytest.mark.parametrize("path", SVG_PATHS, ids=lambda p: p.name)
+    def test_no_text_text_collisions(self, path):
+        collisions = _svg_collisions(path.read_text(encoding="utf-8"))
+        assert not collisions, (
+            f"{len(collisions)} text-text collisions: "
+            + "; ".join(
+                f"'{a}'@({ax:.0f},{ay:.0f}) x '{b}'@({bx:.0f},{by:.0f}) ({ov:.2f})"
+                for ov, a, ax, ay, b, bx, by in sorted(collisions, reverse=True)[:5]
+            )
+        )
+
+
+class TestQuartoAssets:
+    def test_quarto_yml_parses(self):
+        cfg = yaml.safe_load((WEBSITE / "_quarto.yml").read_text(encoding="utf-8"))
+        assert isinstance(cfg, dict)
+        assert cfg.get("project", {}).get("type") == "website"
+
+    def test_navbar_pages_exist(self):
+        cfg = yaml.safe_load((WEBSITE / "_quarto.yml").read_text(encoding="utf-8"))
+        missing = []
+
+        def visit(items):
+            for item in items or []:
+                if isinstance(item, str) and item.endswith(".qmd"):
+                    if not (WEBSITE / item).exists():
+                        missing.append(item)
+                elif isinstance(item, dict):
+                    href = item.get("href", "")
+                    if href.endswith(".qmd") and not (WEBSITE / href).exists():
+                        missing.append(href)
+                    visit(item.get("menu"))
+
+        visit(cfg["website"]["navbar"]["left"])
+        visit(cfg["website"]["navbar"]["right"])
+        assert not missing, f"navbar pages missing: {missing}"
+
+    def test_front_matter_resources_exist(self):
+        missing = []
+        for qmd in QMD_PATHS:
+            text = qmd.read_text(encoding="utf-8")
+            m = re.search(r"^---\n(.*?)\n---", text, re.S | re.M)
+            if not m:
+                continue
+            try:
+                fm = yaml.safe_load(m.group(1)) or {}
+            except yaml.YAMLError:
+                continue
+            for res in fm.get("resources") or []:
+                target = (qmd.parent / str(res)).resolve()
+                if not target.exists():
+                    missing.append(f"{qmd.name}: {res}")
+        assert not missing, f"missing resources: {missing}"
+
+    def test_interactive_widget_assets_exist(self):
+        expected = [
+            WEBSITE / "assets/js/vis-network.min.js",
+            WEBSITE / "charts/phrase_net_differential.json",
+            WEBSITE / "assets/js/theme-switch.js",
+            WEBSITE / "assets/html/theme-head.html",
+            WEBSITE / "assets/css/custom.scss",
+            WEBSITE / "assets/img/favicon.svg",
+        ]
+        missing = [str(p.relative_to(ROOT)) for p in expected if not p.exists()]
+        assert not missing, f"missing interactive assets: {missing}"
+
+    def test_phrase_net_graph_structure(self):
+        graph = json.loads((WEBSITE / "charts/phrase_net_differential.json").read_text())
+        assert isinstance(graph.get("nodes"), list) and graph["nodes"]
+        assert isinstance(graph.get("edges"), list) and graph["edges"]
+        node_keys = {"id", "fail", "ok", "share"}
+        edge_keys = {"from", "to", "z", "fail", "ok", "in_cycle"}
+        for node in graph["nodes"]:
+            assert node_keys <= set(node), f"node missing keys: {node}"
+        for edge in graph["edges"]:
+            assert edge_keys <= set(edge), f"edge missing keys: {edge}"
+
+    def test_website_data_json_structure(self):
+        expected = {
+            "chat-examples.json": {"correct", "misclassified", "generated_at"},
+            "cost-models.json": {"models", "meta"},
+            "experiments.json": {"experiments", "meta"},
+        }
+        for name, keys in expected.items():
+            data = json.loads((WEBSITE / "data" / name).read_text())
+            assert keys <= set(data), f"{name} missing keys {keys - set(data)}"
+        for name in ("confusion-matrices.json", "per-class-accuracy.json"):
+            data = json.loads((WEBSITE / "data" / name).read_text())
+            assert data, f"{name} is empty"
+
+    def test_chat_examples_records_have_required_fields(self):
+        data = json.loads((WEBSITE / "data" / "chat-examples.json").read_text())
+        required = {"filename", "expected", "predicted", "reasoning", "image"}
+        for bucket in ("correct", "misclassified"):
+            records = data.get(bucket) or []
+            assert records, f"no records in chat-examples.{bucket}"
+            for record in records:
+                assert required <= set(record), f"record missing keys: {record}"
+
+
+class TestSiteIntegrity:
+    @staticmethod
+    def _resolve(link: str, qmd_dir: Path) -> bool:
+        target = link.split("#")[0]
+        if not target:
+            return True
+        candidate = qmd_dir / target
+        if candidate.exists():
+            return True
+        if candidate.suffix in (".html", ".qmd"):
+            return candidate.with_suffix(".html").exists() or candidate.with_suffix(".qmd").exists()
+        return False
+
+    def test_internal_links_resolve(self):
+        broken = []
+        for qmd in QMD_PATHS:
+            text = qmd.read_text(encoding="utf-8")
+            for m in re.finditer(r"\[[^\]]*\]\(([^)\s]+)(?: \"[^\"]*\")?\)", text):
+                link = m.group(1)
+                if link.startswith(("http://", "https://", "mailto:", "{{<", "#", "<")):
+                    continue
+                if not self._resolve(link, qmd.parent):
+                    broken.append(f"{qmd.name}: {link}")
+        assert not broken, f"broken internal links: {broken[:10]}"
+
+    def test_images_resolve(self):
+        broken = []
+        for qmd in QMD_PATHS:
+            text = qmd.read_text(encoding="utf-8")
+            for m in re.finditer(r"!\[[^\]]*\]\(([^)\s]+)\)", text):
+                img = m.group(1)
+                if img.startswith(("http://", "https://", "data:")):
+                    continue
+                if not self._resolve(img, qmd.parent):
+                    broken.append(f"{qmd.name}: {img}")
+        assert not broken, f"broken images: {broken[:10]}"
+
+    def test_bib_citations_exist(self):
+        bib = (WEBSITE / "references.bib").read_text(encoding="utf-8")
+        keys = set(re.findall(r"@\w+\{([\w:\-\.]+),", bib))
+        missing = set()
+        for qmd in QMD_PATHS:
+            text = qmd.read_text(encoding="utf-8")
+            for cited in re.findall(r"(?<![\w/])@([a-zA-Z][a-zA-Z0-9:_\-]*)", text):
+                # Skip Quarto cross-refs, CSS media queries, and library@version syntax.
+                if cited.startswith(("fig-", "tbl-", "sec-")) or cited in ("media", "acc"):
+                    continue
+                if cited not in keys:
+                    missing.add(f"{qmd.name}: @{cited}")
+        assert not missing, f"cited keys missing from references.bib: {missing}"
+
+    def test_scss_theme_tokens_are_balanced(self):
+        scss = (WEBSITE / "assets/css/custom.scss").read_text(encoding="utf-8")
+        used = set(re.findall(r"var\((--[\w-]+)", scss))
+        defined = set(re.findall(r"(--[\w-]+)\s*:", scss))
+        missing = used - defined
+        assert not missing, f"undefined theme tokens: {sorted(missing)}"

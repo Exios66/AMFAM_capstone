@@ -2,6 +2,10 @@
 
 from unittest.mock import MagicMock, mock_open, patch
 
+import pytest
+
+pytest.importorskip("pdf2image", reason="pdf2image not installed; run_tiff_processing imports document_processor")
+
 from scripts.datasets import run_tiff_processing as rtp
 
 

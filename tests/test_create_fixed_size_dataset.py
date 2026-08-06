@@ -71,7 +71,7 @@ class TestCollectClassImages:
         (tmp_path / "invoice" / "b.tif").write_bytes(b"x")
 
         result = cf._collect_class_images(
-            tmp_path, ("letter", "invoice"), ("*.png", "*.tif")
+            tmp_path, ("letter", "invoice"), (".png", ".tif")
         )
         assert len(result["letter"]) == 1
         assert len(result["invoice"]) == 1
@@ -82,14 +82,14 @@ class TestCollectClassImages:
         (tmp_path / "unrelated.png").write_bytes(b"x")
 
         result = cf._collect_class_images(
-            tmp_path, ("letter", "invoice"), ("*.png",)
+            tmp_path, ("letter", "invoice"), (".png",)
         )
         assert len(result["letter"]) == 1
         assert len(result["invoice"]) == 1
 
     def test_empty_when_nothing_matches(self, tmp_path):
         (tmp_path / "random.png").write_bytes(b"x")
-        result = cf._collect_class_images(tmp_path, ("letter",), ("*.png",))
+        result = cf._collect_class_images(tmp_path, ("letter",), (".png",))
         assert result["letter"] == []
 
 

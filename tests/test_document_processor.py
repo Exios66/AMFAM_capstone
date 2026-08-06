@@ -6,6 +6,8 @@ from unittest.mock import patch
 import pytest
 from PIL import Image
 
+pytest.importorskip("pdf2image", reason="pdf2image not installed; document_processor imports it at module level")
+
 from src import document_processor as dp
 
 

@@ -93,57 +93,83 @@ def _resp(json_body, status=200):
     return r
 
 
+class _DummyConfig:
+    def __init__(self, api_key="bt-key", project_id="p1", project_name="AMFAM v2"):
+        self.api_key = api_key
+        self.project_id = project_id
+        self.project_name = project_name
+
+
+def _events():
+    return {
+        "events": [
+            {"expected": "invoice", "output": "invoice", "metrics": {"prompt_tokens": 100, "completion_tokens": 5, "duration": 1.0}},
+            {"expected": "letter", "output": "invoice", "metrics": {}},
+            {"expected": "notaclass", "output": "invoice"},  # filtered out
+            {"expected": "", "output": "x"},  # filtered out
+        ],
+        "cursor": None,
+    }
+
+
 class TestFetchExperimentResults:
     def test_fetches_and_filters_rows(self, monkeypatch):
-        monkeypatch.setenv("BRAINTRUST_API_KEY", "bt-key")
+        monkeypatch.setattr(bmv, "load_braintrust_config", lambda: _DummyConfig())
 
-        project_resp = _resp({"objects": [{"id": "p1", "name": bmv.PROJECT_NAME}]})
         exp_resp = _resp({"objects": [
             {"id": "e1", "name": "old", "created": "2020"},
             {"id": "e2", "name": "new", "created": "2021"},
         ]})
-        fetch_resp = _resp({
-            "events": [
-                {"expected": "invoice", "output": "invoice", "metrics": {"prompt_tokens": 100, "completion_tokens": 5, "duration": 1.0}},
-                {"expected": "letter", "output": "invoice", "metrics": {}},
-                {"expected": "notaclass", "output": "invoice"},  # filtered out
-                {"expected": "", "output": "x"},  # filtered out
-            ],
-            "cursor": None,
-        })
+        fetch_resp = _resp(_events())
 
-        with patch.object(bmv.requests, "get", side_effect=[project_resp, exp_resp]), patch.object(
+        with patch.object(bmv.requests, "get", return_value=exp_resp), patch.object(
             bmv.requests, "post", return_value=fetch_resp
         ):
             results, name, meta = bmv.fetch_experiment_results()
 
         assert name == "new"  # most recent by created
         assert len(results) == 2
+        assert results[0]["correct"] is True
+        assert results[1]["correct"] is False
         assert meta["prompt_tokens_avg"] == 100
         assert meta["total_rows"] == 4
 
     def test_targets_named_experiment(self, monkeypatch):
-        monkeypatch.setenv("BRAINTRUST_API_KEY", "bt-key")
-        project_resp = _resp({"objects": [{"id": "p1", "name": bmv.PROJECT_NAME}]})
+        monkeypatch.setattr(bmv, "load_braintrust_config", lambda: _DummyConfig())
         exp_resp = _resp({"objects": [
             {"id": "e1", "name": "alpha", "created": "2020"},
             {"id": "e2", "name": "beta", "created": "2021"},
         ]})
         fetch_resp = _resp({"events": [], "cursor": None})
 
-        with patch.object(bmv.requests, "get", side_effect=[project_resp, exp_resp]), patch.object(
+        with patch.object(bmv.requests, "get", return_value=exp_resp), patch.object(
             bmv.requests, "post", return_value=fetch_resp
         ):
             _, name, _ = bmv.fetch_experiment_results("alpha")
         assert name == "alpha"
 
+    def test_target_missing_experiment_exits(self, monkeypatch):
+        monkeypatch.setattr(bmv, "load_braintrust_config", lambda: _DummyConfig())
+        exp_resp = _resp({"objects": [{"id": "e1", "name": "beta", "created": "2021"}]})
+        with patch.object(bmv.requests, "get", return_value=exp_resp), pytest.raises(SystemExit):
+            bmv.fetch_experiment_results("alpha")
+
     def test_missing_api_key_exits(self, monkeypatch):
+        monkeypatch.setattr(bmv, "load_braintrust_config", lambda: _DummyConfig(api_key=None))
         monkeypatch.delenv("BRAINTRUST_API_KEY", raising=False)
+
+        def _fail(*names):
+            raise SystemExit(1)
+
+        monkeypatch.setattr(bmv, "require_env", _fail)
         with pytest.raises(SystemExit):
             bmv.fetch_experiment_results()
 
     def test_unknown_project_exits(self, monkeypatch):
-        monkeypatch.setenv("BRAINTRUST_API_KEY", "bt-key")
+        monkeypatch.setattr(
+            bmv, "load_braintrust_config",
+            lambda: _DummyConfig(project_id=None, project_name=""),
+        )
         project_resp = _resp({"objects": [{"id": "p1", "name": "some-other-project"}]})
         with patch.object(bmv.requests, "get", return_value=project_resp):
             with pytest.raises(SystemExit):
