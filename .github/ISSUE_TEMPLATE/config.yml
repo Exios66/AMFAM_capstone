@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Experiment log
+    url: docs/experiments/experiment_log.md
+    about: Existing eval results and prompt iterations
+  - name: Prompt changelog
+    url: docs/CHANGELOG.md
+    about: What changed between prompt versions and why
+  - name: Repository changelog
+    url: CHANGELOG.md
+    about: Recent code, config, and tooling changes

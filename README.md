@@ -7,13 +7,13 @@ A Python toolkit for downloading the RVL-CDIP document image dataset, preprocess
 **Core library (`src/`)**
 - `document_processor.py` — Convert TIFF/PDF pages to 300 DPI grayscale PNGs and run OCR with bounding boxes.
 - `openrouter_classifier.py` — Send a document image to an OpenRouter vision model for one of 16 class predictions.
-- `prompts.py` — Versioned classification prompts (v1 → v14) with disambiguation rules.
+- `prompts.py` — Versioned classification prompts (v1 → v17.2) with disambiguation rules.
 - `constants.py`, `image_utils.py`, `openrouter_utils.py`, `env_utils.py`, `cli_utils.py` — Shared helpers.
 
 **Scripts (`scripts/`)**
-- `datasets/` — `download_dataset.py`, `create_balanced_dataset.py`, `create_fixed_size_dataset.py`, `run_tiff_processing.py` — data acquisition and preprocessing.
+- `datasets/` — `create_balanced_dataset.py`, `create_fixed_size_dataset.py`, `run_tiff_processing.py` — data acquisition and preprocessing.
 - `eda/` — `eda_analysis.py`, `eda_dimensions_summary.py` — exploratory data analysis.
-- `braintrust/` — `create_braintrust_800_dataset.py`, `braintrust_openrouter_input.py`, `braintrust_report.py`, `braintrust_metrics_visual.py`, `summarize_braintrust_experiment.py`, `copy_braintrust_dataset.py` — Braintrust evaluation and reporting.
+- `braintrust/` — `create_braintrust_800_dataset.py`, `braintrust_openrouter_input.py`, `braintrust_report.py`, `braintrust_metrics_visual.py`, `summarize_braintrust_experiment.py` — Braintrust evaluation and reporting.
 - `openrouter/` — `estimate_openrouter_cost.py` — extrapolate token usage/cost for 800, 25,000, and 320,000 images.
 
 **Documentation (`docs/`)**
@@ -28,6 +28,7 @@ A Python toolkit for downloading the RVL-CDIP document image dataset, preprocess
 **Other**
 - `requirements.txt` — Python dependencies.
 - `.env.example` — Template for API key environment variable.
+- `archive/` — Deprecated one-off scripts and large raw caches, kept for reference but not part of the active pipeline.
 
 ## Setup
 
@@ -55,10 +56,10 @@ A Python toolkit for downloading the RVL-CDIP document image dataset, preprocess
 
 ## Usage Workflow
 
-1. **Download the dataset**
+1. **Download the dataset** (legacy Kaggle downloader — archived; use the streaming `create_braintrust_*.py` slice builders instead)
 
    ```bash
-   python scripts/datasets/download_dataset.py
+   python archive/datasets/download_dataset.py
    ```
 
 2. **Create a balanced subset**
@@ -99,7 +100,7 @@ A Python toolkit for downloading the RVL-CDIP document image dataset, preprocess
 
 - **Never commit `.env` or any file containing your API key.** `.env` is excluded by `.gitignore`.
 - `.env.example` is safe to commit because it contains a placeholder value only.
-- Generated datasets, images, and report files are excluded from version control by `.gitignore`.
+- Generated images/datasets are excluded from version control by `.gitignore`; `reports/` and `website/` artifacts are committed intentionally (the site renders from them).
 
 ## Notes
 

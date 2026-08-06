@@ -1,0 +1,96 @@
+<div class="phrase-net-widget" style="position: relative; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; background: #ffffff; overflow: hidden; margin: 1.2em 0;">
+<div id="phrase-net-canvas" style="width: 100%; height: 700px; font-family: var(--font-sans);"></div>
+<div id="phrase-net-status" style="position: absolute; top: 10px; left: 14px; z-index: 10; font-size: 13px; color: #5b6577; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 12px; border: 1px solid #d5dbe6; pointer-events: none;">Loading interactive phrase net…</div>
+<div style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;">
+<span><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#66c4a8;vertical-align:-2px;"></span> success-biased word</span>
+<span><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e08580;vertical-align:-2px;"></span> failure-biased word</span>
+<span><span style="display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-radius:2px;vertical-align:-2px;"></span> prompt-leaked word</span>
+<span><span style="display:inline-block;width:22px;height:3px;background:#66c4a8;vertical-align:-2px;"></span> success-biased edge</span>
+<span><span style="display:inline-block;width:22px;height:3px;background:#e08580;vertical-align:-2px;"></span> failure-biased edge</span>
+<span><span style="display:inline-block;width:22px;height:3px;background:#c76e63;vertical-align:-2px;"></span> structural-loop edge</span>
+<span style="margin-left:auto;color:#5b6577;">drag to explore · scroll to zoom · hover for counts · double-click to focus</span>
+</div>
+</div>
+<script>
+(function () {
+  var statusEl = document.getElementById('phrase-net-status');
+  if (typeof vis === 'undefined' || !vis.Network) {
+    if (statusEl) statusEl.textContent = 'Network library failed to load — see static SVG below.';
+    return;
+  }
+  var base = (window.location.pathname.match(/.*\//) || ['/'])[0];
+  // The vendored vis-network 9.1.9 renders STRING tooltips via `innerText`
+  // (HTML shows literally as <b>…</b>); it appends DOM elements with full
+  // HTML instead. Build element titles so markup renders, not displays.
+  function tooltipHtml(html) {
+    var el = document.createElement('div');
+    el.innerHTML = html;
+    return el;
+  }
+  fetch(base + '../charts/phrase_net_differential.json')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) {
+      var nodeMap = {};
+      data.nodes.forEach(function (n) { nodeMap[n.id] = n; });
+      var nodes = data.nodes.map(function (n) {
+        var total = n.fail + n.ok;
+        var size = 14 + 6 * Math.log1p(Math.max(total, 1));
+        var share = Math.max(0, Math.min(1, n.share));
+        var lo = [0.40, 0.77, 0.66], hi = [0.88, 0.52, 0.50];
+        var c = [0, 1, 2].map(function (i) { return lo[i] * (1 - share) + hi[i] * share; });
+        var hex = '#' + c.map(function (v) { return Math.round(v * 255).toString(16).padStart(2, '0'); }).join('');
+        return {
+          id: n.id, label: n.id, size: size, color: { background: hex, border: '#5b6577' },
+          shape: n.leak ? 'diamond' : 'circle',
+          title: tooltipHtml(n.id + '<br>failed traces: <b>' + n.fail + '</b> · correct: <b>' + n.ok + '</b>' +
+                  '<br>failure share: <b>' + (100 * share).toFixed(1) + '%</b>' +
+                  (n.leak ? '<br><i>prompt-leaked vocabulary</i>' : '')),
+          font: { color: '#1b2a4a', size: 13, face: 'Source Sans 3' },
+          borderWidth: 1.2, borderWidthSelected: 2.5, shadow: { enabled: true, size: 12 }
+        };
+      });
+      var zMax = Math.max.apply(null, data.edges.map(function (e) { return Math.abs(e.z); }));
+      var edges = data.edges.map(function (e) {
+        var ec, tag;
+        if (e.in_cycle) {
+          ec = { color: '#c76e63', highlight: '#a8574d', opacity: 1.0 };
+          tag = 'structural loop (failed traces)';
+        } else if (e.bias === 'ok') {
+          ec = { color: '#66c4a8', highlight: '#4fae8f', opacity: 0.6 };
+          tag = 'success-biased differential';
+        } else {
+          ec = { color: '#e08580', highlight: '#c76e63', opacity: 0.6 };
+          tag = 'failure-biased differential';
+        }
+        return {
+          from: e.from, to: e.to,
+          width: 0.6 + 4.4 * Math.abs(e.z) / zMax,
+          color: ec,
+          arrows: { to: { enabled: true, scaleFactor: 0.75 } },
+          title: tooltipHtml(e.from + ' → ' + e.to + '<br>z = <b>' + e.z.toFixed(2) + '</b>' +
+                  '<br>failed: <b>' + e.fail + '</b> · correct: <b>' + e.ok + '</b>' +
+                  '<br><i>' + tag + '</i>'),
+          smooth: { type: 'continuous', roundness: 0.25 }
+        };
+      });
+      var container = document.getElementById('phrase-net-canvas');
+      var opts = {
+        physics: { enabled: true, stabilization: { iterations: 300 }, barnesHut: { gravitationalConstant: -32000, springLength: 130, springConstant: 0.035, damping: 0.6 } },
+        interaction: { hover: true, tooltipDelay: 120, dragNodes: true, zoomView: true, hoverConnectedEdges: true, hideEdgesOnDrag: true },
+        nodes: { scaling: { min: 8, max: 42 } },
+        edges: { selectionWidth: 2, hoverWidth: 2 }
+      };
+      var network = new vis.Network(container, { nodes: nodes, edges: edges }, opts);
+      network.once('stabilizationIterationsDone', function () {
+        network.setOptions({ physics: false });
+        if (statusEl) statusEl.textContent = data.nodes.length + ' words · ' + data.edges.length + ' edges · failure- and success-biased language';
+      });
+      network.on('stabilizationProgress', function (p) {
+        if (statusEl) statusEl.textContent = 'Laying out graph… ' + Math.round(100 * p.iterations / p.total) + '%';
+      });
+    })
+    .catch(function (err) {
+      if (statusEl) statusEl.textContent = 'Could not load graph data (' + err.message + ') — see static SVG below.';
+    });
+})();
+</script>

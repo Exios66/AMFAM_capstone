@@ -1,3 +1,15 @@
+# Runtime dependencies for the AMFAM document-classification pipeline
+# (RVL-CDIP -> OpenRouter/vision-LLM -> Braintrust evaluation).
+#
+# System binaries required (not pip-installable):
+#   - Tesseract OCR  (pytesseract wrapper)      e.g. brew install tesseract
+#   - Poppler        (pdf2image wrapper)        e.g. brew install poppler
+#
+# Local model backends (optional, OpenAI-compatible): a local Ollama server
+# (http://localhost:11434/v1) or a self-hosted vLLM server
+# (http://localhost:8000/v1) can replace OpenRouter by setting
+# OPENROUTER_BASE_URL in the environment (see .venv.example).
+
 pdf2image==1.16.3
 pytesseract==0.3.10
 Pillow>=10.4.0
@@ -11,3 +23,5 @@ tqdm>=4.66.0
 python-dotenv>=1.0.0
 braintrust>=0.0.160
 openai>=1.0.0
+pyarrow>=15.0.0
+networkx>=3.0

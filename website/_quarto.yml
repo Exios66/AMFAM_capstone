@@ -1,0 +1,214 @@
+project:
+  type: website
+  output-dir: _site
+  resources:
+    - charts/
+    - assets/
+    - data/
+    - figures/
+    - chat_images/
+
+execute:
+  enabled: false
+
+website:
+  title: "RVL-CDIP Document Classifier"
+  description: "16-class document intelligence on RVL-CDIP — OpenRouter vision models, 27 prompt versions, Braintrust evals, and Monte Carlo analysis."
+  favicon: assets/img/favicon.svg
+  search:
+    location: navbar
+    type: overlay
+    limit: 50
+    copy-button: false
+    show-item-context: true
+    keyboard-shortcut:
+      - f
+      - /
+      - s
+  navbar:
+    background: dark
+    left:
+      - text: Overview
+        menu:
+          - href: index.qmd
+            text: Overview
+          - href: manuscript.qmd
+            text: Manuscript
+      - text: Methods & Reference
+        menu:
+          - methods/overview.qmd
+          - methods/document-processor.qmd
+          - methods/cli-commands.qmd
+          - methods/classes.qmd
+          - methods/prompt-rules-provenance.qmd
+      - text: Results
+        menu:
+          - results/headline-results.qmd
+          - results/experiment-log.qmd
+          - results/experiment-reports.qmd
+          - results/confusion-matrices.qmd
+          - results/gemini-800-notes.qmd
+          - results/gemini-160-notes.qmd
+      - text: Prompt Evolution
+        menu:
+          - prompts/prompt-changelog.qmd
+          - prompts/enhancements.qmd
+      - text: Cost Analysis
+        menu:
+          - cost/cost-estimation.qmd
+          - cost/cost-projections.qmd
+      - text: Research Memos
+        menu:
+          - memos/accuracy-arc.qmd
+          - memos/generalization-falloff.qmd
+          - memos/model-comparison.qmd
+          - memos/cost-per-image.qmd
+          - memos/hardest-classes.qmd
+          - memos/ensemble-voting.qmd
+          - memos/confidence-routing.qmd
+          - memos/hasty-stop-words.qmd
+          - memos/failure-pipeline.qmd
+          - memos/exemplar-mining.qmd
+      - text: Interactive
+        menu:
+          - interactive/cost-calculator.qmd
+          - interactive/experiment-explorer.qmd
+      - text: Chat Examples
+        href: chats.qmd
+      - text: Monte Carlo
+        menu:
+          - montecarlo/overview.qmd
+          - montecarlo/prompt-ablation.qmd
+          - montecarlo/ensemble-voting.qmd
+          - montecarlo/routing-abstention.qmd
+          - montecarlo/failure-pipeline.qmd
+          - montecarlo/exemplar-mining.qmd
+          - montecarlo/ale-stopword.qmd
+          - montecarlo/trace-language.qmd
+          - montecarlo/verification.qmd
+          - montecarlo/corpus-summary.qmd
+      - text: Notebooks
+        menu:
+          - notebooks/01_env_setup_and_single_image.ipynb
+          - notebooks/02_balanced_sampling_and_braintrust_upload.ipynb
+          - notebooks/03_watchers_evaluators_full_experiment.ipynb
+          - notebooks/04_interactive_cost_and_experiments.ipynb
+      - text: Appendix
+        menu:
+          - appendix/misclassifications.qmd
+    right:
+      - icon: github
+        href: https://github.com/Exios66/AMFAM_capstone
+        aria-label: GitHub repository
+      - icon: github
+        href: https://github.com/Exios66
+        text: Exios66
+        aria-label: GitHub profile Exios66
+  sidebar:
+    style: floating
+    collapse-level: 1
+    contents:
+      - section: "Overview"
+        contents:
+          - href: index.qmd
+            text: Home
+          - href: manuscript.qmd
+            text: Manuscript
+          - text: "Headline results"
+            href: results/headline-results.qmd
+          - text: "Misclassification appendix"
+            href: appendix/misclassifications.qmd
+      - section: "Methods & Reference"
+        contents:
+          - methods/overview.qmd
+          - methods/document-processor.qmd
+          - methods/cli-commands.qmd
+          - methods/classes.qmd
+          - methods/prompt-rules-provenance.qmd
+      - section: "Results"
+        contents:
+          - results/headline-results.qmd
+          - results/experiment-log.qmd
+          - results/experiment-reports.qmd
+          - results/confusion-matrices.qmd
+          - results/gemini-800-notes.qmd
+          - results/gemini-160-notes.qmd
+      - section: "Prompt Evolution"
+        contents:
+          - prompts/prompt-changelog.qmd
+          - prompts/enhancements.qmd
+      - section: "Cost Analysis"
+        contents:
+          - cost/cost-estimation.qmd
+          - cost/cost-projections.qmd
+      - section: "Research Memos"
+        contents:
+          - section: "Core findings"
+            contents:
+              - memos/accuracy-arc.qmd
+              - memos/generalization-falloff.qmd
+              - memos/model-comparison.qmd
+              - memos/cost-per-image.qmd
+              - memos/hardest-classes.qmd
+          - section: "Monte Carlo robustness"
+            contents:
+              - memos/ensemble-voting.qmd
+              - memos/confidence-routing.qmd
+              - memos/hasty-stop-words.qmd
+              - memos/failure-pipeline.qmd
+              - memos/exemplar-mining.qmd
+      - section: "Monte Carlo"
+        contents:
+          - montecarlo/overview.qmd
+          - montecarlo/prompt-ablation.qmd
+          - montecarlo/ensemble-voting.qmd
+          - montecarlo/routing-abstention.qmd
+          - montecarlo/failure-pipeline.qmd
+          - montecarlo/exemplar-mining.qmd
+          - montecarlo/ale-stopword.qmd
+          - montecarlo/trace-language.qmd
+          - montecarlo/verification.qmd
+          - montecarlo/corpus-summary.qmd
+      - section: "Notebooks"
+        contents:
+          - notebooks/01_env_setup_and_single_image.ipynb
+          - notebooks/02_balanced_sampling_and_braintrust_upload.ipynb
+          - notebooks/03_watchers_evaluators_full_experiment.ipynb
+          - notebooks/04_interactive_cost_and_experiments.ipynb
+      - section: "Interactive"
+        contents:
+          - interactive/cost-calculator.qmd
+          - interactive/experiment-explorer.qmd
+      - text: "Chat Examples"
+        href: chats.qmd
+  page-navigation: true
+  page-footer:
+    left: "RVL-CDIP Document Classifier — AMFAM capstone project"
+    center:
+      - text: "GitHub"
+        href: https://github.com/Exios66/AMFAM_capstone
+    right: "Built with Quarto"
+
+format:
+  html:
+    theme:
+      - cosmo
+      - assets/css/custom.scss
+    include-in-header:
+      - assets/html/theme-head.html
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    toc-title: "On this page"
+    toc-actions:
+      - github: https://github.com/Exios66/AMFAM_capstone
+      - issues: https://github.com/Exios66/AMFAM_capstone/issues/new
+    number-sections: true
+    smooth-scroll: true
+    anchor-sections: true
+    code-copy: true
+    code-overflow: scroll
+    code-tools: true
+    link-external-icon: true
+    link-external-newwindow: true
+    mathjax: tex-chtml-full

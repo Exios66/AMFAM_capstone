@@ -1,0 +1,51 @@
+---
+title: "Memo: Do few-shot exemplars fix the top confusion pairs?"
+subtitle: "Research memorandum — exemplar mining & verification"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
+date: "2026-08-05"
+---
+
+**Research question:** Can injecting a handful of correct reasoning traces (exemplars) for the top confusion pairs recover the near-miss errors — and does the measured gain match the simulated gain?
+
+**Formal write-up:** [`montecarlo/exemplar-mining.qmd`](../montecarlo/exemplar-mining.html) · [`montecarlo/verification.qmd`](../montecarlo/verification.html) · [`reports/monte_carlo/exemplar_candidates.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/monte_carlo/exemplar_candidates.md)
+
+---
+
+## Answer, Response, + Summary of Results
+
+**Simulation said yes; the measured verification said no.** Mining 4 high-clarity exemplars (correct traces where runner-up = the decoy class, clarity 1.00) for the 12 worst confusion pairs was simulated to flip **32.8 of 767 corpus errors (4.27% of the error pool)** — a modest but real gain. Pairs targeted: `letter`→`memo` (53), `budget`→`invoice` (52), `invoice`→`form` (41), `specification`→`form` (41), `budget`→`form` (33), `scientific_report`→`form` (23), and more.
+
+The 4 selected exemplars each teach a clean disambiguation:
+- `letter__0029` — letter vs memo (external recipient + salutation + signature)
+- `specification__0075` — specification vs form (MSDS content beats form layout)
+- `resume__0049` — resume vs form (PHS-398 biographical sketch)
+- `questionnaire__0071` — questionnaire vs form (survey beats generic form)
+
+**Measured verification on the 48-row exemplar slice** (v18 with exemplars vs v17.2 baseline):
+
+| run | rows | correct | accuracy |
+|---|---:|---:|---:|
+| base (v17.2) | 48 | 33 | **0.688** |
+| exemplar (v18) | 48 | 31 | **0.646** |
+
+::: {.callout-warning title="Negative Result"}
+**Delta = −0.042 (no gain measured).** The exemplar run *regressed* slightly. Per-image, the exemplars fixed nothing that held and flipped a few previously-correct rows (`invoice__0003` form→budget, `invoice__0008` invoice→form, `scientific_report__0003` → budget).
+:::
+
+**Conclusion.** The simulated exemplar gain did not materialize when measured — a textbook simulated-vs-measured gap. The mined traces are high-clarity, but adding them as in-context examples at 48-row scale neither recovered near-misses nor preserved prior correct answers. **Exemplars are not a free accuracy lever here; the prompt-rules approach remains the primary fix.**
+
+::: {.memo-sources}
+*Sources:* `reports/monte_carlo/exemplar_candidates.md` · `reports/monte_carlo/verification_results.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
+
+---
+
+## What questions or uncertainties remain?
+
+The verification slice is small (48 rows) and the delta (−0.042) is within sampling error — a 95% *CI* would span ~±0.14. The exemplar prompt (v18) also differs from the base (v17.2) in more than the exemplars, so the measured regression is not a clean single-cause test. A larger, controlled exemplar-vs-base A/B with the *same* prompt text except the exemplar block is the decisive experiment.
+
+## What other levers may also improve accuracy?
+
+The [hasty-stop memo](hasty-stop-words.qmd) identifies the mechanism (premature commit) that exemplars were meant to correct; the [confidence-routing memo](confidence-routing.qmd) shows the same simulated-vs-measured caveat applies to escalation. See the [verification page](../montecarlo/verification.html) for both measured/simulated comparisons.

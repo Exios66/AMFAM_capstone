@@ -180,7 +180,22 @@ def write_confusion_matrix(tasks: list[dict], experiment: str, out_dir: Path,
     md.append("")
     md.append("## Raw Counts")
     md.append("")
-    md.append("| Expected \\ Predicted | " + " | ".join(f"`{c[:6]}`" for c in labels) + " | **Total** | **Acc** |")
+    short = {c: c[:6] for c in labels}
+    for src, dst in (
+        ("advertisement", "advert"),
+        ("file_folder", "file_f"),
+        ("handwritten", "handwr"),
+        ("invoice", "invoic"),
+        ("news_article", "news_a"),
+        ("presentation", "presen"),
+        ("questionnaire", "questi"),
+        ("scientific_publication", "sci_pub"),
+        ("scientific_report", "sci_rep"),
+        ("specification", "specif"),
+        ("__invalid__", "__inv"),
+    ):
+        short[src] = dst
+    md.append("| Expected \\ Predicted | " + " | ".join(f"`{short[c]}`" for c in labels) + " | **Total** | **Acc** |")
     md.append("|" + "---:|" * (n + 3))
     for i, exp in enumerate(labels):
         row_total = sum(int(data[i][j]) for j in range(n))

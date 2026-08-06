@@ -1,0 +1,50 @@
+---
+title: "Memo: Does confidence-gated escalation (routing) help?"
+subtitle: "Research memorandum — routing & abstention simulation"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
+date: "2026-08-05"
+---
+
+**Research question:** If the classifier abstains on its lowest-confidence tail and a stronger model re-scores those images, how does accuracy change as a function of the escalate fraction (α) and cost?
+
+**Formal write-up:** [`montecarlo/routing-abstention.qmd`](../montecarlo/routing-abstention.html) · [`reports/monte_carlo/routing_abstention.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/monte_carlo/routing_abstention.md)
+
+---
+
+## Answer, Response, + Summary of Results
+
+**Escalation recovers up to +9.8 *pp* at 1.8× cost** (α = 40%), and the accuracy-vs-cost Pareto curve dominates same-model ensembling at every point. Assumptions: escalated model accuracy 90%, escalated cost 3.0×.
+
+| α (escalate) | escalated | accuracy | 95% *CI* | cost factor |
+|---:|---:|---:|---:|---:|
+| 1% | 15 | 0.826 | 0.810–0.841 | 1.02× |
+| 5% | 76 | 0.845 | 0.830–0.859 | 1.10× |
+| 10% | 151 | 0.864 | 0.850–0.878 | 1.20× |
+| 20% | 302 | 0.891 | 0.877–0.904 | 1.40× |
+| 30% | 454 | 0.895 | 0.882–0.908 | 1.60× |
+| 40% | 605 | **0.919** | 0.909–0.928 | 1.80× |
+| 50% | 756 | 0.909 | 0.899–0.919 | 2.00× |
+
+::: {.callout-important title="Optimal Point"}
+The accuracy peak is at **α ≈ 40%** (0.919); beyond that, escalating more images adds cost without accuracy. At **α = 10%**, accuracy 0.864 at just **1.2× cost** — the **best accuracy-per-cost point**.
+:::
+
+**Sensitivity to the escalated-model assumption** (`@acc ±5 pp`): at α = 10%, accuracy ranges 0.859–0.869; at α = 40%, 0.899–0.939. The ranking of α = 10% as the cost-efficient choice is robust; α = 40% only wins if the escalated model truly hits ~90%+.
+
+**Conclusion.** Routing the low-confidence tail to a stronger model is the best accuracy/cost lever in the study: +4.3 *pp* at 1.2× (α = 10%) or up to +9.8 *pp* at 1.8× (α = 40%), conditional on the escalated model being genuinely stronger.
+
+::: {.memo-sources}
+*Sources:* `reports/monte_carlo/routing_abstention.md` · `reports/monte_carlo/escalation_candidates.txt` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
+
+---
+
+## What questions or uncertainties remain?
+
+Two big assumptions are unmeasured: (1) that a 90%-accurate escalation model exists at 3× cost, and (2) that the confidence ordering is *calibrated* — that the model's low-confidence tail is genuinely more error-prone. The [verification study](../montecarlo/verification.html) measured a small escalation slice: base accuracy 0.667 vs escalated 0.625 — i.e., **no measured gain** on those 48 images, which undercuts the simulated +. This is the single most important open question for the routing claim.
+
+## What other levers may also improve accuracy?
+
+Where escalation under-delivers, [ensemble voting](ensemble-voting.qmd) and [few-shot exemplars](exemplar-mining.qmd) are complementary; the [verification memo](../montecarlo/verification.html) directly tests simulated-vs-measured for both routing and exemplars.

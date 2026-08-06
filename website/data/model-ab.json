@@ -1,0 +1,787 @@
+{
+ "generated": "build_model_ab.py",
+ "meta": {
+  "count": 20,
+  "prompt_evolution": 12,
+  "cross_model": 8,
+  "note": "Real logged traces: same image, different prompts/models. Prompt evolution = qwen3.7-flash v0 vs v11.8+ from the Monte Carlo corpus; cross-model = the four models on the shared 160-image slice at v11.8."
+ },
+ "images": [
+  {
+   "filename": "rvl_cdip__advertisement__0005.png",
+   "expected": "advertisement",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "specification",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 5675,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document content:**\n- **Header:** \"Power Tease\" (underlined). This looks like a title or a project name.\n- **Bullet points:**\n    - \"Page\"\n    - \"Three (3) 1/2 Pages in Sequence\"\n    - \"Double Truck Spread\"\n- **Footer:**\n    - \"TELEPHONE: (212) 251-7700\"\n    - \"FAX: (212) 532-3616\"\n    - A logo in the bottom right corner (looks like \"RJR\" or similar, likely R.J. Reynolds given the tobacco archive context).\n    - A number \"51427 8435\" rotated vertically.\n\n**2. Evaluate against the classification labels:**\n- **advertisement:** The content describes layout specifications (\"Three (3) 1/2 Pages in Sequence\", \"Double Truck Spread\"). This is a description of an ad layout, not the ad itself. Wait, \"Power Tease\" sounds like a campaign name. But the text is technical instructions about page layout. Let's look closer. \"Double Truck Spread\" is a printing term. \"Three (3) 1/2 Pages in Sequence\" describes the structure. This looks like a brief or a specification for an advertisement. Is it an advertisement? No, it's describing an ad.\n- **budget:** No numbers related to money.\n- **email:** No \"To:\", \"From:\", \"Subject:\" headers.\n- **file_folder:** No.\n- **form:** No fields to fill out.\n- **handwritten:** No.\n- **invoice:** No billing info.\n- **letter:** No salutation or signature.\n- **memo:** Memos often have headers like \"To:\", \"From:\", \"Date:\", \"Subject:\". This has a title \"Power Tease\" and bullet points. It looks like a brief or a spec sheet. Let's reconsider.\n- **news_article:** No.\n- **presenta"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "advertisement",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 7327,
+     "runner_up": "presentation",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\n\n**1. Pre-scan:**\n- **Mail-client header:** None.\n- **Masthead/Running head:** There is a vertical text on the right side \"50112 0315\". This looks like a Bates number or archive ID. No newspaper masthead or journal running head.\n\n**2. Scratchpad procedure:**\n\n*   **Check 1: file_folder**\n    *   Evidence: The page has a large illustration/advertisement. It's not just an ID or stamp.\n    *   Result: not this check.\n\n*   **Check 2: handwritten**\n    *   Evidence: There is handwritten text \"WB-POS-6\" and \"Meal\" (looks like handwritten annotation). But the main content is a printed advertisement.\n    *   Result: not this check.\n\n*   **Check 3: FAX TRANSMISSION SHEET**\n    *   Evidence: No fax header.\n    *   Result: not this check.\n\n*   **Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire**\n    *   Evidence: No survey questions.\n    *   Result: not this check.\n\n*   **Check 5: PERSON'S CAREER HISTORY -> resume**\n    *   Evidence: No.\n    *   Result: not this check.\n\n*   **Check 6: PUBLISHED EVIDENCE -> scientific_publication**\n    *   Evidence: No journal header.\n    *   Result: not this check.\n\n*   **Check 7: FINANCIAL DOCUMENT -> invoice or budget**\n    *   Evidence: No financial table or bill.\n    *   Result: not this check.\n\n*   **Check 8: PRODUCT OR MATERIAL DOCUMENTATION -> specification**\n    *   Evidence: No technical specs.\n    *   Result: not this check.\n\n*   **Check 9: SLIDE DECK, DECK COVER, OR COMPANY STATEMENT -> presentation**\n    *   Evidence: There is a black bar on the right"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__advertisement__0005.png"
+  },
+  {
+   "filename": "rvl_cdip__budget__0007.png",
+   "expected": "budget",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 6013,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document content:**\n- **Header:** \"ACTUAL BUDGET SUMMARY\" at the very top.\n- **Sub-header:** \"Charges Paid In MAY\" (handwritten).\n- **Body:** A list of organizations (ARGUS RESEARCH LABORATORIES, GUILFORD LABORATORIES, HAZLETON LABORATORIES AMERICA, HUNTINGDON RESEARCH, IITRI, MICROBIOLOGICAL ASSOCIATES, RESEARCH TRIANGLE INSTITUTE, RICERCA, STARKS ASSOCIATES).\n- **Items under organizations:** Specific test types or services (Teratology, Condensate Collection, Acute Toxicity, 28-Day Oral, Skin Painting, Chromosome Aberr., Mouse Lymphoma, Acute Cardiovascular, Inhalation Development, etc.).\n- **Data:** There are lines for numbers, some filled in (3100, 3103). There's a \"TOTAL\" line at the bottom.\n- **Side text:** \"83311220\".\n\n**2. Apply the classification rules (Function over Subject Matter):**\n- **Check 1: advertisement?** No. It's a financial summary.\n- **Check 2: budget?** The header says \"ACTUAL BUDGET SUMMARY\". It lists charges paid against a budget. This looks like a budget document. Wait, let's look at the other options.\n- **Check 3: email?** No.\n- **Check 4: file_folder?** No.\n- **Check 5: form?** It has lines for filling in data, but it looks more like a report or summary sheet. However, \"budget\" is a specific category. Let's look at the definition. A budget is a financial plan. This is an \"Actual Budget Summary\". It summarizes actual charges against a budget.\n- **Check 6: handwritten?** There is some handwriting (\"MAY\", \"3100\", \"3103\"), but the document is primarily typed. I"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 10388,
+     "runner_up": "form",
+     "reasoning": "The user wants me to classify a scanned business document into one of 16 categories.\nI need to follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Fax transmission header: None.\n- Masthead/running head: None. There is a Bates number \"2048523872\" and \"CONFIDENTIAL 013423\". There is a handwritten note \"Bound to pay for / All post-up & print\". There is a title \"MARLBORO AUTOSPORTS BULLETIN PROGRAM\".\n\n**Check 1: file_folder**\n- Evidence: The page has a table with data (Market/Race, Date, Display Total, etc.), a title \"MARLBORO AUTOSPORTS BULLETIN PROGRAM\", and a date \"17-Apr-90\". It has real content, not just an identifier.\n- Not this check.\n\n**Check 2: handwritten**\n- Evidence: There is a handwritten note \"Bound to pay for / All post-up & print\", but the majority of the content is a typed table.\n- Not this check.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No fax header.\n- Not this check.\n\n**Check 4: questionnaire**\n- Evidence: No survey instrument.\n- Not this check.\n\n**Check 5: resume**\n- Evidence: No career history.\n- Not this check.\n\n**Check 6: scientific_publication**\n- Evidence: No journal masthead or running head.\n- Not this check.\n\n**Check 7: FINANCIAL DOCUMENT -> invoice or budget**\n- Evidence: The page is a table titled \"MARLBORO AUTOSPORTS BULLETIN PROGRAM\". It lists race dates, locations (Phoenix, AZ; Indianapolis; Milwaukee; Detroit; Portland, OR; Cleveland, OH; New Jersey; New York; Michigan), number of boards, space cost, extra posting charge, monthly cost.\n- Let's look at the columns: MARKET/RACE, RACE"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__budget__0007.png"
+  },
+  {
+   "filename": "rvl_cdip__budget__0003.png",
+   "expected": "budget",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 10730,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document content:**\n- **Header:** \"THE TOBACCO INSTITUTE\", \"PUBLIC AFFAIRS DIVISION\".\n- **Title:** \"VARIANCE ANALYSIS OF BUDGETED vs ACTUAL EXPENDITURES\".\n- **Subtitle:** \"TWO MONTH PERIOD ENDING FEBRUARY 28, 1993\".\n- **Table structure:**\n    - Columns: \"Year-to-Date\", \"ACTUAL (000)\", \"BUDGET (000)\", \"AMOUNT OVER(UNDER) BUDGET (000)\", \"PROJECTED VARIANCE DEC 31, 1993 (000)\".\n    - Rows: \"GENERAL COALITIONS\", \"ADVERTISING ISSUE\", \"ADMINISTRATION\", \"MEDIA RELATIONS\", \"SCIENTIFIC AFFAIRS\", \"EXCISE TAX ISSUE\", \"TOTALS\".\n    - Data: Numerical values like $186, $330, ($144), $0, etc.\n    - Text descriptions next to row headers explaining variances (e.g., \"Expenditures are under budget due to timing differences\").\n- **Footer:** Date \"03/05/93\" and a document ID \"2025351419\".\n\n**2. Evaluate against categories based on FUNCTION:**\n\n*   **advertisement:** No. It's internal financial data.\n*   **budget:** The title is \"VARIANCE ANALYSIS OF BUDGETED vs ACTUAL EXPENDITURES\". This is a financial report comparing budget to actuals. Wait, is it a \"budget\" document or a \"scientific_report\" or \"specification\"? Let's look at the labels.\n    *   `budget`: Usually a plan for future spending. This is a variance analysis *of* a budget. It's a financial report. Let's look for other options.\n    *   `invoice`: No, not a bill to a customer.\n    *   `form`: No, it's not a blank form to be filled out. It's a filled-out report.\n    *   `letter`: No.\n    *   `memo`: Memos often contain internal reports. But this "
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 4643,
+     "runner_up": "form",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI will follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: None. There is a Bates number \"2024140844\" rotated on the right side. No journal masthead.\n\n**Check 1: file_folder**\n- Evidence: The page contains a large table with data (QUARTERLY CLOSING P/E, YEAR, PM, S&P 400, etc.). It has real content, not just an identifier/stamp.\n- Not this check.\n\n**Check 2: handwritten**\n- Evidence: The page is entirely typed text and numbers in a table. No freeform handwriting.\n- Not this check.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No fax cover sheet header. The rotated text \"2024140844\" is a Bates number.\n- Not this check.\n\n**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL**\n- Evidence: No survey questions or transmittal note.\n- Not this check.\n\n**Check 5: PERSON'S CAREER HISTORY**\n- Evidence: No resume/CV content.\n- Not this check.\n\n**Check 6: PUBLISHED EVIDENCE**\n- Evidence: No journal name, volume, issue, page range, DOI, or copyright line belonging to a journal on this page.\n- Not this check.\n\n**Check 7: FINANCIAL DOCUMENT -> invoice or budget**\n- Evidence: The page is a table titled \"QUARTERLY CLOSING P/E\". Columns: YEAR, PM, S&P 400, DISCOUNT TO S&P 400, S&P 600, DISCOUNT TO S&P 600, SHORT-TERM INTEREST. Rows are years (1980-1993) and quarters. This is a financial/money-data table (price-to-earnings, stock/investment figures).\n- Check 7 says: \"Also covers money-only records: ... a financial or money-data table (price/va"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__budget__0003.png"
+  },
+  {
+   "filename": "rvl_cdip__budget__0015.png",
+   "expected": "budget",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "",
+     "no_label": true,
+     "correct": false,
+     "reasoning_len": 16173,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document content:**\n- **Header:** \"1983 FOUR-BRAND MEDIA WEIGHT TEST ATLANTA-3G0 Test Market\"\n- **Table structure:**\n    - Columns: \"March '83\" (with sub-columns \"$\" and \"% of Total Exp.\") and \"Cumulative Jan-March '83\" (with sub-columns \"$\" and \"% of Total Exp.\").\n    - Rows: List of brands/companies (Marlboro Full Flavor, Marlboro Lights, Benson & Hedges, Merit, Virginia Slims, Other PM, Total Philip Morris, R.J. Reynolds, American, Brown & Williamson, Lorillard, Liggett & Myers, TOTAL ALL COMPANIES).\n    - Data: Numerical values representing money ($) and percentages.\n- **Footer/ID:** \"2040798510\" (rotated on the right side). This looks like a Bates number or archive ID.\n\n**2. Evaluate against categories based on FUNCTION:**\n\n*   **advertisement:** No. It's a data table.\n*   **budget:** It shows expenses (\"Total Exp.\"), but it looks like a report of actuals or a test result, not a plan for future spending. Wait, \"Media Weight Test\" sounds like a market research report or a summary of media spending. Let's look closer. It lists \"Total Philip Morris\", \"R.J. Reynolds\", etc. These are companies. It lists brands. It looks like a summary of media spending (advertising weight) across brands. Is it a budget? A budget is a plan. This looks like data from a test market. \"Test Market\" is in the title. So it's a report of data.\n*   **email:** No.\n*   **file_folder:** No.\n*   **form:** No. It's not a blank form to be filled out. It's filled data.\n*   **handwritten:** No. It's typewritten/print"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "scientific_report",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 9233,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI will follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: \"MONTHLY MANAGEMENT STATUS REPORT\", \"PROJECT NO.: H-102\". No journal masthead.\n\n**Check 1: file_folder**\n- Evidence: \"MONTHLY MANAGEMENT STATUS REPORT\", \"PROJECT NO.: H-102\", \"PROJECT TITLE: PMO - 1977\", \"BUDGET: $30,988\", \"DATE: 1977\", \"PROJECT DESCRIPTION\", graph, \"PROJECT COMPONENTS\", signatures.\n- Not file_folder.\n\n**Check 2: handwritten**\n- Evidence: Mostly typed text, a graph, and two signatures at the bottom. Not majority handwritten.\n- Not handwritten.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No fax header.\n- Not fax.\n\n**Check 4: questionnaire**\n- Evidence: No survey questions.\n- Not questionnaire.\n\n**Check 5: resume**\n- Evidence: Not a CV/resume.\n- Not resume.\n\n**Check 6: scientific_publication**\n- Evidence: No journal name/volume/issue/page number on the page itself.\n- Not scientific_publication.\n\n**Check 7: FINANCIAL DOCUMENT -> invoice or budget**\n- Evidence: \"BUDGET: $30,988\", \"BUDGET VS. ACTUAL K$\" graph, \"285 Hrs. to Date - 1,000 Total Hrs. Budgeted = 26%\".\n- Wait, is this an invoice or a budget?\n- \"budget: internal money planning, tracking, or disbursement \u2014 budget or expense lines, forecast vs. actual, expense reports, a statement of account, a check face or check stub, a check/payment register, or a status report whose PRIMARY content is budget and spend tracking.\"\n- The page is a \"MONTHLY MANAGEMENT STATUS REPORT\" for \"PROJECT NO.: H-102"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__budget__0015.png"
+  },
+  {
+   "filename": "rvl_cdip__budget__0020.png",
+   "expected": "budget",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 4481,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document:**\n- **Header:** \"weiss\\watson\" at the top left.\n- **Title/Subject:** \"VIRGINIA SLIMS PHILIP MORRIS U.S.A. BUDGET FOR TWO VIRGINIA SLIMS VIDEOS OCTOBER 6, 1989\".\n- **Content:** A numbered list of items with costs.\n    - 1. Project Coordination $17,000\n    - 2. Design, soundtrack, editing, dubbing $40,300\n    - 3. Staging: Equipment/New York (Video, Audio, Lights)\n    - 4. Staging: Labor/New York\n    - 5. Shipping\n    - 6. Miscellaneous\n    - 7. Weiss/Watson Fee $10,000\n    - Total $92,650\n- **Footer:** \"Not included: Applicable taxes...\" and contact info for Weiss/Watson.\n\n**2. Apply the classification rules:**\n- **Check 1: Is it an advertisement?** No, it's a financial breakdown.\n- **Check 2: Is it a budget?** The title explicitly says \"BUDGET FOR TWO VIRGINIA SLIMS VIDEOS\". It lists costs and a total. This looks like a budget proposal or a budget document.\n- **Check 3: Is it an email?** No.\n- **Check 4: Is it a file folder?** No.\n- **Check 5: Is it a form?** It doesn't look like a fillable form. It's a typed document.\n- **Check 6: Is it handwritten?** No.\n- **Check 7: Is it an invoice?** It lists fees and a total. \"Weiss/Watson Fee $10,000\". It looks like a quote or a budget proposal. Wait, let's look closer. It says \"BUDGET FOR...\". Usually, an invoice is a request for payment. A budget is a plan of financial estimates. This document is titled \"BUDGET\". It lists estimated costs. It's a budget document. However, sometimes these are used as invoices. Let's look at the \"Weis"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 5177,
+     "runner_up": "invoice",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI will follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: None. There's a Bates number \"TNWL 0034682\" at the bottom.\n\n**Check 1: file_folder**\n- Evidence: The page has a check, a detachable stub, and financial data. Not just an identifier.\n- Not this check.\n\n**Check 2: handwritten**\n- Evidence: There is a signature, but the majority is typed (check, stub, table).\n- Not this check.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No fax header.\n- Not this check.\n\n**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL**\n- Evidence: No survey instrument.\n- Not this check.\n\n**Check 5: PERSON'S CAREER HISTORY**\n- Evidence: No resume.\n- Not this check.\n\n**Check 6: PUBLISHED EVIDENCE**\n- Evidence: No journal masthead.\n- Not this check.\n\n**Check 7: FINANCIAL DOCUMENT -> invoice or budget**\n- Evidence: The page is a check and a detachable stub (check stub).\n- Top part: \"THE TOBACCO INSTITUTE\", \"PAY IN DOLLARS ... TWO HUNDRED AND 00/100\", \"TO THE ORDER OF MICHAEL HEAVEY CAMPAIGN FUND\", signature, MICR line. This is a check face.\n- Bottom part: \"DETACH BEFORE DEPOSITING NO OTHER RECEIPT REQUIRED\", \"THE TOBACCO INSTITUTE\", \"VENDOR NUMBER 006425\", \"CHECK DATE 04/25/90\", \"CHECK NUMBER 071419\", \"MICHAEL HEAVEY CAMPAIGN\", table with \"DOCUMENT DATE\", \"DOCUMENT NO\", \"PO NUMBER\", \"REFERENCE NO\", \"DOCUMENT AMOUNT\", \"DISCOUNT\", \"NET AMOUNT\". This is a check stub / payment register.\n- Check 7 rules: \"A check face/check stub \u2014 a check number, bank, M"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__budget__0020.png"
+  },
+  {
+   "filename": "rvl_cdip__specification__0010.png",
+   "expected": "specification",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "scientific_report",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 21949,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document content:**\n- **Header:** \"FEDERAL TRADE COMMISSION\", \"[ 16 CFR Part 408 ]\", \"ADVERTISING AND LABELING OF CIGARETTES\", \"Notice of Rule-Making Proceeding for Establishment of Trade Regulation Rules :\".\n- **Body text:** It starts with \"Notice is hereby given that the Federal Trade Commission... has initiated a proceeding for the promulgation of Trade Regulation Rules...\". It discusses findings of an Advisory Committee, health hazards of smoking, etc.\n- **Footer:** \"Reprinted from Federal Register of January 22, 1964\".\n\n**2. Evaluate against categories based on FUNCTION:**\n- **advertisement:** No, it's a government notice.\n- **budget:** No financial data.\n- **email:** No.\n- **file_folder:** No.\n- **form:** No fill-in-the-blanks.\n- **handwritten:** No.\n- **invoice:** No.\n- **letter:** No.\n- **memo:** No.\n- **news_article:** It looks like a news article or a reprinted document, but let's look closer. The footer says \"Reprinted from Federal Register\". The content is a \"Notice of Rule-Making Proceeding\". This is a legal/regulatory document. Wait, let's look at the labels.\n- **presentation:** No.\n- **questionnaire:** No.\n- **resume:** No.\n- **scientific_publication:** It contains scientific findings (\"The specific findings of the Advisory Committee include the following...\"), but the primary function is a government notice. Wait, let's look at the labels again.\n- **scientific_report:** It contains a report of findings (\"The Report of the Advisory Committee...\"). But the document itse"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "specification",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 6689,
+     "runner_up": "form",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI need to follow the scratchpad procedure, checking 1-14 in order.\n\n**Document Analysis:**\n- Title: \"National POL 0907\"\n- Columns: \"Merit Ultra Lights Menthol (White Tipping)\" and \"Salem Ultra Lights 85\"\n- Rows: IBM Code (D0ARC-1, D0ARD), Smoke (Butt Length, FTC Tar, Nicotine, Puffs/cigt.), Cigarette (Total RTD, Static Burn Time, Length, Circumference), Paper (Permeability), Filter (RTD, Length, Weight, Tipping Paper Length, Color, Ventilation), Filler (Total alkaloids, Total red. sugars, Wt. of tob., Rod Density, Oven Volatiles), Menthol, mg/cigt. (Smoke, Filler, Filter).\n- There is a Bates number on the right side: \"2072980943\".\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: None. Just \"National POL 0907\" at the top.\n\n**Check 1: file_folder**\n- Almost no body content? No, it has a detailed table of product specifications.\n- Not file_folder.\n\n**Check 2: handwritten**\n- Most content freeform handwriting? No, it's typed text and numbers.\n- Not handwritten.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- \"FACSIMILE\" header? No.\n- Not fax.\n\n**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL**\n- Asks reader to answer? No.\n- Not questionnaire.\n\n**Check 5: PERSON'S CAREER HISTORY**\n- Resume/CV? No.\n- Not resume.\n\n**Check 6: PUBLISHED EVIDENCE**\n- Journal running head/masthead? No.\n- Not scientific_publication.\n\n**Check 7: FINANCIAL DOCUMENT**\n- Invoice or budget? No money, no billing, no financial data. Just product specs.\n- Not financial.\n\n**Check 8: PRODUCT OR MATERIAL DOCUMENTATION -> sp"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__specification__0010.png"
+  },
+  {
+   "filename": "rvl_cdip__presentation__0010.png",
+   "expected": "presentation",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "",
+     "no_label": true,
+     "correct": false,
+     "reasoning_len": 15237,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document:**\n- **Header:** \"From: The Tobacco Institute, Inc., 1735 K Street, N.W., Washington, D.C., 20006 (202-296-8434)\". This looks like a letterhead or a memo header. Wait, it says \"From:\". Usually memos have \"To:\", \"From:\", \"Date:\", \"Subject:\". This has \"From:\" and a date.\n- **Date:** \"May 19, 1967\".\n- **Body text:**\n    - \"Correction:\" (underlined)\n    - \"In the news release issued by The Tobacco Institute, May 18, 1967, commenting on a report by Dr. Philip W. West of Louisiana State University regarding selenium and cigarette paper, please substitute the attached page two for the original page two.\"\n- **Footer/Side text:** \"650278432\" (rotated). This looks like a Bates number or archive ID.\n\n**2. Evaluate against categories (in order of checks):**\n\n*   **advertisement:** No. It's not selling anything.\n*   **budget:** No financial tables.\n*   **email:** No. Date is 1967. Email didn't exist like this. It's typed text.\n*   **file_folder:** No. It's a page of text.\n*   **form:** No standard form fields (boxes, lines to fill in).\n*   **handwritten:** No, it's typewritten.\n*   **invoice:** No money, no bill of goods.\n*   **letter:** It has a \"From:\" header and a date. It looks like a memo or a letter. Let's look closer. \"From: The Tobacco Institute...\". It's addressed to someone implicitly (implied recipient). But the content is a \"Correction\". It's an internal communication or a cover note. Wait, let's look at the structure.\n    - \"From: [Organization]\"\n    - Date: \"May 19, 1967\"\n "
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "form",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 10613,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI will follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: None. There's a Bates number \"207870790\" and \"Page 1\", \"Lorillard.WKS Chart 2\". No journal masthead.\n\n**Check 1: file_folder**\n- Evidence: The page has a chart, title \"Lorillard Premium Volume 12mm billion units\", axes, data lines. Not just an identifier/stamp.\n- Result: not this check.\n\n**Check 2: handwritten**\n- Evidence: Typed text, printed chart. No handwriting.\n- Result: not this check.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No fax header.\n- Result: not this check.\n\n**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL**\n- Evidence: No survey questions.\n- Result: not this check.\n\n**Check 5: PERSON'S CAREER HISTORY**\n- Evidence: No resume/CV content.\n- Result: not this check.\n\n**Check 6: PUBLISHED EVIDENCE**\n- Evidence: No journal name, volume, issue, page range, DOI. \"Page 1\" is just a page number, not a journal page range. \"Lorillard.WKS Chart 2\" is a file/chart name.\n- Result: not this check.\n\n**Check 7: FINANCIAL DOCUMENT**\n- Evidence: The chart shows \"Lorillard Premium Volume 12mm billion units\" over years 1994-1999. Source: MSA Shipments. This is a data chart about volume, not a financial document like an invoice or budget (no dollar amounts, no line items of charges, no check stub). Wait, is it a financial document? \"billion units\" is volume, not money.\n- Result: not this check.\n\n**Check 8: PRODUCT OR MATERIAL DOCUMENTATION**\n- Evidence: \"Lorillard "
+    }
+   ],
+   "image": "chat_images/rvl_cdip__presentation__0010.png"
+  },
+  {
+   "filename": "rvl_cdip__questionnaire__0003.png",
+   "expected": "questionnaire",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "form",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 8474,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document:**\n- **Title:** \"CIGARETTE TEST - REPORT FORM PART I\"\n- **Instruction box:** \"TO BE ANSWERED IMMEDIATELY AFTER YOU HAVE FINISHED SMOKING 3 OR 4 PACKS OF THE C8 CIGARETTES AND BEFORE YOU START SMOKING THE M7 CIGARETTES.\"\n- **Content:**\n    - Question 1: \"What, if anything, did you dislike about the C8 cigarettes?\" followed by blank lines.\n    - Question 2: \"What, if anything, did you like about the C8 cigarettes?\" followed by blank lines.\n    - Question 3: A Likert scale survey (pairs of phrases, boxes 1-7). \"Below are pairs of different phrases which might be used to describe the C8 cigarettes... Please check one box for each pair of phrases.\"\n    - Items A-J are survey questions with checkboxes.\n- **Footer:** \"IMPORTANT: PLEASE KEEP THIS REPORT FORM HANDY UNTIL WE TELEPHONE YOU. DO NOT RETURN IT TO US.\" and a page number \"- 2 -\".\n\n**2. Apply the classification rules:**\n- **Function over subject matter:** The subject is cigarette testing (tobacco industry). The function is a form to be filled out.\n- **Check 1: advertisement?** No. It's not selling anything.\n- **Check 2: budget?** No. No financial data.\n- **Check 3: email?** No. No \"To/From/Subject\" headers.\n- **Check 4: file_folder?** No.\n- **Check 5: form?** Yes. The title literally says \"REPORT FORM\". It has fields to be filled out (blank lines for text, checkboxes for ratings). It asks the user to answer questions. The footer says \"KEEP THIS REPORT FORM HANDY\". This is a very strong match.\n- **Check 6: handwritten?** No, "
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "questionnaire",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 8333,
+     "runner_up": "form",
+     "reasoning": "The user wants me to classify the provided document into one of 16 categories.\n\n**1. Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: None. Just a title \"SAMPLE PROFESSIONAL COMPETENCY MODEL INTERVIEW QUESTIONS\" and a Bates number \"2083249139\" on the side.\n\n**2. Scratchpad procedure:**\n\n*   **Check 1: file_folder**\n    *   Evidence: The page has a title \"SAMPLE PROFESSIONAL COMPETENCY MODEL INTERVIEW QUESTIONS\" and a list of questions. It has real content.\n    *   Result: not this check.\n\n*   **Check 2: handwritten**\n    *   Evidence: Mostly typed text. There are some handwritten asterisks/markings next to questions 3, 3, 1. But the majority is typed.\n    *   Result: not this check.\n\n*   **Check 3: FAX TRANSMISSION SHEET**\n    *   Evidence: No fax header.\n    *   Result: not this check.\n\n*   **Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire**\n    *   Evidence: The title is \"SAMPLE PROFESSIONAL COMPETENCY MODEL INTERVIEW QUESTIONS\". It asks questions like \"During your time at ___ company, describe for me how...\", \"Tell me about a project...\", \"What do you think are the greatest threats...\". These are interview questions, essentially a survey instrument or a structured interview guide. Wait, is an interview questionnaire a questionnaire?\n    *   Let's look at the definition: \"The page asks the reader to answer, rate, choose, or commit: opinion items, rating scales, multiple choice, open-response lines, an enrolment/commitment application, or a cover letter transmitting a survey.\"\n    *   Interview questions are open-response lines asking t"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__questionnaire__0003.png"
+  },
+  {
+   "filename": "rvl_cdip__presentation__0013.png",
+   "expected": "presentation",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "memo",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 30732,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document content:**\n- **Header:** \"TOBACCO ADVISORY COUNCIL\"\n- **Title/Subtitle:** \"Outline notes for a fifty-minute film on the question of 'Passive Smoking' for a general audience and for television release.\"\n- **Sections:** \"OBJECTIVE\", \"METHOD\".\n- **Body text:** Describes the aim of a film, what it will and won't do, and the method of presentation (structural element, quotes, counter-arguments).\n- **Footer/ID:** \"1000090622\" (rotated).\n\n**2. Evaluate against categories based on FUNCTION:**\n\n*   **advertisement:** Is it selling something? No, it's internal notes about a film.\n*   **budget:** Is it financial planning? No.\n*   **email:** Is it an email? No, looks like a typed memo or report.\n*   **file_folder:** Is it a folder? No, it's a page of text.\n*   **form:** Is it a form with fields to fill out? No.\n*   **handwritten:** Is it handwritten? No, it's typewritten.\n*   **invoice:** Is it a bill? No.\n*   **letter:** Is it a letter to someone? No, it looks like internal notes.\n*   **memo:** \"Memorandum\". This is a strong candidate. It's internal documentation (\"Outline notes...\"). Let's look closer. It has a header \"TOBACCO ADVISORY COUNCIL\". It outlines a plan. It reads like an internal memo or a project brief. Wait, let's look at the other options.\n*   **news_article:** Is it a news article? No.\n*   **presentation:** Is it a slide deck or presentation notes? The text says \"Outline notes for a fifty-minute film\". It's a script or a plan for a film. It's not a presentation in the s"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 11673,
+     "runner_up": "scientific_report",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI need to follow a specific scratchpad procedure, checking 1-14 in order.\n\n**Document Analysis:**\n- Header: \"PRESENTATION TO BOARD OF DIRECTORS - 9:30 AM, APRIL 26, 1973\"\n- Content: An outline or agenda for a presentation.\n    - I. Introduction.\n        - A. Since this occasion marks the dedication...\n        - B. Note on the Operations Team.\n        - C. Objectives of R&D\n        - D. Current Status of facility.\n    - II. Accomplishments.\n        - A. Historical.\n        - B. Case histories - Products. (1. Charcoal filter..., 2. Plastic Extrusion..., Doral - Patent)\n        - C. Case histories - Processes. (1. TFP, 2. Expanded Tobacco, 3. Expanded Stems)\n        - D. Case histories - S&H Defense... (1. A standard smoking machine, 2. The phenol crisis, 3. The Regenerated Tobacco Situation..., 4. The positive approach..., 5. Involvement in government agencies.)\n- There is a Bates number: \"0000226397\" rotated on the right side.\n- There is a small handwritten mark \"6\" and \"15\" or similar at the top left.\n\n**Pre-scan:**\n- Mail-client header: None.\n- Masthead/running head: None. Just a title at the top.\n\n**Check 1: file_folder**\n- Evidence: \"PRESENTATION TO BOARD OF DIRECTORS...\" is a bold topical heading/title. It has real content (an outline). Not file_folder.\n- Result: not this check.\n\n**Check 2: handwritten**\n- Evidence: Mostly typed text. Only a tiny handwritten mark at the top left. Not majority handwritten.\n- Result: not this check.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No fax header.\n-"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__presentation__0013.png"
+  },
+  {
+   "filename": "rvl_cdip__questionnaire__0012.png",
+   "expected": "questionnaire",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "form",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 23445,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document from a tobacco industry archive.\n\n**1. Analyze the document content:**\n- **Header:** \"Newman-Stein, Inc.\", address, \"Job #2392 CLT\", \"May, 1983\".\n- **Top section:** \"CHECK QUOTA:\", \"CHECK CITY:\". These look like instructions for an interviewer.\n- **Title:** \"CIGARETTE ATTITUDE STUDY (Screener)\". This is a strong indicator. A screener is a type of form used in surveys.\n- **Fields:** \"RESPONDENT'S NAME\", \"AREA CODE\", \"TELEPHONE #\", \"ADDRESS\", \"CITY\", \"STATE\", \"ZIP CODE\", \"INTERVIEWER'S NAME\", \"I.D.#\", \"TIME BEGAN\", \"DATE\", \"TIME ENDED\". These are blank lines for filling in data. This is a form structure.\n- **Body text:** \"APPROACH ADULT BLACKS 18-34\". \"Hello, I'm ___ from Newman-Stein, Inc... We're conducting a survey...\".\n- **Questions:** \"1a. First, are you currently a cigarette smoker?\", \"1b. Which of the following age groups...\". These are survey questions with instructions like \"(CONTINUE)\", \"(TERMINATE, RECORD ON TALLY SHEET, ERASE AND RE-USE)\".\n\n**2. Evaluate against labels:**\n- **advertisement:** No. It's not selling a product.\n- **budget:** No. No financial planning data.\n- **email:** No. Not an email format.\n- **file_folder:** No. It's a page of content.\n- **form:** Yes. It has fields to fill out (Name, Address, etc.) and instructions for data collection. Specifically, it's a survey screener form. Wait, let's look closer. It's a script for an interviewer. It has fields for the respondent's info. It's a \"screener\" form. Is it a questionnaire?\n- **handwritten:** No. It's typed/printed.\n- **invoice:** No. No billing info.\n- **le"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "questionnaire",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 3658,
+     "runner_up": "form",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI will follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: \"APPENDIX TABLE C P.2\" at the top. \"3573 875\" top left. \"Box 500 Manhasset, N.Y. 11030\" top right. \"2040734420\" vertical on the right. No journal masthead.\n\n**Check 1: file_folder**\n- Evidence: \"APPENDIX TABLE C P.2\", \"FILTER CIGARETTE REPORT FORM\", \"PART A\", \"PART B\", lots of text and checkboxes. Not just an identifier.\n- Result: not this check.\n\n**Check 2: handwritten**\n- Evidence: The page is typed. There are no handwritten entries visible (the boxes are empty).\n- Result: not this check.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No \"FACSIMILE\" or fax header.\n- Result: not this check.\n\n**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire**\n- Evidence: Title \"FILTER CIGARETTE REPORT FORM\". Text: \"To Be Filled Out After You Have Smoked All Of The G74 Cigarettes, Or At The End Of 3 Days\". \"Now that you have tried Cigarette G74, we would like you to tell us how you think they compare... For each characteristic, simply check the box that comes closest to describing how you feel about Test Cigarette G74.\" Checkboxes for TASTE, MILDNESS, OVERALL. Part B for N31. \"PLEASE KEEP THIS REPORT FORM HANDY UNTIL WE TELEPHONE YOU\". This is a consumer test/survey instrument asking participants to rate cigarettes.\n- Result: questionnaire.\n\nLet's double check.\nIs it a form (check 10)?\nCheck 4 says: \"The page asks the reader to answer, rate, choose, or commit: opi"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__questionnaire__0012.png"
+  },
+  {
+   "filename": "rvl_cdip__scientific_publication__0012.png",
+   "expected": "scientific_publication",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "scientific_publication",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 3670,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document image into one of 16 categories.\n\n**1. Analyze the document:**\n- **Title:** \"Myc-mediated apoptosis requires wild-type p53 in a manner independent of cell cycle arrest and the ability of p53 to induce p21waf1/cip1\"\n- **Authors:** Andrew J. Wagner, John M. Kokontis, and Nissim Hay.\n- **Affiliation:** The Ben May Institute and the Departments of Biochemistry and Molecular Biology and Pharmacological and Physiological Sciences, The University of Chicago.\n- **Abstract/Intro:** There's a paragraph starting with \"Deregulated expression of the c-myc proto-oncogene...\" which looks like an abstract or introduction. Wait, let's look closer. It has \"Received August 12, 1994; revised version accepted October 13, 1994\". This is typical of a journal article.\n- **Key Words:** [Key Words: Oncogene; tumor suppressor; programmed cell death]\n- **Text body:** Two columns of text. Citations like (Cole 1986, Cory 1986...).\n- **Footer:** \"GENES & DEVELOPMENT 8:2817-2830 \u00a9 1994 by Cold Spring Harbor Laboratory Press ISSN 0890-9369/94 $5.00 2817\". This is a journal footer.\n\n**2. Evaluate against categories:**\n- **advertisement:** No.\n- **budget:** No.\n- **email:** No.\n- **file_folder:** No.\n- **form:** No.\n- **handwritten:** No.\n- **invoice:** No.\n- **letter:** No.\n- **memo:** No.\n- **news_article:** No, it's academic.\n- **presentation:** No.\n- **questionnaire:** No.\n- **resume:** No.\n- **scientific_publication:** Yes. It looks like a page from a scientific journal (\"GENES & DEVELOPMENT\"). It has a title, authors, abstract/intro text, citations, and a journa"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "scientific_publication",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 3015,
+     "runner_up": "scientific_report",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI will follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: Top left says \"Proc. Natl. Acad. Sci. USA / Vol. 90, pp. 4304-4308, May 1993 / Genetics\". This is a journal running head. Page number at bottom is 4304.\n\n**Check 1: file_folder**\n- Evidence: No, there is a full article with title, authors, abstract, text.\n- Not this check.\n\n**Check 2: handwritten**\n- Evidence: No, it's typed text.\n- Not this check.\n\n**Check 3: FAX TRANSMISSION SHEET**\n- Evidence: No fax header.\n- Not this check.\n\n**Check 4: questionnaire**\n- Evidence: No survey instrument.\n- Not this check.\n\n**Check 5: resume**\n- Evidence: No career history.\n- Not this check.\n\n**Check 6: scientific_publication**\n- Evidence: Top left corner: \"Proc. Natl. Acad. Sci. USA / Vol. 90, pp. 4304-4308, May 1993 / Genetics\". Bottom center: \"4304\". This is a named journal (Proceedings of the National Academy of Sciences of the United States of America) with volume (90), page range (4304-4308), and date (May 1993).\n- This matches check 6.\n\n**Check 7: financial document**\n- Evidence: No financial content.\n- Not this check.\n\n**Check 8: specification**\n- Evidence: No.\n- Not this check.\n\n**Check 9: presentation**\n- Evidence: No.\n- Not this check.\n\n**Check 10: form**\n- Evidence: No.\n- Not this check.\n\n**Check 11: correspondence**\n- Evidence: No.\n- Not this check.\n\n**Check 12: news_article**\n- Evidence: No.\n- Not this check.\n\n**Check 13: scientific_report**\n- Evidence: It is a scie"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__scientific_publication__0012.png"
+  },
+  {
+   "filename": "rvl_cdip__scientific_report__0003.png",
+   "expected": "scientific_report",
+   "axis": "prompt_evolution",
+   "runs": [
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v0",
+     "predicted": "form",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 5794,
+     "runner_up": "",
+     "reasoning": "The user wants me to classify a document from a tobacco industry archive.\n\n**1. Analyze the document content:**\n- **Header:** \"BLENDED FLAVOR ACCEPTANCE\"\n- **Top right box:** \"94-002057\" (looks like a document ID or tracking number).\n- **Left column fields:**\n    - DM Code: 75-814\n    - PMID #: 233889-01\n    - Date Produced: 1/31/94\n    - Date Inspected: 1/31/94\n    - Compounder: DAVID\n    - No. Containers: 1\n    - Specific Gravity: (77 Deg. F) 1.1149\n- **Right column fields:**\n    - D/H Code Descrip: P.M. FLAVOR 7564-75-RC\n    - Quantity Produced: 567.750 LITS\n    - Inspector: F/C Q.A. Lab, Pull, Production\n    - Expiration Date: 2/31/94\n    - Flash Point: None\n- **Signature block:**\n    - Signature: \"Alma K Charles\" (looks like)\n    - Label: \"Supervisor\"\n    - Date: 2/01/94\n    - Label: \"Date\"\n- **Text body:** \"The material identified above has been sampled and tested and has been found to be suitable for use by Philip Morris.\"\n- **Comments:** \"In tote with 233921.\"\n- **Side text:** \"2024442203\" (vertical text, likely a Bates number or archive ID).\n\n**2. Apply the classification rules (Function over Subject Matter):**\n\n*   **Check 1: advertisement?** No. It's an internal business document.\n*   **Check 2: budget?** No. No financial projections or allocations.\n*   **Check 3: email?** No. No \"To:\", \"From:\", \"Subject:\" headers typical of email. It's a structured record.\n*   **Check 4: file_folder?** No. It's a single page record, not a folder cover.\n*   **Check 5: form?**\n    *   It has a clear title: \"BLENDED FLAVOR ACCEPTANCE\".\n    *   It has structured fields with labels ("
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "scientific_publication",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 8406,
+     "runner_up": "form",
+     "reasoning": "The user wants me to classify a scanned document into one of 16 categories.\nI will follow the scratchpad procedure, checking 1-14 in order.\n\n**Pre-scan:**\n- Mail-client header block: None.\n- Masthead/running head: \"CORESTA 1982 SYMPOSIUM\" at the top. \"ABSTRACT FORM\" below it. Page number \"19\" at the bottom right. \"0110346\" (Bates number) on the right side. No journal name/volume/issue/page range belonging to a journal. \"CORESTA 1982 SYMPOSIUM\" looks like a conference/symposium name.\n\n**Check 1: IDENTIFIER-ONLY PAGE -> file_folder**\n- Evidence: The page has a title, abstract text, author names, affiliation. Not identifier-only.\n- Not this check.\n\n**Check 2: MAJORITY-HANDWRITTEN PAGE -> handwritten**\n- Evidence: Typed text throughout.\n- Not this check.\n\n**Check 3: FAX TRANSMISSION SHEET -> form**\n- Evidence: No fax header.\n- Not this check.\n\n**Check 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire**\n- Evidence: No survey questions.\n- Not this check.\n\n**Check 5: PERSON'S CAREER HISTORY -> resume**\n- Evidence: Not a resume.\n- Not this check.\n\n**Check 6: PUBLISHED EVIDENCE -> scientific_publication**\n- Evidence: \"CORESTA 1982 SYMPOSIUM\" is at the top. \"ABSTRACT FORM\". Page number \"19\". Is this a published conference proceeding? \"CORESTA 1982 SYMPOSIUM\" is a symposium. The page is an \"ABSTRACT FORM\" submitted to the symposium. Wait, check 6 says: \"a formal paper or abstract in published conference proceedings: a named conference/symposium/tagungsband with a year, a titled, authored paper or abstract with an affiliation, and (usually) a page number.\"\n- Let's look closely a"
+    }
+   ],
+   "image": "chat_images/rvl_cdip__scientific_report__0003.png"
+  },
+  {
+   "filename": "test_imagesp_p_z_i_pzi97d00_2063676527_6529.tif.png",
+   "expected": "presentation",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "news_article",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 2026,
+     "runner_up": "letter",
+     "reasoning": "Mandatory pre-scan:\n- Mail-client header block: None present.\n- Masthead or running head: Yes, \"CATALINA MARKETING CORPORATION\" and \"News\" at the top. This points towards check 12 (news_article).\n\nScratchpad procedure:\n1.  file_folder: No. The page contains a press release with a title, date, and narrative content, not just an identifier or filing label.\n2.  handwritten: No. The page is entirely typed.\n3.  FAX TRANSMISSION SHEET: No. No fax transmission header.\n4.  questionnaire: No. It is not a survey instrument or asking for responses.\n5.  resume: No. No personal career history.\n6.  scientific_publication: No. No journal name, volume, issue, or page numbers on the page itself.\n7.  FINANCIAL DOCUMENT: No. While it mentions \"invoiced every four weeks\", the primary function is not financial reporting but announcing a new product program. It is not an invoice, budget, or statement.\n8.  specification: No. No product formulation, material safety data, or \"shall/must\" requirement language.\n9.  presentation: No. The layout is not sparse like a slide deck; it's dense prose. It's not a presentation cover or section divider.\n10. form: No. It is not a form with fields to fill out or capture data.\n11. CORRESPONDENCE:\n    *   email: No mail-client header.\n    *   memo: No internal TO/FROM/RE/SUBJECT header followed by prose.\n    *   letter: No letterhead with an external address, no \"Dear...\" salutation, no closing signature.\n12. news_article: Yes.\n    *   Evidence: The page has a masthead (\"CATALINA MARKETING CORPORATION\" and \"News\"), a dateline (\"ST. PETERSBURG, Fla., Nov. 22, 1996\")"
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1083,
+     "runner_up": "news_article",
+     "reasoning": "file_folder: none \u2014 page carries a full headline, body text, and contact block; not a filing label or tab.\nhandwritten: none \u2014 entirely printed/typed.\nfax: none \u2014 no facsimile or telefax header.\nquestionnaire: none \u2014 no survey items, rating scales, or response fields.\nresume: none \u2014 no education, positions, or honors list.\nscientific_publication: none \u2014 no journal running head, volume/issue, or copyright line on this page.\ninvoice/budget: none \u2014 no line-item bill, ledger, or budget table; money is mentioned only inside prose.\nspecification: none \u2014 no product requirements, test data, or \u201cshall\u201d language.\npresentation: yes \u2014 \u201cFOR RELEASE: IMMEDIATE\u201d, media contact block (Brandon Smith / GCI Spindler / (213) 930-0811), headline, dateline, and corporate press-release layout with \u201c-- more --\u201d continuation. This is an issued statement. STOP.\nRunner-up: news_article, ruled out because the page is a corporate press release from Catalina Marketing Corporation, not editorial content from a general-audience outlet; check 9 explicitly covers press releases and precedes check 12."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1070,
+     "runner_up": "news_article",
+     "reasoning": "file_folder: no \u2014 page contains full prose body, headline, and contact details, not just filing metadata.\nhandwritten: no \u2014 entirely typed text.\nfax transmission sheet: no \u2014 no \"FACSIMILE\" or \"TELEFAX\" cover sheet header with To/From fields.\nquestionnaire: no \u2014 does not ask reader to answer questions or fill out a form.\nresume: no \u2014 not a career history or CV.\nscientific_publication: no \u2014 no journal name, volume, issue, or DOI on the page.\ninvoice/budget: no \u2014 mentions invoicing in text but page is not a bill or ledger.\nspecification: no \u2014 not a product spec sheet or MSDS.\npresentation: yes \u2014 header shows \"CATALINA MARKETING CORPORATION\" with \"FOR RELEASE: IMMEDIATE\" and \"CONTACT:\" block; explicitly matches Check 9's \"corporate press release / issued statement ('FOR IMMEDIATE RELEASE', media contact)\" criteria.\nRunner-up: news_article, ruled out because the masthead identifies a corporation (\"Catalina Marketing Corporation\") rather than a general-audience news outlet, and the \"FOR RELEASE\" tag designates it as a press release (Check 9 precedes Check 12)."
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 2146,
+     "runner_up": "news_article",
+     "reasoning": "file_folder: no \u2014 the page contains a full press release with headline, body text, and contact information, not just an identifier or stamp.\nhandwritten: no \u2014 the page is entirely typed text.\nFAX TRANSMISSION SHEET: no \u2014 there is no fax cover sheet header (only a machine-stamped Bates number on the side, which is scan metadata).\nquestionnaire: no \u2014 there are no survey questions or rating scales.\nresume: no \u2014 this is not a career history or CV.\nscientific_publication: no \u2014 there is no journal running head, volume, issue, or page range belonging to a publication on this page (only a Bates number).\nfinancial document: no \u2014 although the text mentions being \"invoiced every four weeks\", the page itself is not a bill, ledger, or budget; it is a press release about a program.\nspecification: no \u2014 there is no material safety data, product formulation, or \"shall/must\" requirement language.\npresentation: yes \u2014 the page has a \"FOR RELEASE: IMMEDIATE\" header and a \"CONTACT:\" block (Brandon Smith, GCI Spindler), which matches the definition of a corporate press release/issued statement in check 9. It also ends with \"-- more --\", typical of press releases.\nform: no \u2014 there are no fields, boxes, or checkboxes for data capture.\ncorrespondence: no \u2014 it lacks a mail-client header (email), a TO/FROM/RE memo header, or a letter salutation/closing signature.\nnews_article: no \u2014 while it has the word \"News\" and a dateline, the header \"CATALINA MARKETING CORPORATION\" indicates this is a corporate press release, not a general-audience newspaper or magazine masthead (check 12 caveat).\nscientific_repor"
+    }
+   ],
+   "image": "chat_images/test_imagesp_p_z_i_pzi97d00_2063676527_6529.tif.png"
+  },
+  {
+   "filename": "test_imagesa_a_q_o_aqo64a00_83513344_3405.tif.png",
+   "expected": "presentation",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "form",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 650,
+     "runner_up": "presentation",
+     "reasoning": "file_folder: no \u2014 has topical titles and descriptive text beyond just an identifier.\nhandwritten: no \u2014 majority is printed, with some handwriting filling fields.\nquestionnaire: no \u2014 no survey items or questions.\nform: yes \u2014 has printed labels (\"THE FOLLOWING INFORMATION WAS GIVEN TO:\", \"BY\", \"TOTAL OF 64 PAGES\") with handwritten entries filling these fields, plus Bates numbers and administrative identifiers. This functions as a cover sheet or transmission log for a document package.\nRunner-up: presentation, ruled out because the presence of filled fields (labels + data) makes its primary function a form, which precedes the presentation check."
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1130,
+     "runner_up": "file_folder",
+     "reasoning": "1 file_folder: no \u2014 prominent rotated headings \"1995 WHOLESALE MASTERS\" and \"CUSTOMER PROGRAM DETAILS\" are real topical content; not a folder tab or pure ID page.\n2 handwritten: no \u2014 only a small handwritten annotation on the right; the dominant content is large printed text.\n3 fax: no \u2014 no \"FACSIMILE\" or fax cover header.\n4 questionnaire: no \u2014 no survey items, rating scales, or \"SURVEY OF...\" title.\n5 resume: no \u2014 no CV, career history, or biographical sketch.\n6 scientific_publication: no \u2014 no journal masthead, volume/issue, or copyright line on this page.\n7 financial: no \u2014 no line-item money table, invoice, or budget ledger.\n8 specification: no \u2014 no product code, \"shall/must\" language, or material data.\n9 presentation: yes \u2014 large sparse rotated headings \"1995 WHOLESALE MASTERS\" / \"CUSTOMER PROGRAM DETAILS\" on a mostly blank page with a vertical rule, page number \"1\", and a small handwritten distribution note: a deck title/section-divider layout.\nRunner-up: file_folder, ruled out because the bold topical headings constitute real content, making this a presentation cover/divider rather than pure filing metadata."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1406,
+     "runner_up": "file_folder",
+     "reasoning": "file_folder: no \u2014 the page contains a bold headline title \"CUSTOMER PROGRAM DETAILS\" and a subheading \"1995 WHOLESALE MASTERS\". Per Check 1, a page pairing a Bates number with a bold headline title carries real content and is a cover/title page or section divider (presentation), not file_folder.\nhandwritten: no \u2014 most content is typed; only a small transmittal note is handwritten.\nfax_transmission_sheet: no \u2014 no \"FACSIMILE\" header block.\nquestionnaire: no \u2014 no survey questions or response fields.\nresume: no \u2014 no career history.\nscientific_publication: no \u2014 no journal masthead/volume/page identifiers.\ninvoice/budget: no \u2014 no financial line items or billing structure.\nspecification: no \u2014 no product specs, MSDS, or \"shall/must\" language.\npresentation: yes \u2014 a near-blank cover/title page with a bold headline title (\"CUSTOMER PROGRAM DETAILS\"), a subheading (\"1995 WHOLESALE MASTERS\"), and sparse layout. Fits Check 9 definition of a section-divider page or deck cover.\nform: no \u2014 no data-entry fields.\nemail/memo/letter: no \u2014 no correspondence headers or salutations.\nnews_article: no \u2014 no newspaper/magazine masthead.\nscientific_report: no \u2014 no running narrative prose.\nadvertisement: no \u2014 no promotional imagery/slogans.\nRunner-up: file_folder, ruled out because the bold headline title \"CUSTOMER PROGRAM DETAILS\" constitutes real content per Check 1, moving it to presentation (section divider)."
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 2004,
+     "runner_up": "file_folder",
+     "reasoning": "file_folder: no \u2014 the page carries bold headline titles \"1995 WHOLESALE MASTERS\" and \"CUSTOMER PROGRAM DETAILS\" along with a handwritten transmittal note mentioning \"Total of 64 pages\". This is real content (a cover/title page or section divider), not pure filing metadata. The large rotated text is a section divider heading, not a short folder-tab label.\nhandwritten: no \u2014 the page is mostly typed (rotated) text with only a small handwritten note in the corner.\nfax: no \u2014 no fax transmission header. The handwritten note is a transmittal note, not a fax cover sheet.\nquestionnaire: no \u2014 no survey instrument or questions.\nresume: no \u2014 no career history.\nscientific_publication: no \u2014 no journal running head or volume/issue info.\nfinancial: no \u2014 no line-item table, invoice, or budget data on this page.\nspecification: no \u2014 no product data or \"shall/must\" language.\npresentation: yes \u2014 the page is mostly empty space with large, bold, rotated headline titles (\"1995 WHOLESALE MASTERS\", \"CUSTOMER PROGRAM DETAILS\"). This fits the description of a \"deck title or section-divider page\" or a \"near-blank cover or title page\". The rule explicitly states: \"A large heading rotated 90 degrees... is a section divider... presentation\". The handwritten note (\"Total of 64 pages\") suggests this is the cover for a presentation deck or document package.\nform: no \u2014 no fields, boxes, or checkboxes.\ncorrespondence: no \u2014 the handwritten note is a brief transmittal, not a full memo/letter structure with headers/prose.\nnews_article: no \u2014 no masthead or news typography.\nscientific_report: no \u2014 no running narrat"
+    }
+   ],
+   "image": "chat_images/test_imagesa_a_q_o_aqo64a00_83513344_3405.tif.png"
+  },
+  {
+   "filename": "test_imagesc_c_j_h_cjh64f00_0060373853.tif.png",
+   "expected": "memo",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "specification",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 1509,
+     "runner_up": "memo",
+     "reasoning": "file_folder: no \u2014 the page contains extensive body text describing technical evaluations and results, not just an identifier.\nhandwritten: no \u2014 the page is entirely typed.\nform: no \u2014 not a fax transmission sheet.\nquestionnaire: no \u2014 the page reports on material testing and performance, not a survey instrument.\nresume: no \u2014 the page is a technical report, not a career history.\nscientific_publication: no \u2014 no journal name, volume, issue, or page number is present on this page.\ninvoice: no \u2014 the page discusses material properties and performance, not financial transactions.\nbudget: no \u2014 the page discusses material properties and performance, not financial planning or tracking.\nspecification: yes \u2014 the page reports on the evaluation of black paper samples, detailing their properties (basis weight, moisture content, carbon content, weight, pressure drop) and performance in manufacturing. It explicitly states that the produced rods had \"pressure drop values within specification.\" This indicates the document's function is to report on whether a product meets defined standards. The text refers to \"attaching tables showing the basis weight, moisture content and percent carbon obtained on the black paper samples,\" which are product-referenced test data.\nRunner-up: memo, ruled out because specification (check 8) is an earlier check than memo (check 11) and provides a more specific functional classification for a document reporting on material properties and performance against defined standards."
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "memo",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1301,
+     "runner_up": "scientific_report",
+     "reasoning": "file_folder: no \u2014 the page is a full dated internal memo with running technical prose, not a filing label or folder tab.\nhandwritten: no \u2014 entirely typed text.\nfax transmission sheet: no \u2014 no \"FACSIMILE\" or fax cover header.\nquestionnaire: no \u2014 no printed survey items, rating scales, or enrollment fields.\nresume: no \u2014 no CV, education, or employment history.\nscientific_publication: no \u2014 no journal running head, volume/issue, or copyright line on this page.\nfinancial: no \u2014 no invoice line items, budget table, or money tracking; only technical measurements in prose.\nspecification: no \u2014 no \"shall/must\" language, MSDS header, or product-change authorization; it is a narrative memo about sample evaluations.\npresentation: no \u2014 dense typed prose, not a sparse slide or deck cover.\nform: no \u2014 no printed fields, boxes, checkboxes, or ruled data-entry lines.\nmemo: yes \u2014 dated \"November 5, 1975\", addressed to \"Mr. R. J. Smith, Manager - Hanmer Division\" from \"T. P. Pettigrew, Manufacturing Services Manager - Research and Development\", followed by memo-style prose; no external address, no \"Dear ...\" salutation, and no closing signature.\nRunner-up: scientific_report, ruled out because the internal memo header structure (name + division, date, sender + division) matches check 11 before check 13."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "memo",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1509,
+     "runner_up": "scientific_report",
+     "reasoning": "file_folder: no \u2014 the page has substantial body content (paragraphs of text), not just an identifier or stamp.\nhandwritten: no \u2014 the page is typed throughout.\nfax: no \u2014 no \"FACSIMILE\" or \"TELEFAX\" header; the \"November 5, 1975\" is a date, not a transmission header.\nquestionnaire: no \u2014 it does not ask the reader to answer questions or rate items; it reports on an evaluation.\nresume: no \u2014 not a career history.\nscientific_publication: no \u2014 no journal name, volume, issue, or page number on the page itself.\nfinancial: no \u2014 no invoice, budget, or financial table structure; mentions weights and products but not money.\nspecification: no \u2014 it reports on test results/evaluation rather than defining product requirements (\"shall/must\") or listing material safety data.\npresentation: no \u2014 dense text layout, not a slide deck or sparse cover page.\nform: no \u2014 not a form with fields to fill in; it is a narrative report.\ncorrespondence: yes \u2014 the page has a clear internal memo header structure: Date (\"November 5, 1975\"), To (\"Mr. R. J. Smith, Manager - Hanmer Division\"), From (\"T. P. Pettigrew, Manufacturing Services Manager - Research and Development\"). It follows the memo definition: internal names + titles + date + prose, with no salutation or closing signature.\nRunner-up: scientific_report, ruled out because the page has a clear internal memo header (Date, To, From) and follows the correspondence structure defined in Check 11, which takes precedence over the content-based classification of Check 13."
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "memo",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1549,
+     "runner_up": "letter",
+     "reasoning": "file_folder: no \u2014 the page contains full narrative prose and structured data, not just a filing label or Bates number.\nhandwritten: no \u2014 the page is entirely typed.\nfax: no \u2014 no fax transmission header or cover sheet.\nquestionnaire: no \u2014 does not ask the reader to answer or rate items.\nresume: no \u2014 not a career history.\nscientific_publication: no \u2014 no journal name, volume, issue, or page range on the page itself.\nfinancial: no \u2014 the page discusses paper moisture and weight, not money or financial records.\nspecification: no \u2014 not a material safety data sheet or product formulation document.\npresentation: no \u2014 not a slide deck, cover, or sparse layout.\nform: no \u2014 not a structured form with fields/boxes for data capture.\ncorrespondence/memo: yes \u2014 dated \"November 5, 1975\", addressed to \"Mr. R. J. Smith, Manager - Hanmer Division\" from \"T. P. Pettigrew, Manufacturing Services Manager - Research and Development\", followed directly by memo-style prose with no external address, no \"Dear...\" salutation, and no closing signature. This perfectly matches the memo rule for internal names + titles + date + prose.\nnews_article: no \u2014 not published journalism.\nscientific_report: no \u2014 the primary structure is a memo header + prose, not a research write-up.\nadvertisement: no \u2014 not promotional material.\nRunner-up: letter, ruled out because the addressee includes an internal title/division (\"Manager - Hanmer Division\") and there is no external address, \"Dear...\" salutation, or closing signature, which defines it as a memo rather than a letter."
+    }
+   ],
+   "image": "chat_images/test_imagesc_c_j_h_cjh64f00_0060373853.tif.png"
+  },
+  {
+   "filename": "test_imagest_t_q_y_tqy07d00_tnwl0000798.tif.png",
+   "expected": "budget",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "handwritten",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 1488,
+     "runner_up": "file_folder",
+     "reasoning": "file_folder: no \u2014 the page contains multiple lines of handwritten text (dates, names, locations) and a Bates number, which is more than just identifier-only content.\nhandwritten: yes \u2014 the majority of the content is freeform handwriting, including dates (\"2/15/04\", \"2/28/04\"), names (\"Annars\"), and locations/addresses (\"Horse Road\", \"Andover\", \"Constantine\"). It does not appear to be filling in a printed template.\nquestionnaire: no \u2014 no printed survey questions or response fields.\nform: no \u2014 the handwritten entries are not filling in pre-defined fields or structured form elements.\nemail: no \u2014 no mail-client header block.\nmemo: no \u2014 no memo header block (TO/FROM/RE/SUBJECT/DATE) followed by prose.\nletter: no \u2014 no letterhead, external address, salutation, or closing.\nnews_article: no \u2014 no masthead, byline, dateline, or news typography.\npresentation: no \u2014 not a slide layout, deck cover, or section divider.\nscientific_publication: no \u2014 no journal name or publication identifiers.\nscientific_report: no \u2014 no running narrative prose with objectives, methods, results, or discussion.\nadvertisement: no \u2014 no marketing layout or product imagery.\ninvoice: no \u2014 no financial figures, line items, or billing details.\nbudget: no \u2014 no financial planning or tracking details.\nspecification: no \u2014 no product specifications or requirement language.\nRunner-up: file_folder, ruled out because the page contains substantial handwritten notes and entries, not just an identifier or filing label."
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1131,
+     "runner_up": "handwritten",
+     "reasoning": "1. file_folder: no \u2014 the page carries a handwritten expense log with topical entries and dates, not just a Bates number or filing label.\n2. handwritten: no \u2014 while the page is majority handwritten, the entries form a dated expense log by category (\"Houseplant\", \"Dinners\", etc. with dates 2/13/94, 2/15/94, 2/26/94, 2/28/94), which the check instructions explicitly classify as budget, not handwritten.\n3. form (fax): no \u2014 no facsimile transmission header or cover sheet fields.\n4. questionnaire: no \u2014 no printed survey items, rating scales, or transmittal language.\n5. resume: no \u2014 no career history, education, or positions listed.\n6. scientific_publication: no \u2014 no journal running head, volume/issue, or copyright line on this page.\n7. budget: yes \u2014 handwritten note/log of dated expenses by category with entries such as \"Houseplant\" and \"Dinners\" alongside dates; this is internal expense tracking, which check 7 explicitly covers as budget even when amounts are illegible.\nRunner-up: handwritten, ruled out because the check 2 and check 7 instructions specifically reclassify a handwritten expense log by category as budget."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 848,
+     "runner_up": "handwritten",
+     "reasoning": "file_folder: no \u2014 Page contains a handwritten log of dates and categories, not just filing metadata (Bates number).\nhandwritten: not this check \u2014 Check 2 explicitly excludes \"handwritten note/log of dated expenses by category\" from the label (is budget, not handwritten).\nfax_transmission_sheet: no \u2014 No fax header block.\nquestionnaire: no \u2014 No survey instrument or questions.\nresume: no \u2014 No career history or biographical sketch.\nscientific_publication: no \u2014 No journal running head or publication identifiers.\nbudget: yes \u2014 Check 7 explicitly covers \"handwritten note/log of dated expenses by category (amounts need not be legible)\". Page shows dates (3/1/94, 3/2/94) and expense categories (House Plant, Painting, Garden, Dinner).\nRunner-up: handwritten, ruled out because Check 2 explicitly categorizes this content as budget, not handwritten."
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "budget",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1197,
+     "runner_up": "handwritten",
+     "reasoning": "file_folder: no \u2014 the page contains handwritten content (dates, categories, amounts), not just a Bates number or filing label.\nhandwritten: not this check \u2014 although the page is mostly freeform handwriting, the instructions explicitly state that \"a handwritten note/log of dated expenses by category (e.g. 'Contractor', 'Dinner', 'Painting', 'Houseplant', each with a date) even when amounts are not legible \u2014 is budget, not handwritten\". The page matches this exactly.\nFAX: not this check \u2014 no fax transmission header or cover sheet.\nquestionnaire: not this check \u2014 no survey instrument or transmittal.\nresume: not this check \u2014 no career history or biographical sketch.\nscientific_publication: not this check \u2014 no journal running head, volume, or issue identifier.\nbudget: yes \u2014 the page contains a handwritten log of dated expenses by category (dates like \"3/01/94\", \"3/15/94\", \"3/26/94\", \"3/29/94\" alongside categories \"Houseplant\", \"Painting\", \"Contractor\", \"Dinner\" with amount dots). The instructions explicitly state this is budget, not handwritten.\nRunner-up: handwritten, ruled out because the content is a log of dated expenses by category, which the rules explicitly classify as budget."
+    }
+   ],
+   "image": "chat_images/test_imagest_t_q_y_tqy07d00_tnwl0000798.tif.png"
+  },
+  {
+   "filename": "test_imagesq_q_r_y_qry74c00_91652770_2771.tif.png",
+   "expected": "advertisement",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "news_article",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 2772,
+     "runner_up": "presentation",
+     "reasoning": "Mandatory pre-scan:\n- Mail-client header block: None found.\n- Masthead or running head: Found \"Galaxy\" masthead. This points towards check 12.\n\nCheck 1: IDENTIFIER-ONLY PAGE -> file_folder\n- Evidence: The page has a masthead (\"Galaxy\"), images, and text about actors. It is not an identifier-only page.\n- Result: no \u2014 not this check.\n\nCheck 2: MAJORITY-HANDWRITTEN PAGE -> handwritten\n- Evidence: The page is entirely printed.\n- Result: no \u2014 not this check.\n\nCheck 3: FAX TRANSMISSION SHEET -> form\n- Evidence: No fax transmission headers found.\n- Result: no \u2014 not this check.\n\nCheck 4: SURVEY INSTRUMENT OR ITS TRANSMITTAL -> questionnaire\n- Evidence: The page does not contain survey questions or related materials.\n- Result: no \u2014 not this check.\n\nCheck 5: PERSON'S CAREER HISTORY -> resume\n- Evidence: The content is about actors and a publication, not a person's career history.\n- Result: no \u2014 not this check.\n\nCheck 6: PUBLISHED EVIDENCE -> scientific_publication\n- Evidence: The page has a masthead (\"Galaxy\") but it appears to be a general interest magazine, not a scientific journal. No journal identifiers (volume, issue, page range, DOI, copyright) are present on this page.\n- Result: no \u2014 not this check.\n\nCheck 7: FINANCIAL DOCUMENT -> invoice or budget\n- Evidence: No financial content, line items, or monetary figures are present.\n- Result: no \u2014 not this check.\n\nCheck 8: PRODUCT OR MATERIAL DOCUMENTATION -> specification\n- Evidence: No product specifications, technical data, or \"shall/must\" language.\n- Result: no \u2014 not this check.\n\nCheck 9: SLIDE DECK, DECK COVER, OR COMPANY STATEM"
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "news_article",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 1470,
+     "runner_up": "advertisement",
+     "reasoning": "Pre-scan: Magazine masthead \"Galaxy\" at top; no mail-client header block.\n1. file_folder: none \u2014 page carries a masthead, photographs, and topical text; not pure filing metadata.\n2. handwritten: none \u2014 content is printed, not freeform handwriting.\n3. form (fax): none \u2014 no \"FACSIMILE\" or fax cover header.\n4. questionnaire: none \u2014 no survey items, rating scales, or response boxes.\n5. resume: none \u2014 no career history or biographical sketch.\n6. scientific_publication: none \u2014 masthead is a general-audience magazine (\"Galaxy\") with no volume, issue, page range, or journal copyright line.\n7. financial: none \u2014 no line-item billing, ledger, or budget table.\n8. specification: none \u2014 no product data, MSDS, or requirement language.\n9. presentation: none \u2014 not a sparse slide deck cover or photographic slide; it is a magazine page with a masthead and feature layout.\n10. form: none \u2014 no data-entry fields, boxes, checkboxes, or ruled lines.\n11. correspondence: none \u2014 no To/From/Subject block, salutation, or letter structure.\n12. news_article: yes \u2014 magazine masthead \"Galaxy\" at top; feature text \"CHANCES ARE\" with star names (MARY STUART MASTERSON, ROBERT DOWNEY, JR., CYBILL SHEPHERD) and photographs; presents as published periodical editorial content from a general-audience outlet.\nRunner-up: advertisement, ruled out because the page carries the magazine's own masthead (\"Galaxy\") and functions as editorial feature content, not a single-brand promotional layout."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "advertisement",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1945,
+     "runner_up": "news_article",
+     "reasoning": "file_folder: no \u2014 the page contains a large photographic image, a bold headline (\"Chances Are\"), and billing text listing actors, which constitutes real content beyond a filing label or Bates number.\nhandwritten: no \u2014 all text and images are printed/scanned; no freeform handwriting dominates the page.\nfax: no \u2014 no \"FACSIMILE\" header or transmission metadata block.\nquestionnaire: no \u2014 no survey questions, rating scales, or instructions to answer.\nresume: no \u2014 no career history, education, or biographical profile of a person.\nscientific_publication: no \u2014 no journal running head, volume, issue, or DOI; \"Galaxy\" appears to be a title/logo, not a scientific journal identifier.\nfinancial: no \u2014 no line-item billing, ledger, or budget tracking structure.\nspecification: no \u2014 no material safety data, product formulation, or technical requirement language.\npresentation: no \u2014 layout is dense with multiple images and text blocks, resembling a print advertisement or poster rather than a sparse slide deck or overhead.\nform: no \u2014 no administrative fields, checkboxes, or ruled entry lines for data capture.\ncorrespondence: no \u2014 no To/From/Salutation/Closing structure typical of letters or memos.\nnews_article: no \u2014 while \"Galaxy\" resembles a masthead, the dominant content is a movie billing block (\"Star Mary Stuart Masterson\", \"Joins Robert Downey, Jr.\") and promotional imagery, not editorial news or multi-column journalism.\nscientific_report: no \u2014 no narrative research methodology, results, or discussion prose.\nadvertisement: yes \u2014 the page displays a marketing layout for a film (\"Chances Ar"
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "advertisement",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1738,
+     "runner_up": "news_article",
+     "reasoning": "file_folder: no \u2014 the page contains photographic images and promotional text, not just an identifier or stamp.\nhandwritten: no \u2014 the page is entirely printed/photographic with no freeform handwriting.\nfax: no \u2014 no fax transmission header or cover sheet present.\nquestionnaire: no \u2014 no survey items, rating scales, or response boxes.\nresume: no \u2014 not a career history or biographical sketch.\nscientific_publication: no \u2014 no journal name, volume, issue, or page range on the page itself.\nfinancial: no \u2014 no line-item financial table, ledger, or billing structure.\nspecification: no \u2014 no material safety data, product formulation, or \"shall/must\" requirement language.\npresentation: no \u2014 not a slide deck, corporate statement, or speech text.\nform: no \u2014 no structured fields, checkboxes, or ruled entry lines for data capture.\ncorrespondence: no \u2014 no mail-client header, memo block, or letter formatting (salutation/closing).\nnews_article: no \u2014 while \"Galaxy\" appears at the top (possibly a magazine masthead), the dominant layout is a single promotional advertisement for the TV show \"Chances Are\" rather than editorial/multi-story news content.\nscientific_report: no \u2014 no running narrative prose, objectives, methods, or results.\nadvertisement: yes \u2014 the dominant content is a marketing/promotional layout for the TV show \"Chances Are,\" featuring product imagery (photographs of the cast: Mary Stuart Masterson, Robert Downey Jr., Cybill Shepherd), the show's title, and promotional text. This fits the definition of promotional material/advertisement.\nRunner-up: news_article, ruled out because the p"
+    }
+   ],
+   "image": "chat_images/test_imagesq_q_r_y_qry74c00_91652770_2771.tif.png"
+  },
+  {
+   "filename": "test_imagesw_w_e_b_web24c00_2080160352_0372.tif.png",
+   "expected": "presentation",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1967,
+     "runner_up": "file_folder",
+     "reasoning": "file_folder: no \u2014 the page contains a photographic image and a Bates number (\"2080160352\"), which is explicitly stated to be presentation (check 9) rather than file_folder when paired with an image.\nhandwritten: no \u2014 the dominant content appears to be an image with printed text/identifiers, not freeform handwriting.\nfax_transmission_sheet: no \u2014 no fax transmission header is visible.\nquestionnaire: no \u2014 no survey instrument content is visible.\nresume: no \u2014 no career history information is visible.\nscientific_publication: no \u2014 no journal name, volume, issue, or page number is visible on the page itself.\ninvoice: no \u2014 no financial transaction details like line items, amounts due, or vendor billing are visible.\nbudget: no \u2014 no internal financial planning or tracking information is visible.\nspecification: no \u2014 no product formulation, material data, or \"shall/must\" requirements are visible.\nform: no \u2014 no structured fields, boxes, or entry lines for capturing data are clearly visible.\nemail: no \u2014 no mail-client header block (From/To/Sent/Subject) or forwarded trail is visible.\nmemo: no \u2014 no memo header (TO/FROM/RE/SUBJECT) followed by prose is visible.\nletter: no \u2014 no letterhead, external address, salutation, or closing signature is visible.\nnews_article: no \u2014 no newspaper/magazine masthead, byline, or dateline is visible.\nscientific_report: no \u2014 no running narrative prose (objectives, methods, results, discussion) is visible.\npresentation: yes \u2014 the page contains a prominent, blurred visual element that resembles a photograph of a scene or people. The text \"2080160352\" is visible"
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "advertisement",
+     "no_label": false,
+     "correct": false,
+     "reasoning_len": 1375,
+     "runner_up": "presentation",
+     "reasoning": "file_folder: no \u2014 page contains a full promotional photograph with product imagery and brand text, not a filing label or tab.\nhandwritten: no \u2014 printed image, no handwriting.\nform (fax): no \u2014 no facsimile header.\nquestionnaire: no \u2014 no survey items or instrument elements.\nresume: no \u2014 no career history or biographical sketch.\nscientific_publication: no \u2014 no journal running head, volume/issue, or copyright line on this page.\nfinancial: no \u2014 no invoice line items, budget table, or money structure.\nspecification: no \u2014 no technical product data, MSDS, or \u201cshall\u201d language.\npresentation: no \u2014 the photograph is part of a designed advertisement with integrated brand text and product styling, not a sparse slide or standalone slide image.\nform: no \u2014 no fields, boxes, checkboxes, or data-capture structure.\ncorrespondence: no \u2014 no email, memo, or letter headers.\nnews_article: no \u2014 no newspaper masthead, byline, or multi-column editorial layout.\nscientific_report: no \u2014 no running narrative prose or study title.\nadvertisement: yes \u2014 dominant layout is a marketing image: a model holding a perfume bottle with the brand name \u201cFLEUR DE JASMIN\u201d visible, classic promotional styling.\nRunner-up: presentation, ruled out because the page is a designed brand advertisement with integrated product imagery and text, not a standalone photographic slide carrying only a Bates number."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1356,
+     "runner_up": "file_folder",
+     "reasoning": "file_folder: no \u2014 while there is a Bates number (\"2080160352\"), the page contains significant visual content (a photographic image/scene), not just filing metadata.\nhandwritten: no \u2014 no legible handwriting; the noise is scan degradation.\nquestionnaire: no \u2014 no survey questions or instruments.\nresume: no \u2014 no career history text.\nscientific_publication: no \u2014 no journal masthead or identifiers.\ninvoice/budget: no \u2014 no financial tables or line items.\nspecification: no \u2014 no product data or technical specs.\npresentation: yes \u2014 the page displays a photographic image (people/scene) with heavy scan noise/artifacts, accompanied by a Bates number. Per Check 9, \"A standalone photographic image (people, a scene, an event photo) carrying only a Bates number is a photographic slide (this check)\".\nform: no \u2014 no administrative fields or boxes.\nemail/memo/letter: no \u2014 no correspondence headers or signatures.\nnews_article: no \u2014 no newspaper/magazine masthead.\nscientific_report: no \u2014 no running narrative prose.\nadvertisement: no \u2014 while it could be promotional, the primary identifiable feature is the photographic slide format with a Bates number, which maps to presentation per the specific rule for standalone images.\nRunner-up: file_folder, ruled out because the presence of the photographic image constitutes real content beyond just an archive stamp/ID."
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1240,
+     "runner_up": "file_folder",
+     "reasoning": "file_folder: no \u2014 the page contains a photographic image of people, not just an identifier/stamp or folder tab label.\nhandwritten: no \u2014 no handwriting present.\nform: no \u2014 no fax transmission header or structured fields.\nquestionnaire: no \u2014 no survey instrument.\nresume: no \u2014 no career history.\nscientific_publication: no \u2014 no journal running head or volume/issue identifier.\ninvoice/budget: no \u2014 no financial data or billing structure.\nspecification: no \u2014 no product data or \"shall/must\" language.\npresentation: yes \u2014 standalone photographic image (people/scene) carrying only a Bates number (\"2080160352\"). The solid black bar along the left edge is a scan artifact for slides/transparencies, and the content is a photo of people, fitting the \"photographic slide\" definition.\nform: no \u2014 not an administrative form.\nemail/memo/letter: no \u2014 no mail header or correspondence structure.\nnews_article: no \u2014 no masthead or editorial layout.\nscientific_report: no \u2014 no running narrative prose.\nadvertisement: no \u2014 no marketing layout or slogans.\nRunner-up: file_folder, ruled out because the page carries a photographic image (people), which counts as real content, making it a photographic slide (presentation) under check 9, not a filing label."
+    }
+   ],
+   "image": "chat_images/test_imagesw_w_e_b_web24c00_2080160352_0372.tif.png"
+  },
+  {
+   "filename": "test_imagesu_u_b_a_uba13e00_2060574010.tif.png",
+   "expected": "presentation",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1791,
+     "runner_up": "form",
+     "reasoning": "file_folder: no \u2014 the page has a title \"ARCHIVE LOCATION VARIANCE SHEET\", a number range, and structured options for location, not just an identifier or filing label.\nhandwritten: no \u2014 the majority of the content is printed text and checkboxes; only a handwritten 'X' and the number range.\nFAX TRANSMISSION SHEET: no \u2014 no fax transmission header is present.\nquestionnaire: no \u2014 this is not a survey instrument asking for opinions or data for research; it's an administrative record-keeping document.\nresume: no \u2014 no career history content.\nscientific_publication: no \u2014 no journal name, volume, issue, or page number on the page itself.\nFINANCIAL DOCUMENT: no \u2014 the content is about location, not money.\nspecification: no \u2014 no product formulation, MSDS, or \"shall/must\" language.\npresentation: yes \u2014 The calibration note for check 9 states: \"one-page status/location display sheet \u2014 a titled sheet stating where a record range or item is located, printed in slide-style layout with a title, a line of reference numbers, and checkbox-style options (e.g. an \"ARCHIVE LOCATION VARIANCE SHEET\" listing \"THE NUMBER (RANGE) ... IS LOCATED: ( ) IN THE AUDIO CABINET ...\") \u2014 is a presentation (this check), not a form.\" This page perfectly matches this description with its title \"ARCHIVE LOCATION VARIANCE SHEET\", the listed number range, and the options with checkboxes for location. The layout is sparse, fitting a \"slide-style\" description.\nform: no \u2014 While it has form-like elements (checkboxes, fields), the specific calibration note for check 9 overrides this, classifying this type of document as a pr"
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1225,
+     "runner_up": "form",
+     "reasoning": "file_folder: not this check \u2014 page carries a bold topical title \"ARCHIVE LOCATION VARIANCE SHEET\" and structured checkbox content, not pure filing metadata.\nhandwritten: not this check \u2014 printed text throughout; only a single \"X\" mark in one checkbox.\nform (fax): not this check \u2014 no facsimile or telefax header.\nquestionnaire: not this check \u2014 no survey questions, rating scales, or enrolment items.\nresume: not this check \u2014 no career history or biographical data.\nscientific_publication: not this check \u2014 no journal name, volume, issue, or copyright line on the page.\ninvoice/budget: not this check \u2014 no financial amounts, line-item billing, or money tracking.\nspecification: not this check \u2014 no product code, material data, or \"shall/must\" language.\npresentation: yes \u2014 titled \"ARCHIVE LOCATION VARIANCE SHEET\", lists a number range \"2060574009-2060574012\", and shows checkbox-style location options with \"ON THE OVERSIZE SHELF\" marked; this is the one-page status/location display sheet explicitly described in check 9's caveat.\nRunner-up: form, ruled out because check 9 explicitly designates this exact location-variance layout as a presentation (it presents where something is, rather than capturing data for records)."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 995,
+     "runner_up": "form",
+     "reasoning": "file_folder: no \u2014 the page contains a title, a specific number range, and a list of location options with checkboxes; it is not just an identifier/stamp.\nhandwritten: no \u2014 the majority of the content is printed text and layout; only the number range and the 'X' are handwritten.\nquestionnaire: no \u2014 it is not a survey instrument asking for opinions or data collection from respondents.\npresentation: yes \u2014 Check 9 explicitly cites this exact document type: \"A one-page status/location display sheet \u2014 a titled sheet stating where a record range or item is located... (e.g. an 'ARCHIVE LOCATION VARIANCE SHEET' listing 'THE NUMBER (RANGE)... IS LOCATED: ...') \u2014 is a presentation (this check), not a form.\" The page matches this description perfectly (Title: \"ARCHIVE LOCATION VARIANCE SHEET\", Number Range: \"2060574004-2060574012\", Checkbox options).\nRunner-up: form, ruled out because Check 9 explicitly overrides the form classification for this specific type of status/location display sheet."
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "presentation",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1214,
+     "runner_up": "form",
+     "reasoning": "file_folder: no \u2014 the page has a title \"ARCHIVE LOCATION VARIANCE SHEET\", a number range, and a list of locations with checkboxes; it has real content, not just an identifier.\nhandwritten: no \u2014 mostly printed text with a handwritten number range and an 'X' in a checkbox; not majority freeform handwriting.\nfax: no \u2014 no fax transmission header.\nquestionnaire: no \u2014 not a survey instrument.\nresume: no.\nscientific_publication: no \u2014 no journal running head or identifier.\nfinancial: no \u2014 no financial data.\nspecification: no \u2014 no product/material data.\npresentation: yes \u2014 matches the specific caveat in check 9: \"a one-page status/location display sheet \u2014 a titled sheet stating where a record range or item is located... (e.g. an 'ARCHIVE LOCATION VARIANCE SHEET' listing 'THE NUMBER (RANGE) 2060574004-2060574012 IS LOCATED: ...') \u2014 is a presentation (this check), not a form.\" The page has the title \"ARCHIVE LOCATION VARIANCE SHEET\", the number range \"2060574004-2060574012\", and checkbox options for locations.\nRunner-up: form, ruled out because check 9 explicitly categorizes this exact \"ARCHIVE LOCATION VARIANCE SHEET\" layout as a presentation (status/location display sheet), and check 9 precedes check 10."
+    }
+   ],
+   "image": "chat_images/test_imagesu_u_b_a_uba13e00_2060574010.tif.png"
+  },
+  {
+   "filename": "test_imagesj_j_o_w_jow70f00_0011930077.tif.png",
+   "expected": "invoice",
+   "axis": "cross_model",
+   "runs": [
+    {
+     "model_short": "gemini-2.5-flash-lite",
+     "model": "google/gemini-2.5-flash-lite",
+     "prompt": "v11.8",
+     "predicted": "invoice",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 2069,
+     "runner_up": "budget",
+     "reasoning": "file_folder: no \u2014 the page contains structured financial fields and a description of a transaction, not just an identifier.\nhandwritten: no \u2014 the page is predominantly typed, with handwriting filling in printed fields.\nfax_transmission_sheet: no \u2014 no fax transmission header.\nquestionnaire: no \u2014 not a survey instrument or its transmittal.\nresume: no \u2014 not a career history document.\nscientific_publication: no \u2014 no journal name, volume, issue, or page number on the page itself.\nfinancial_document: yes \u2014 the page is a \"VOUCHER\" with fields for vendor, payee, amount, and item description, clearly indicating a financial transaction. It is either an invoice or a budget.\n  - invoice: The definition states \"A payment VOUCHER naming a payee, vendor/item fields, an amount ('PAY THIS AMOUNT'/'AMOUNT'), and a payment date is a payment instrument that BILLS a named payee for named goods/services/charges \u2014 invoice, whether it pays a vendor for goods/services or a grantee/recipient (e.g. a contribution payment for a grant).\" This page is a voucher for a \"Final contribution for grant to above Institute for basic research\" with a specific amount and date. This fits the definition of invoice, specifically the \"contribution payment for a grant\" example.\n  - budget: The definition includes \"contribution/expenditure REQUEST/CHECKLIST/STATEMENT whose ENTIRE content is the amount and (for a contribution) the recipient\". While this is a contribution for a grant, it is explicitly labeled a \"VOUCHER\" and contains more fields than just amount and recipient (e.g., vendor, address, item description, P.O"
+    },
+    {
+     "model_short": "kimi-k2.6",
+     "model": "moonshotai/kimi-k2.6",
+     "prompt": "v11.8",
+     "predicted": "invoice",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1138,
+     "runner_up": "form",
+     "reasoning": "file_folder: not this check \u2014 the page is a detailed payment voucher with payee and amount fields, not a filing label or index card.\nhandwritten: not this check \u2014 only minor handwritten annotations; the page is overwhelmingly typed.\nfax transmission sheet: not this check \u2014 no \"FACSIMILE\" or fax cover header.\nquestionnaire: not this check \u2014 no survey items, rating scales, or transmittal language.\nresume: not this check \u2014 no career history or biographical sketch.\nscientific_publication: not this check \u2014 no journal running head, volume/issue, or copyright line on this page.\nfinancial: yes \u2014 the page is a \"VOUCHER\" from Brown & Williamson Tobacco Corporation naming payee \"The Franklin Institute\", item description \"Final contribution for grant to above Institute for basic research\", amount \"$275,000.00\", and a \"PAY THIS AMOUNT\" block; per check 7, a payment voucher that bills a named payee (including a grantee) is an invoice.\nRunner-up: form, ruled out because check 7 explicitly states a payment voucher naming a payee and amount is a payment instrument classified as invoice, overriding its form-like fields and approval boxes."
+    },
+    {
+     "model_short": "qwen3.5-35b-a3b",
+     "model": "qwen/qwen3.5-35b-a3b",
+     "prompt": "v11.8",
+     "predicted": "invoice",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1095,
+     "runner_up": "form",
+     "reasoning": "file_folder: no \u2014 the page contains a full voucher layout with payee, amount, description, and signatures, not just an ID stamp or folder tab.\nhandwritten: no \u2014 the page is primarily a printed form with typed fields; handwriting is limited to signatures/dates.\nfax: no \u2014 the header reads \"VOUCHER\", not \"FAX COVER SHEET\" or similar transmission sheet.\nquestionnaire: no \u2014 this is a payment instrument, not a survey or feedback form.\nresume: no \u2014 not a career history document.\nscientific_publication: no \u2014 no journal running head, volume, or issue identifier on the page.\nfinancial: yes \u2014 the page is titled \"VOUCHER\", lists a payee (\"The Franklin Institute\"), an item description (\"Final contribution for grant...\"), and an amount (\"$278,000.00\"). Per Check 7 rules: \"A payment VOUCHER naming a payee... is invoice... whether it pays a vendor for goods/services or a grantee/recipient (e.g. a contribution payment for a grant).\"\nSTOP HERE.\nRunner-up: form, ruled out because money records (specifically vouchers) are directed to check 7 (invoice/budget) rather than general administrative form."
+    },
+    {
+     "model_short": "qwen3.7-flash",
+     "model": "qwen/qwen3.7-flash",
+     "prompt": "v11.8",
+     "predicted": "invoice",
+     "no_label": false,
+     "correct": true,
+     "reasoning_len": 1850,
+     "runner_up": "budget",
+     "reasoning": "file_folder: no \u2014 the page contains a full voucher form with vendor details, item descriptions, amounts, and account codes, not just an ID or stamp.\nhandwritten: no \u2014 the page is a printed form with typed/printed entries (e.g., \"Final contribution...\", \"$278,000.00\"); only a small date \"November 16 '89\" at the bottom is handwritten.\nquestionnaire: no \u2014 no survey questions or instruments.\nresume: no \u2014 no career history.\nscientific_publication: no \u2014 no journal running head or publication identifier.\nfinancial (invoice/budget): yes \u2014 the page is titled \"VOUCHER\" from \"BROWN & WILLIAMSON TOBACCO CORPORATION\". It lists a vendor (\"The Franklin Institute\"), an item description (\"Final contribution for grant to above institute for basic research\"), an amount (\"$278,000.00\"), and a date (\"11/20/89\"). Check 7 states: \"A payment VOUCHER naming a payee, vendor/item fields, an amount (\"PAY THIS AMOUNT\"/\"AMOUNT\"), and a payment date is a payment instrument that BILLS a named payee for named goods/services/charges \u2014 invoice, whether it pays a vendor for goods/services or a grantee/recipient (e.g. a contribution payment for a grant).\" This matches perfectly.\nspecification: no \u2014 no product specs.\npresentation: no \u2014 not a slide deck.\nform: no \u2014 although it is a form layout, Check 7 (Financial Document) overrides form layout for payment vouchers.\ncorrespondence: no \u2014 no memo/letter header structure.\nnews_article: no \u2014 no masthead.\nscientific_report: no \u2014 no running narrative prose.\nadvertisement: no \u2014 no promotional content.\nRunner-up: budget, ruled out because the document is a payment vouch"
+    }
+   ],
+   "image": "chat_images/test_imagesj_j_o_w_jow70f00_0011930077.tif.png"
+  }
+ ]
+}

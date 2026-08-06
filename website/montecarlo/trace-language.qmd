@@ -1,0 +1,652 @@
+---
+title: 'Trace-Language Analysis'
+description: 'Differential phrase nets, log-odds with a Dirichlet prior, and a scattertext-style word grid over failed vs correct reasoning traces.'
+resources:
+  - '../assets/js/vis-network.min.js'
+  - '../assets/js/d3.v7.min.js'
+  - '../charts/phrase_net_differential.json'
+  - '../charts/scattertext_style.json'
+toc: true
+toc-depth: 3
+---
+- **Corpus rows (reasoning-covered)**: 3101 (658 failed, 2443 correct)
+- **Scope**: all
+- **Word tokenization**: content words (stopwords removed); phrase tokenization keeps function words for loop detection
+- **Dirichlet prior** a = 0.01 (symmetric pseudo-count)
+
+## Differential Phrase Nets
+
+<script src="../assets/js/vis-network.min.js"></script>
+
+<div class="phrase-net-widget" style="position: relative; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; background: #ffffff; overflow: hidden; margin: 1.2em 0;">
+<div id="phrase-net-canvas" style="width: 100%; height: 700px; font-family: var(--font-sans);"></div>
+<div id="phrase-net-status" style="position: absolute; top: 10px; left: 14px; z-index: 10; font-size: 13px; color: #5b6577; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 12px; border: 1px solid #d5dbe6; pointer-events: none;">Loading interactive phrase net…</div>
+<div style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;">
+<span><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#66c4a8;vertical-align:-2px;"></span> success-biased word</span>
+<span><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e08580;vertical-align:-2px;"></span> failure-biased word</span>
+<span><span style="display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-radius:2px;vertical-align:-2px;"></span> prompt-leaked word</span>
+<span><span style="display:inline-block;width:22px;height:3px;background:#66c4a8;vertical-align:-2px;"></span> success-biased edge</span>
+<span><span style="display:inline-block;width:22px;height:3px;background:#e08580;vertical-align:-2px;"></span> failure-biased edge</span>
+<span><span style="display:inline-block;width:22px;height:3px;background:#c76e63;vertical-align:-2px;"></span> structural-loop edge</span>
+<span style="margin-left:auto;color:#5b6577;">drag to explore · scroll to zoom · hover for counts · double-click to focus</span>
+</div>
+</div>
+<script>
+(function () {
+  var statusEl = document.getElementById('phrase-net-status');
+  if (typeof vis === 'undefined' || !vis.Network) {
+    if (statusEl) statusEl.textContent = 'Network library failed to load — see static SVG below.';
+    return;
+  }
+  var base = (window.location.pathname.match(/.*\//) || ['/'])[0];
+  // The vendored vis-network 9.1.9 renders STRING tooltips via `innerText`
+  // (HTML shows literally as <b>…</b>); it appends DOM elements with full
+  // HTML instead. Build element titles so markup renders, not displays.
+  function tooltipHtml(html) {
+    var el = document.createElement('div');
+    el.innerHTML = html;
+    return el;
+  }
+  fetch(base + '../charts/phrase_net_differential.json')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) {
+      var nodeMap = {};
+      data.nodes.forEach(function (n) { nodeMap[n.id] = n; });
+      var nodes = data.nodes.map(function (n) {
+        var total = n.fail + n.ok;
+        var size = 14 + 6 * Math.log1p(Math.max(total, 1));
+        var share = Math.max(0, Math.min(1, n.share));
+        var lo = [0.40, 0.77, 0.66], hi = [0.88, 0.52, 0.50];
+        var c = [0, 1, 2].map(function (i) { return lo[i] * (1 - share) + hi[i] * share; });
+        var hex = '#' + c.map(function (v) { return Math.round(v * 255).toString(16).padStart(2, '0'); }).join('');
+        return {
+          id: n.id, label: n.id, size: size, color: { background: hex, border: '#5b6577' },
+          shape: n.leak ? 'diamond' : 'circle',
+          title: tooltipHtml(n.id + '<br>failed traces: <b>' + n.fail + '</b> · correct: <b>' + n.ok + '</b>' +
+                  '<br>failure share: <b>' + (100 * share).toFixed(1) + '%</b>' +
+                  (n.leak ? '<br><i>prompt-leaked vocabulary</i>' : '')),
+          font: { color: '#1b2a4a', size: 13, face: 'Source Sans 3' },
+          borderWidth: 1.2, borderWidthSelected: 2.5, shadow: { enabled: true, size: 12 }
+        };
+      });
+      var zMax = Math.max.apply(null, data.edges.map(function (e) { return Math.abs(e.z); }));
+      var edges = data.edges.map(function (e) {
+        var ec, tag;
+        if (e.in_cycle) {
+          ec = { color: '#c76e63', highlight: '#a8574d', opacity: 1.0 };
+          tag = 'structural loop (failed traces)';
+        } else if (e.bias === 'ok') {
+          ec = { color: '#66c4a8', highlight: '#4fae8f', opacity: 0.6 };
+          tag = 'success-biased differential';
+        } else {
+          ec = { color: '#e08580', highlight: '#c76e63', opacity: 0.6 };
+          tag = 'failure-biased differential';
+        }
+        return {
+          from: e.from, to: e.to,
+          width: 0.6 + 4.4 * Math.abs(e.z) / zMax,
+          color: ec,
+          arrows: { to: { enabled: true, scaleFactor: 0.75 } },
+          title: tooltipHtml(e.from + ' → ' + e.to + '<br>z = <b>' + e.z.toFixed(2) + '</b>' +
+                  '<br>failed: <b>' + e.fail + '</b> · correct: <b>' + e.ok + '</b>' +
+                  '<br><i>' + tag + '</i>'),
+          smooth: { type: 'continuous', roundness: 0.25 }
+        };
+      });
+      var container = document.getElementById('phrase-net-canvas');
+      var opts = {
+        physics: { enabled: true, stabilization: { iterations: 300 }, barnesHut: { gravitationalConstant: -32000, springLength: 130, springConstant: 0.035, damping: 0.6 } },
+        interaction: { hover: true, tooltipDelay: 120, dragNodes: true, zoomView: true, hoverConnectedEdges: true, hideEdgesOnDrag: true },
+        nodes: { scaling: { min: 8, max: 42 } },
+        edges: { selectionWidth: 2, hoverWidth: 2 }
+      };
+      var network = new vis.Network(container, { nodes: nodes, edges: edges }, opts);
+      network.once('stabilizationIterationsDone', function () {
+        network.setOptions({ physics: false });
+        if (statusEl) statusEl.textContent = data.nodes.length + ' words · ' + data.edges.length + ' edges · failure- and success-biased language';
+      });
+      network.on('stabilizationProgress', function (p) {
+        if (statusEl) statusEl.textContent = 'Laying out graph… ' + Math.round(100 * p.iterations / p.total) + '%';
+      });
+    })
+    .catch(function (err) {
+      if (statusEl) statusEl.textContent = 'Could not load graph data (' + err.message + ') — see static SVG below.';
+    });
+})();
+</script>
+
+
+<figcaption>The interactive differential phrase net — drag nodes, zoom, and hover for raw counts and log-odds. A static rendering follows as a print/no-JS fallback.</figcaption>
+
+![Differential phrase net — static rendering](../charts/phrase_net_differential.svg)
+
+Directed bi-gram graph of the reasoning traces, restricted to edges whose prevalence in **failed** traces exceeds their prevalence in **correct** traces (log-odds difference ≥ threshold, ≥ min failed occurrences). The differential filter removes the corporate boilerplate and prompt-leaked tokens shared with correct traces, leaving the phrases characteristic of reasoning breakdowns. Diamond-outlined nodes are **prompt-leaked** tokens — words the model parrots from the prompt text itself. Red edges are structural loops.
+
+### Top failure-biased bi-grams
+
+| Bi-gram | Failed *n* | Correct *n* | *z* |
+|---|---:|---:|---:|
+| `structural → formula` | 115 | 0 | 10.06 |
+| `form → m-01` | 111 | 0 | 10.02 |
+| `analytical → information` | 108 | 0 | 9.99 |
+| `dry → dry` | 102 | 0 | 9.94 |
+| `variance → sheet` | 97 | 0 | 9.89 |
+| `formula → mol` | 90 | 0 | 9.81 |
+| `federal → register` | 88 | 0 | 9.79 |
+| `rel → rel` | 84 | 0 | 9.74 |
+| `brand → publication` | 81 | 0 | 9.71 |
+| `mol → form` | 78 | 0 | 9.67 |
+| `interoffice → memorandum` | 75 | 0 | 9.63 |
+| `information → detailed` | 67 | 0 | 9.52 |
+| `mol → weight` | 67 | 0 | 9.52 |
+| `aroma → mini` | 63 | 0 | 9.45 |
+| `mini → groups` | 63 | 0 | 9.45 |
+| `form → mo1a` | 60 | 0 | 9.41 |
+| `reported → by` | 60 | 0 | 9.41 |
+| `phone → message` | 60 | 0 | 9.41 |
+| `power → tease` | 58 | 0 | 9.37 |
+| `job → specification` | 57 | 0 | 9.35 |
+| `worker → history` | 57 | 0 | 9.35 |
+| `please → substitute` | 54 | 0 | 9.30 |
+| `check → disbursement` | 54 | 0 | 9.30 |
+| `publications → bees` | 51 | 0 | 9.24 |
+| `form → mol` | 51 | 0 | 9.24 |
+
+**124 of 400 differential edges are prompt-leaked** (both words appear in the prompt text) — the model failing while reciting its own instructions.
+
+### Structural loops
+
+8 cycles detected (length ≤ 6). Full inventory with example traces: [phrase_net_loops.md](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/trace_language/phrase_net_loops.md).
+
+| Cycle | Length |
+|---|---:|
+| `dry` | 1 |
+| `gs` | 1 |
+| `rel` | 1 |
+| `change → gross` | 2 |
+| `form → mol` | 2 |
+| `nic → tar` | 2 |
+| `estimate → revised → marketing` | 3 |
+| `all → answerable → information → detailed → quantitative` | 5 |
+
+### Stuck phrases per trace
+
+Back-to-back phrase repetition (`A B A B` or `A B C A B C`):
+
+| Group | Traces | Looping traces | Rate |
+|---|---:|---:|---:|
+| Failed | 658 | 335 | 50.9% |
+| Correct | 2443 | 631 | 25.8% |
+
+## Log-Odds Ratio (Uninformative Dirichlet Prior)
+
+![Log-odds bar chart](../charts/logodds_dirichlet.svg)
+
+Fightin' Words (Monroe, Colaresi & Quinn, 2008): `z = log((y_f + a)/(n_f - y_f + a)) - log((y_o + a)/(n_o - y_o + a))` with the symmetric prior a on every count. Positive *z* = word is more likely to appear in a failed trace; negative *z* = more likely in a correct trace. Words shared across both classes (boilerplate, prompt-leaked labels) sit near *z* = 0 and drop out of the extremes.
+
+### Top 30 words most likely in FAILED traces
+
+| word | failed *n* | correct *n* | *z* |
+|---|---:|---:|---:|
+| m-01 | 114 | 0 | 10.08 |
+| fedex | 66 | 0 | 9.53 |
+| tease | 66 | 0 | 9.53 |
+| oppose | 64 | 0 | 9.50 |
+| mo1a | 60 | 0 | 9.44 |
+| cpt | 53 | 0 | 9.32 |
+| bellomy | 52 | 0 | 9.30 |
+| bees | 52 | 0 | 9.30 |
+| requisitioner's | 51 | 0 | 9.28 |
+| taped | 48 | 0 | 9.22 |
+| junkscience | 47 | 0 | 9.20 |
+| derivatives | 45 | 0 | 9.15 |
+| increasing | 44 | 0 | 9.13 |
+| answerable | 44 | 0 | 9.13 |
+| clara | 42 | 0 | 9.08 |
+| ser | 41 | 0 | 9.06 |
+| depository | 41 | 0 | 9.06 |
+| elia | 40 | 0 | 9.03 |
+| salzman | 40 | 0 | 9.03 |
+| tox | 39 | 0 | 9.01 |
+| rata | 39 | 0 | 9.01 |
+| avp's | 39 | 0 | 9.01 |
+| pharm | 39 | 0 | 9.01 |
+| verteiler | 38 | 0 | 8.98 |
+| hockett | 38 | 0 | 8.98 |
+| wow | 37 | 0 | 8.96 |
+| perfected | 37 | 0 | 8.96 |
+| establishment | 36 | 0 | 8.93 |
+| pmo | 35 | 0 | 8.90 |
+| otology | 35 | 0 | 8.90 |
+
+### Top 30 words most likely in CORRECT traces
+
+| word | failed *n* | correct *n* | *z* |
+|---|---:|---:|---:|
+| benedum | 0 | 70 | -8.11 |
+| bravo | 0 | 71 | -8.13 |
+| denied | 0 | 71 | -8.13 |
+| harley | 0 | 71 | -8.13 |
+| davidson | 0 | 72 | -8.14 |
+| hoyt | 0 | 73 | -8.16 |
+| faktuur | 0 | 73 | -8.16 |
+| grocery | 0 | 74 | -8.17 |
+| newsweek | 0 | 75 | -8.18 |
+| bmj | 0 | 75 | -8.18 |
+| rods | 0 | 77 | -8.21 |
+| hsr | 0 | 79 | -8.24 |
+| grams | 0 | 84 | -8.30 |
+| message---- | 0 | 87 | -8.33 |
+| sirs | 0 | 88 | -8.34 |
+| thursday | 0 | 90 | -8.37 |
+| tom | 0 | 92 | -8.39 |
+| borriston | 0 | 93 | -8.40 |
+| bcc | 0 | 93 | -8.40 |
+| intermediate | 0 | 94 | -8.41 |
+| bruce | 0 | 95 | -8.42 |
+| pharmacology | 0 | 96 | -8.43 |
+| camels | 0 | 96 | -8.43 |
+| ideal | 0 | 99 | -8.46 |
+| gmr | 0 | 102 | -8.49 |
+| imbibableness | 0 | 106 | -8.53 |
+| harley-davidson | 0 | 107 | -8.54 |
+| vitro | 0 | 110 | -8.57 |
+| message----- | 0 | 170 | -9.00 |
+| supercedes | 0 | 186 | -9.09 |
+
+## Scattertext-style Frequency Scatter
+
+<script src="../assets/js/d3.v7.min.js"></script>
+
+<div class="scatter-widget" style="position: relative; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; background: #ffffff; overflow: hidden; margin: 1.2em 0;">
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px;">
+<input id="scatter-search" type="text" placeholder="Search a word… (Enter to jump)" autocomplete="off"
+       style="flex: 0 1 300px; min-width: 150px; padding: 5px 10px; border: 1px solid #c9d2e0; border-radius: 6px; font-size: 13px; color: #1b2a4a; background: #ffffff;" />
+<span id="scatter-count" style="color: #5b6577; white-space: nowrap;"></span>
+<button id="scatter-reset" type="button"
+        style="margin-left: auto; padding: 5px 12px; border: 1px solid #c9d2e0; border-radius: 6px; background: #ffffff; color: #1b2a4a; font-size: 12px; cursor: pointer;">Reset view</button>
+</div>
+<div id="scatter-canvas" style="position: relative; width: 100%; background: #ffffff;"></div>
+<div id="scatter-status" style="position: absolute; top: 52px; left: 14px; z-index: 10; font-size: 13px; color: #5b6577; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 12px; border: 1px solid #d5dbe6; pointer-events: none;">Loading interactive scatter…</div>
+<div id="scatter-tooltip" style="position: absolute; display: none; z-index: 20; pointer-events: none; max-width: 260px; background: rgba(255,255,255,0.97); border: 1px solid #c9d2e0; border-radius: 8px; padding: 8px 11px; font-size: 12.5px; color: #1b2a4a; line-height: 1.5; box-shadow: 0 4px 14px rgba(27,42,74,0.14);"></div>
+<div style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;">
+<span class="sc-chip" data-bias="fail" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e08580;vertical-align:-2px;"></span> failure-biased</span>
+<span class="sc-chip" data-bias="neutral" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#b9c4d6;vertical-align:-2px;"></span> neutral</span>
+<span class="sc-chip" data-bias="ok" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#66c4a8;vertical-align:-2px;"></span> success-biased</span>
+<span class="sc-chip" data-bias="leak" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-radius:2px;vertical-align:-2px;"></span> prompt-leaked</span>
+<span style="margin-left:auto;color:#5b6577;">scroll to zoom · drag to pan · hover for counts · click to pin label · click legend to filter</span>
+</div>
+<style>
+.scatter-widget svg { font-family: var(--font-sans); display: block; }
+.scatter-widget .sc-chip.off { opacity: 0.35; }
+.scatter-widget .sc-tip-word { font-weight: 600; margin-bottom: 2px; }
+.scatter-widget .sc-tip-leak { font-weight: 600; font-size: 10.5px; color: #a57c12; background: #fdf3d7; border: 1px solid #e6d39a; border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: 1px; }
+</style>
+</div>
+<script>
+(function () {
+  var statusEl = document.getElementById('scatter-status');
+  if (typeof d3 === 'undefined') {
+    if (statusEl) statusEl.textContent = 'D3 failed to load — see static SVG below.';
+    return;
+  }
+  var base = (window.location.pathname.match(/.*\//) || ['/'])[0];
+  fetch(base + '../charts/scattertext_style.json')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) {
+      var widgetEl = document.querySelector('.scatter-widget');
+      var canvasEl = document.getElementById('scatter-canvas');
+      var tooltipEl = document.getElementById('scatter-tooltip');
+      var countEl = document.getElementById('scatter-count');
+      var searchEl = document.getElementById('scatter-search');
+      var resetEl = document.getElementById('scatter-reset');
+      if (!widgetEl || !canvasEl) return;
+
+      var points = data.points.map(function (p) {
+        return {
+          word: p.word, fail: p.fail, ok: p.ok,
+          z: p.z, leak: p.leak,
+          // Static SVG drops out-of-grid words; here they render pinned to the
+          // grid edge so nothing vanishes in the interactive view.
+          fx: Math.max(0.3, Math.min(10000, p.freq_ok)),
+          fy: Math.max(0.3, Math.min(10000, p.freq_fail)),
+          bias: p.z > 0.5 ? 'fail' : (p.z < -0.5 ? 'ok' : 'neutral')
+        };
+      });
+      var biasKeys = ['fail', 'neutral', 'ok'];
+      var filters = { fail: true, neutral: true, ok: true, leak: true };
+      var query = '';
+      var pinned = {};   // word -> pinned word record (label pinned near its dot)
+      var currentTransform = d3.zoomIdentity;
+      var HEIGHT = 600;
+
+      function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      var fmtInt = d3.format(',');
+
+      function dotRadius(p) { return Math.min(10, 2 + 2.3 * Math.log1p(p.fail + p.ok)); }
+
+      function dotColor(p) {
+        return p.bias === 'fail' ? '#e08580' : p.bias === 'ok' ? '#66c4a8' : '#b9c4d6';
+      }
+
+      function tooltipHtml(p) {
+        return '<div class="sc-tip-word">' + esc(p.word) +
+               (p.leak ? ' <span class="sc-tip-leak">prompt-leaked</span>' : '') + '</div>' +
+               '<div>failed traces: <b>' + fmtInt(p.fail) + '</b> · correct: <b>' + fmtInt(p.ok) + '</b></div>' +
+               '<div>log-odds z = <b>' + (p.z >= 0 ? '+' : '') + p.z.toFixed(2) + '</b></div>' +
+               '<div>freq — failed <b>' + fmtInt(p.fy) + '/M</b> · correct <b>' + fmtInt(p.fx) + '/M</b></div>';
+      }
+
+      function showTooltip(event, p) {
+        var rect = widgetEl.getBoundingClientRect();
+        tooltipEl.innerHTML = tooltipHtml(p);
+        tooltipEl.style.display = 'block';
+        var x = event.clientX - rect.left;
+        var y = event.clientY - rect.top;
+        var tw = tooltipEl.offsetWidth || 240;
+        var th = tooltipEl.offsetHeight || 90;
+        var nx = x + 16 + tw > rect.width ? x - tw - 14 : x + 16;
+        var ny = y + 16 + th > rect.height ? Math.max(4, y - th - 10) : y + 16;
+        tooltipEl.style.left = Math.max(4, nx) + 'px';
+        tooltipEl.style.top = ny + 'px';
+      }
+
+      function hideTooltip() { tooltipEl.style.display = 'none'; }
+
+      function updateStatus() {
+        var visible = 0;
+        points.forEach(function (p) {
+          if (filters[p.bias] && (filters.leak || !p.leak)) visible++;
+        });
+        statusEl.textContent = fmtInt(points.length) + ' words · ' + fmtInt(visible) +
+                               ' visible · drag to pan · scroll to zoom';
+      }
+
+      function build() {
+        var width = Math.max(canvasEl.clientWidth || 900, 320);
+        var margin = { top: 44, right: 18, bottom: 52, left: 66 };
+        var innerW = width - margin.left - margin.right;
+        var innerH = HEIGHT - margin.top - margin.bottom;
+
+        var svg = d3.select(canvasEl).selectAll('svg').data([null])
+          .join('svg')
+          .attr('width', width)
+          .attr('height', HEIGHT)
+          .attr('role', 'img')
+          .attr('aria-label', 'Scattertext-style frequency scatter of reasoning-trace words');
+        svg.selectAll('*').remove();
+
+        var x = d3.scaleLog().domain([0.3, 10000]).range([0, innerW]);
+        var y = d3.scaleLog().domain([0.3, 10000]).range([innerH, 0]);
+        var tickFmt = function (v) { return v >= 1 ? d3.format('~s')(v) : String(v); };
+
+        var plot = svg.append('g')
+          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        // Grid + axes (fixed, not zoomed)
+        var gGridX = plot.append('g').attr('class', 'sc-grid-x');
+        var gGridY = plot.append('g').attr('class', 'sc-grid-y');
+        var gAxisX = plot.append('g').attr('class', 'sc-axis-x');
+        var gAxisY = plot.append('g').attr('class', 'sc-axis-y');
+        var xAxis = d3.axisBottom(x).ticks(6, '~s').tickFormat(tickFmt)
+          .tickSize(0).tickPadding(8);
+        var yAxis = d3.axisLeft(y).ticks(6, '~s').tickFormat(tickFmt)
+          .tickSize(0).tickPadding(8);
+
+        // Dashed reference diagonal (fixed)
+        plot.append('line')
+          .attr('x1', x(0.3)).attr('y1', y(0.3))
+          .attr('x2', x(10000)).attr('y2', y(10000))
+          .attr('stroke', '#98a2b3').attr('stroke-width', 1)
+          .attr('stroke-dasharray', '6 5').attr('opacity', 0.7);
+
+        // Corner hints (fixed)
+        plot.append('text')
+          .attr('x', 10).attr('y', 18)
+          .attr('font-size', 12).attr('font-style', 'italic')
+          .attr('fill', '#8a94a6')
+          .text('top-left = failure hallmarks');
+        plot.append('text')
+          .attr('x', innerW - 10).attr('y', innerH - 12)
+          .attr('text-anchor', 'end')
+          .attr('font-size', 12).attr('font-style', 'italic')
+          .attr('fill', '#8a94a6')
+          .text('bottom-right = success drivers');
+
+        // Axis labels
+        plot.append('text')
+          .attr('x', innerW / 2).attr('y', innerH + 38)
+          .attr('text-anchor', 'middle').attr('font-size', 13)
+          .attr('fill', '#1b2a4a')
+          .text('Frequency per million tokens — CORRECT traces');
+        plot.append('text')
+          .attr('transform', 'translate(-46,' + (innerH / 2) + ') rotate(-90)')
+          .attr('text-anchor', 'middle').attr('font-size', 13)
+          .attr('fill', '#1b2a4a')
+          .text('Frequency per million tokens — FAILED traces');
+
+        // Zoomed content group
+        var gView = plot.append('g');
+
+        function zoomed(event) {
+          currentTransform = event.transform;
+          gView.attr('transform', currentTransform);
+          var zx = currentTransform.rescaleX(x);
+          var zy = currentTransform.rescaleY(y);
+          gAxisX.call(xAxis.scale(zx));
+          gAxisY.call(yAxis.scale(zy));
+          gGridX.call(d3.axisBottom(zx).ticks(6, '~s').tickSize(-innerH).tickFormat(''));
+          gGridY.call(d3.axisLeft(zy).ticks(6, '~s').tickSize(-innerW).tickFormat(''));
+          gGridX.selectAll('line').attr('stroke', '#e8ecf3');
+          gGridY.selectAll('line').attr('stroke', '#e8ecf3');
+          gGridX.selectAll('path').attr('stroke', 'none');
+          gGridY.selectAll('path').attr('stroke', 'none');
+        }
+
+        var zoom = d3.zoom()
+          .scaleExtent([1, 40])
+          .extent([[0, 0], [innerW, innerH]])
+          .translateExtent([[0, 0], [innerW, innerH]])
+          .clickDistance(4)
+          .on('zoom', zoomed);
+
+        // Plot background (inside zoom space): click clears pins
+        gView.append('rect')
+          .attr('width', innerW).attr('height', innerH)
+          .attr('fill', 'none').attr('pointer-events', 'all')
+          .on('click', function (event) {
+            if (event.detail > 1) return;
+            clearPins();
+          });
+
+        // Dots: circles (plain) + diamonds (prompt-leaked)
+        var gDots = gView.append('g');
+        var circle = gDots.selectAll('circle.dot').data(points).join('circle');
+        circle.attr('class', function (p) { return 'dot bias-' + p.bias + (p.leak ? ' leak' : ''); })
+          .attr('cx', function (p) { return x(p.fx); })
+          .attr('cy', function (p) { return y(p.fy); })
+          .attr('r', dotRadius)
+          .attr('fill', dotColor)
+          .attr('opacity', 0.62)
+          .attr('stroke', 'none')
+          .on('mouseenter', function (event, p) { showTooltip(event, p); })
+          .on('mousemove', function (event, p) { showTooltip(event, p); })
+          .on('mouseleave', hideTooltip)
+          .on('click', function (event, p) {
+            if (event.detail > 1) return;
+            togglePin(p);
+          });
+
+        var diamondPath = d3.symbol().type(d3.symbolDiamond);
+        var gDiamonds = gView.append('g');
+        var leaked = points.filter(function (p) { return p.leak; });
+        var diamond = gDiamonds.selectAll('path.dot').data(leaked).join('path');
+        diamond.attr('class', function (p) { return 'dot bias-' + p.bias + ' leak'; })
+          .attr('transform', function (p) { return 'translate(' + x(p.fx) + ',' + y(p.fy) + ')'; })
+          .attr('d', function (p) { return diamondPath.size(2 * dotRadius(p) * dotRadius(p))(); })
+          .attr('fill', dotColor)
+          .attr('stroke', '#c9a227').attr('stroke-width', 1.2)
+          .attr('opacity', 0.75)
+          .on('mouseenter', function (event, p) { showTooltip(event, p); })
+          .on('mousemove', function (event, p) { showTooltip(event, p); })
+          .on('mouseleave', hideTooltip)
+          .on('click', function (event, p) {
+            if (event.detail > 1) return;
+            togglePin(p);
+          });
+
+        // Pinned labels live inside zoom space so they follow their dots
+        var gPins = gView.append('g').attr('class', 'sc-pins');
+
+        function renderPins() {
+          gPins.selectAll('*').remove();
+          Object.keys(pinned).forEach(function (word) {
+            var p = pinned[word];
+            var px = x(p.fx), py = y(p.fy);
+            var lx = Math.min(px + 12, innerW - 10);
+            var ly = Math.max(py - 12, 12);
+            gPins.append('line')
+              .attr('x1', px).attr('y1', py).attr('x2', lx).attr('y2', ly)
+              .attr('stroke', '#1b2a4a').attr('stroke-width', 0.9).attr('opacity', 0.5);
+            var label = gPins.append('g').attr('transform', 'translate(' + lx + ',' + ly + ')');
+            var text = label.append('text')
+              .attr('x', 2).attr('y', 4)
+              .attr('font-size', 12).attr('font-weight', 'bold')
+              .attr('fill', '#1b2a4a')
+              .text(word);
+            var tw = text.node().getComputedTextLength();
+            label.insert('rect', 'text')
+              .attr('x', -3).attr('y', -10)
+              .attr('width', tw + 8).attr('height', 17)
+              .attr('rx', 4)
+              .attr('fill', '#ffffff').attr('stroke', '#c9d2e0')
+              .attr('stroke-width', 0.7).attr('opacity', 0.92);
+            label.raise();
+          });
+        }
+
+        function clearPins() {
+          pinned = {};
+          renderPins();
+          updateStatus();
+        }
+
+        function togglePin(p) {
+          if (pinned[p.word]) delete pinned[p.word];
+          else pinned[p.word] = p;
+          renderPins();
+          updateStatus();
+        }
+
+        function applyFilters() {
+          gDots.selectAll('circle.dot').each(function (p) {
+            var show = filters[p.bias] && (filters.leak || !p.leak);
+            this.style.display = show ? null : 'none';
+          });
+          gDiamonds.selectAll('path.dot').each(function (p) {
+            var show = filters[p.bias] && filters.leak;
+            this.style.display = show ? null : 'none';
+          });
+          updateStatus();
+        }
+
+        function applySearch() {
+          var q = query.toLowerCase();
+          gDots.selectAll('circle.dot').each(function (p) {
+            var m = q && p.word.toLowerCase().indexOf(q) !== -1;
+            d3.select(this)
+              .attr('opacity', q && !m ? 0.04 : 0.62)
+              .attr('stroke', m ? '#c9a227' : 'none')
+              .attr('stroke-width', m ? 1.4 : 0)
+              .attr('r', m ? dotRadius(p) + 1.5 : dotRadius(p));
+          });
+          gDiamonds.selectAll('path.dot').each(function (p) {
+            var m = q && p.word.toLowerCase().indexOf(q) !== -1;
+            d3.select(this).attr('opacity', q && !m ? 0.04 : 0.75);
+          });
+          if (q) {
+            var n = points.filter(function (p) { return p.word.toLowerCase().indexOf(q) !== -1; }).length;
+            countEl.textContent = n + (n === 1 ? ' match' : ' matches');
+          } else {
+            countEl.textContent = '';
+          }
+          updateStatus();
+        }
+
+        function jumpToWord(p) {
+          pinned[p.word] = p;
+          renderPins();
+          var k = 4;
+          var tx = innerW / 2 - k * x(p.fx);
+          var ty = innerH / 2 - k * y(p.fy);
+          svg.transition().duration(400)
+            .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+          updateStatus();
+        }
+
+        searchEl.oninput = function () {
+          query = searchEl.value.trim();
+          applySearch();
+        };
+        searchEl.onkeydown = function (event) {
+          if (event.key === 'Enter') {
+            var q = query.toLowerCase();
+            var match = points.filter(function (p) { return p.word.toLowerCase().indexOf(q) !== -1; })[0];
+            if (match) jumpToWord(match);
+          } else if (event.key === 'Escape') {
+            query = '';
+            searchEl.value = '';
+            applySearch();
+          }
+        };
+        resetEl.onclick = function () {
+          query = '';
+          searchEl.value = '';
+          pinned = {};
+          filters = { fail: true, neutral: true, ok: true, leak: true };
+          d3.selectAll('.scatter-widget .sc-chip').classed('off', false);
+          applySearch();
+          applyFilters();
+          renderPins();
+          svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+        };
+        d3.selectAll('.scatter-widget .sc-chip').on('click', function (event) {
+          var bias = this.getAttribute('data-bias');
+          filters[bias] = !filters[bias];
+          d3.select(this).classed('off', !filters[bias]);
+          applyFilters();
+        });
+
+        svg.call(zoom).call(zoom.transform, currentTransform);
+        applyFilters();
+        renderPins();
+      }
+
+      function onResize() {
+        build();
+      }
+
+      var resizeTimer = null;
+      window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(onResize, 200);
+      });
+
+      build();
+      updateStatus();
+    })
+    .catch(function (err) {
+      if (statusEl) statusEl.textContent = 'Could not load scatter data (' + err.message + ') — see static SVG below.';
+    });
+})();
+</script>
+
+
+<figcaption>The interactive scattertext-style scatter — hover for counts, search and click to pin word labels, toggle legend chips to filter bias, and drag/zoom the grid. A static rendering follows as a print/no-JS fallback.</figcaption>
+
+![Scattertext-style scatter — static rendering](../charts/scattertext_style.svg)
+
+Every word on a log-log grid of frequency-per-million-tokens in correct (x) vs failed (y) traces. The **top-left corner** isolates hallmark failure language; the **bottom-right corner** the words driving successful classification. Words near the diagonal are class-neutral (both the prompt template and document text are shared across both classes).

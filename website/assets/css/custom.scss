@@ -1,0 +1,1861 @@
+// ---------------------------------------------------------------------------
+// RVL-CDIP Document Classifier — site theme
+//
+// Four themes, one stylesheet. The active theme is `data-site-theme` on <html>,
+// set by assets/js/theme-switch.js (localStorage-persisted, OS-preference
+// default). All three dark themes also set data-bs-theme="dark" on <html> so
+// Bootstrap's native components re-skin through the --bs-* overrides below.
+//
+//   light (default)   — navy/blue academic light
+//   dark              — same-hue navy dark
+//   osaka-jade        — jade/teal dark
+//   synthwave84       — outrun purple/magenta dark
+//
+// Design tokens: deep navy primary, blue accent, warm-light canvas.
+// ---------------------------------------------------------------------------
+
+/*-- scss:defaults --*/
+
+// --- Bootstrap overrides ---------------------------------------------------
+$primary: #1b2a4a;          // deep navy
+$accent: #2d6cdf;           // electric blue
+$body-bg: #f6f8fb;
+$body-color: #212a3a;
+$font-size-base: 1rem;
+$link-color: #2d6cdf;
+$link-decoration: none;
+$headings-color: #14213d;
+// Source family typography — self-hosted (woff2 in assets/fonts), so the site
+// renders with zero external requests. Source Serif 4 (an editorial display
+// serif with optical sizing) carries headings, the hero, stat numerals, and
+// pull-quotes; Source Sans 3 carries body text, tables, and UI chrome; Source
+// Code Pro carries code. This replaces the previous default-font "vanilla"
+// stack (Inter + Georgia) with a designed, cohesive type system.
+$font-family-sans-serif: "Source Sans 3", -apple-system, BlinkMacSystemFont,
+  "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-family-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
+$font-family-monospace: "Source Code Pro", ui-monospace, "SFMono-Regular",
+  Menlo, Consolas, "Liberation Mono", monospace;
+$font-family-base: $font-family-sans-serif;
+$headings-font-family: $font-family-serif;
+$headings-font-weight: 600;
+$headings-line-height: 1.18;
+$navbar-dark-color: rgba(255, 255, 255, 0.82);
+$navbar-dark-hover-color: #ffffff;
+$navbar-dark-active-color: #ffffff;
+$border-radius: 0.4rem;
+$code-color: #b3287a;
+
+/*-- scss:rules --*/
+
+// ===========================================================================
+// Self-hosted fonts — Source Serif 4 / Source Sans 3 / Source Code Pro
+// ===========================================================================
+
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/assets/fonts/source-serif-4-v14-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/assets/fonts/source-sans-3-v19-latin-700.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Code Pro";
+  src: url("/assets/fonts/source-code-pro-v31-latin-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Code Pro";
+  src: url("/assets/fonts/source-code-pro-v31-latin-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+// ===========================================================================
+// Design tokens — one palette per theme
+// ===========================================================================
+
+:root {
+  color-scheme: light;
+
+  --font-sans: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", Times, serif;
+  --font-mono: "Source Code Pro", ui-monospace, "SFMono-Regular", Menlo,
+    Consolas, "Liberation Mono", monospace;
+  --canvas: #f6f8fb;
+  --card: #ffffff;
+  --surface-2: #f0f3f9;
+  --surface-3: #eef2f8;
+  --border: #e3e8f0;
+  --border-strong: #d4dce8;
+
+  --text-body: #212a3a;
+  --text-muted: #3a4660;
+  --text-faint: #5a6b85;
+  --heading: #14213d;
+
+  --accent: #2d6cdf;
+  --accent-hover: #1f56b5;
+  --accent-soft: rgba(45, 108, 223, 0.08);
+  --accent-2: #4c78a8;
+  --primary: #1b2a4a;
+
+  --code: #b3287a;
+  --code-bg: #faf3f8;
+
+  --focus-ring: rgba(45, 108, 223, 0.55);
+  --selection-bg: rgba(45, 108, 223, 0.16);
+
+  --navbar-bg: #16213e;
+  --navbar-border: rgba(255, 255, 255, 0.08);
+  --navbar-text: rgba(255, 255, 255, 0.88);
+  --navbar-text-active: #ffffff;
+  --navbar-hover-bg: rgba(255, 255, 255, 0.08);
+  --navbar-icon-hover-bg: rgba(255, 255, 255, 0.1);
+  --navbar-toggler-border: rgba(255, 255, 255, 0.2);
+  --navbar-shadow: 0 1px 0 rgba(20, 33, 61, 0.08), 0 2px 10px var(--shadow-sm);
+
+  --hero-grad-1: #16213e;
+  --hero-grad-2: #1b2a4a;
+  --hero-grad-3: #24408a;
+  --hero-glow: rgba(120, 160, 255, 0.28);
+  --hero-text: #ffffff;
+  --hero-text-muted: rgba(255, 255, 255, 0.88);
+  --hero-badge-bg: rgba(255, 255, 255, 0.14);
+  --hero-badge-border: rgba(255, 255, 255, 0.28);
+
+  --chart-frame: #ffffff;
+
+  --shadow-sm: rgba(20, 33, 61, 0.05);
+  --shadow-hover: rgba(20, 33, 61, 0.12);
+
+  // mark/highlight + kbd (Bootstrap compiles these to literal light colors)
+  --highlight-bg: #ffe3d0;
+  --kbd-bg: #212a3a;
+  --kbd-fg: #f6f8fb;
+
+  --ok-bg: #e7f6ec; --ok-fg: #1d7a3e; --ok-border: #bfe6cd;
+  --miss-bg: #fdeeee; --miss-fg: #b03030; --miss-border: #f2c9c9;
+  --illu-bg: #eef2f8; --illu-fg: #5a6b85; --illu-border: #d4dce8;
+
+  --success: #2e8b57;
+  --danger: #c0392b;
+
+  // Bootstrap runtime overrides (light)
+  --body-rgb: 33, 42, 58;
+  --accent-rgb: 45, 108, 223;
+  --bs-body-bg: var(--canvas);
+  --bs-body-color: var(--text-body);
+  --bs-body-color-rgb: var(--body-rgb);
+  --bs-border-color: var(--border);
+  --bs-secondary-bg: var(--surface-2);
+  --bs-tertiary-bg: var(--surface-3);
+  --bs-emphasis-color: var(--heading);
+  --bs-secondary-color: var(--text-muted);
+  --bs-tertiary-color: var(--text-faint);
+  --bs-link-color: var(--accent);
+  --bs-link-color-rgb: var(--accent-rgb);
+  --bs-link-hover-color: var(--accent-hover);
+  --bs-code-color: var(--code);
+}
+
+html[data-site-theme="dark"],
+html[data-site-theme="osaka-jade"],
+html[data-site-theme="synthwave84"] {
+  color-scheme: dark;
+  --shadow-sm: rgba(0, 0, 0, 0.3);
+  --shadow-hover: rgba(0, 0, 0, 0.5);
+  --chart-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+
+  --highlight-bg: rgba(255, 179, 71, 0.24);
+  --kbd-bg: #2a3550;
+  --kbd-fg: var(--text-body);
+
+  // Navbar: dark shadow instead of a light hairline, so the chrome sinks into
+  // the dark canvas instead of glowing off it.
+  --navbar-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 3px 14px var(--shadow-hover);
+
+  // Pandoc syntax-highlight palette (the compiled highlight stylesheet ships
+  // light-theme colors only; per-theme values replace the old hardcoded set).
+  --syn-comment: #7d8ea8;
+  --syn-keyword: #ff8ac2;
+  --syn-string: #8ce99a;
+  --syn-number: #ffd43b;
+  --syn-func: #74c0fc;
+  --syn-attr: #63e6be;
+  --syn-preproc: #ffa94d;
+  --syn-annot: #9775fa;
+  --syn-error: #ff6b6b;
+  --syn-op: #c9b8f0;
+
+  --bs-body-bg: var(--canvas);
+  --bs-body-color: var(--text-body);
+  --bs-body-color-rgb: var(--body-rgb);
+  --bs-border-color: var(--border);
+  --bs-secondary-bg: var(--surface-2);
+  --bs-tertiary-bg: var(--surface-3);
+  --bs-emphasis-color: var(--heading);
+  --bs-secondary-color: var(--text-muted);
+  --bs-tertiary-color: var(--text-faint);
+  --bs-link-color: var(--accent);
+  --bs-link-color-rgb: var(--accent-rgb);
+  --bs-link-hover-color: var(--accent-hover);
+  --bs-code-color: var(--code);
+}
+
+// --- Theme: dark (same-hue navy) -------------------------------------------
+html[data-site-theme="dark"] {
+  --canvas: #0d1526;
+  --card: #16213e;
+  --surface-2: #1b2744;
+  --surface-3: #1f2c4d;
+  --border: #26314d;
+  --border-strong: #3a4a6e;
+
+  --text-body: #dde5f0;
+  --text-muted: #aebcd1;
+  --text-faint: #8fa1bd;
+  --heading: #f2f6fc;
+
+  --accent: #5b8cff;
+  --accent-hover: #7ba4ff;
+  --accent-soft: rgba(91, 140, 255, 0.14);
+  --accent-2: #9fb0c9;
+  --primary: #7d9fe6;
+
+  --code: #ff8ac2;
+  --code-bg: #241f3a;
+
+  --focus-ring: rgba(91, 140, 255, 0.65);
+  --selection-bg: rgba(91, 140, 255, 0.28);
+
+  --navbar-bg: #0d1526;
+  --navbar-border: #22304f;
+
+  --hero-grad-1: #0a1120;
+  --hero-grad-2: #14213d;
+  --hero-grad-3: #1b2f6b;
+  --hero-glow: rgba(91, 140, 255, 0.22);
+
+  // SVG charts carry a baked-in white canvas; frame them on a dark surface
+  // with a dark shadow so they sit in the page instead of glowing white.
+  --chart-frame: #15203c;
+
+  --ok-bg: #0f2a1b; --ok-fg: #4ade80; --ok-border: #1f5a3c;
+  --miss-bg: #33141a; --miss-fg: #ff8a8a; --miss-border: #5c232e;
+  --illu-bg: #1c2540; --illu-fg: #aebcd1; --illu-border: #3a4a6e;
+
+  --body-rgb: 221, 229, 240;
+  --accent-rgb: 91, 140, 255;
+}
+
+// --- Theme: osaka-jade -----------------------------------------------------
+html[data-site-theme="osaka-jade"] {
+  --canvas: #071310;
+  --card: #0d1f1a;
+  --surface-2: #102822;
+  --surface-3: #14312a;
+  --border: #1f3d34;
+  --border-strong: #2e5a4c;
+
+  --text-body: #d6efe6;
+  --text-muted: #9dc9b8;
+  --text-faint: #7fb09e;
+  --heading: #ecfcf6;
+
+  --accent: #2ee6a8;
+  --accent-hover: #5cf0bf;
+  --accent-soft: rgba(46, 230, 168, 0.14);
+  --accent-2: #22d3ee;
+  --primary: #34d399;
+
+  --code: #7df0c8;
+  --code-bg: #0e2620;
+
+  --focus-ring: rgba(46, 230, 168, 0.6);
+  --selection-bg: rgba(46, 230, 168, 0.26);
+
+  --navbar-bg: #071310;
+  --navbar-border: #1d4236;
+
+  --hero-grad-1: #04100c;
+  --hero-grad-2: #0b231b;
+  --hero-grad-3: #0f3a2c;
+  --hero-glow: rgba(46, 230, 168, 0.2);
+
+  --chart-frame: #0e231d;
+  --chart-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+
+  // Jade-flavored syntax accents
+  --syn-comment: #6f9a8b;
+  --syn-keyword: #5cf0bf;
+  --syn-func: #4fd8e8;
+  --syn-op: #9dc9b8;
+
+  --ok-bg: #0d2a1e; --ok-fg: #34d399; --ok-border: #1f4a38;
+  --miss-bg: #2b1416; --miss-fg: #ff9e9e; --miss-border: #5c2326;
+  --illu-bg: #10261f; --illu-fg: #9dc9b8; --illu-border: #2e5a4c;
+
+  --body-rgb: 214, 239, 230;
+  --accent-rgb: 46, 230, 168;
+}
+
+// --- Theme: synthwave84 ----------------------------------------------------
+html[data-site-theme="synthwave84"] {
+  --canvas: #170b2e;
+  --card: #241242;
+  --surface-2: #2b1551;
+  --surface-3: #331a5e;
+  --border: #3b2470;
+  --border-strong: #5233a0;
+
+  --text-body: #f0e9ff;
+  --text-muted: #c9b8f0;
+  --text-faint: #a98fd8;
+  --heading: #fdf6ff;
+
+  --accent: #ff2e97;
+  --accent-hover: #ff66b5;
+  --accent-soft: rgba(255, 46, 151, 0.16);
+  --accent-2: #00f0ff;
+  --primary: #ff7ac2;
+
+  --code: #00f0ff;
+  --code-bg: #1f0f3e;
+
+  --focus-ring: rgba(255, 46, 151, 0.65);
+  --selection-bg: rgba(255, 46, 151, 0.3);
+
+  --navbar-bg: #170b2e;
+  --navbar-border: #43298f;
+
+  --hero-grad-1: #12081f;
+  --hero-grad-2: #241242;
+  --hero-grad-3: #4a1a7a;
+  --hero-glow: rgba(255, 46, 151, 0.25);
+
+  --chart-frame: #261349;
+  --chart-shadow: 0 4px 24px rgba(0, 0, 0, 0.55);
+
+  // Synthwave-flavored syntax accents
+  --syn-keyword: #ff66b5;
+  --syn-string: #00f0ff;
+  --syn-comment: #9d86c9;
+  --syn-func: #c792ea;
+
+  --ok-bg: #1d1533; --ok-fg: #4ade80; --ok-border: #3a2a5e;
+  --miss-bg: #331530; --miss-fg: #ff8a8a; --miss-border: #5c2350;
+  --illu-bg: #2b1551; --illu-fg: #c9b8f0; --illu-border: #5233a0;
+
+  --body-rgb: 240, 233, 255;
+  --accent-rgb: 255, 46, 151;
+}
+
+// ===========================================================================
+// Bootstrap component tokens — Quarto compiles the Bootstrap 5.3 component
+// variables (dropdown/modal/card/offcanvas/popover) to LITERAL light colors,
+// so dark mode leaves them light. Re-point them at our theme tokens; the
+// values here are chosen to match the compiled light output exactly, and the
+// dark themes flow through automatically via the --canvas/--card tokens.
+// ===========================================================================
+
+.card {
+  --bs-card-bg: var(--canvas);
+  --bs-card-color: var(--text-body);
+  --bs-card-border-color: var(--border);
+  --bs-card-cap-bg: var(--surface-2);
+  --bs-card-cap-color: var(--text-muted);
+}
+
+.dropdown-menu {
+  --bs-dropdown-bg: var(--canvas);
+  --bs-dropdown-color: var(--text-body);
+  --bs-dropdown-border-color: var(--border);
+  --bs-dropdown-link-color: var(--text-body);
+  --bs-dropdown-link-hover-color: var(--accent);
+  --bs-dropdown-link-hover-bg: var(--accent-soft);
+  --bs-dropdown-link-active-color: var(--accent);
+  --bs-dropdown-link-active-bg: var(--accent-soft);
+}
+
+.modal {
+  --bs-modal-bg: var(--canvas);
+  --bs-modal-color: var(--text-body);
+  --bs-modal-border-color: var(--border);
+}
+
+.offcanvas,
+.offcanvas-sm,
+.offcanvas-md,
+.offcanvas-lg,
+.offcanvas-xl,
+.offcanvas-xxl {
+  --bs-offcanvas-bg: var(--canvas);
+  --bs-offcanvas-color: var(--text-body);
+}
+
+.popover {
+  --bs-popover-bg: var(--canvas);
+  --bs-popover-color: var(--text-body);
+  --bs-popover-border-color: var(--border);
+}
+
+mark,
+.search-match.mark {
+  --bs-highlight-bg: var(--highlight-bg);
+  background-color: var(--highlight-bg);
+}
+
+kbd {
+  color: var(--kbd-fg);
+  background-color: var(--kbd-bg);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > *,
+.table-striped-columns > :not(caption) > tr > :nth-child(even) {
+  --bs-table-striped-bg: var(--surface-2);
+}
+
+.table-hover > tbody > tr:hover > * {
+  --bs-table-hover-bg: var(--accent-soft);
+}
+
+// Quarto sidebar bottom border compiles to a literal light color
+.sidebar.sidebar-navigation {
+  border-bottom-color: var(--border);
+}
+
+// ===========================================================================
+// Algolia / Quarto search (`.aa-*`) — the compiled search stylesheet is
+// hardcoded to light surfaces; re-theme for all four schemes. The navbar
+// overlay input already inherits (`.navbar #quarto-search.type-overlay .aa-Form`
+// is transparent); the results panel, detached (mobile) container, and result
+// rows are what needed theming.
+// ===========================================================================
+
+html[data-bs-theme="dark"] .aa-Form,
+html[data-bs-theme="dark"] .aa-DetachedFormContainer .aa-Form {
+  background-color: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-Input,
+html[data-bs-theme="dark"] .aa-Input::placeholder,
+html[data-bs-theme="dark"] .aa-ClearButton,
+html[data-bs-theme="dark"] .aa-CopyButton,
+html[data-bs-theme="dark"] .aa-DetachedCancelButton {
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-DetachedFormContainer {
+  background-color: var(--card);
+  border-bottom-color: var(--border);
+}
+
+html[data-bs-theme="dark"] .aa-Panel,
+html[data-bs-theme="dark"] .aa-DetachedContainer .aa-Panel,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Panel {
+  background-color: var(--card);
+}
+
+html[data-bs-theme="dark"] .aa-DetachedContainer {
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--border-strong), var(--shadow-hover);
+}
+
+html[data-bs-theme="dark"] .aa-DetachedOverlay {
+  background-color: rgba(0, 0, 0, 0.55);
+}
+
+html[data-bs-theme="dark"] .aa-Item .search-item,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item .search-item {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-SourceHeader,
+html[data-bs-theme="dark"] #quarto-search-results .aa-SourceHeader .search-result-header {
+  background-color: var(--surface-3);
+}
+
+html[data-bs-theme="dark"] .aa-Item[aria-selected="false"] .search-item .search-result-text-container,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="false"] .search-item .search-result-text-container {
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .search-result-doc:not(.document-selectable) .search-result-title-container,
+html[data-bs-theme="dark"] #quarto-search-results .search-result-doc:not(.document-selectable) .search-result-title-container {
+  background-color: var(--card);
+  color: var(--text-body);
+}
+
+html[data-bs-theme="dark"] .aa-Item[aria-selected="true"] .search-item,
+html[data-bs-theme="dark"] .aa-Item[aria-selected="true"] .search-item .search-result-text-container,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="true"] .search-item,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="true"] .search-item .search-result-text-container {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
+html[data-bs-theme="dark"] .aa-Item[aria-selected="true"] .search-item .search-match.mark,
+html[data-bs-theme="dark"] #quarto-search-results .aa-Item[aria-selected="true"] .search-item .search-match.mark {
+  background-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+html[data-bs-theme="dark"] .search-match.mark,
+html[data-bs-theme="dark"] #quarto-search-results .search-match.mark {
+  background-color: var(--selection-bg);
+}
+
+// ===========================================================================
+// Interactive widget chrome (phrase-net + scattertext) — the widgets carry
+// their chrome as INLINE styles (white frame, light #f7f9fc legend/toolbar
+// bars), so `!important` is required to theme them. The canvases themselves
+// stay white in every theme: vis-network node labels and the d3 SVG are
+// drawn in dark ink and need a light backdrop for legibility. Only the outer
+// frame, toolbar, and legend bars follow the theme tokens.
+// ===========================================================================
+
+.phrase-net-widget,
+.scatter-widget {
+  border-color: var(--border) !important;
+}
+
+// Legend bar (both widgets) + scattertext toolbar — last/first child divs.
+.phrase-net-widget > div:last-child,
+.scatter-widget > div:last-child,
+.scatter-widget > div:first-child {
+  background: var(--surface-2) !important;
+  border-color: var(--border) !important;
+  color: var(--text-muted) !important;
+}
+
+.phrase-net-widget > div:last-child > span:last-child,
+.scatter-widget > div:last-child > span:last-child {
+  color: var(--text-faint) !important;
+}
+
+// Scattertext toolbar controls (inline white + navy in the source HTML)
+.scatter-widget input[type="text"],
+.scatter-widget button,
+#scatter-count {
+  background: var(--card) !important;
+  border-color: var(--border-strong) !important;
+  color: var(--text-body) !important;
+}
+
+// ===========================================================================
+// Accessibility — skip link, focus, reduced motion
+// ===========================================================================
+
+.skip-link {
+  position: fixed;
+  top: -120px;
+  left: 1rem;
+  z-index: 2000;
+  background: var(--card);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+  border-radius: 0.4rem;
+  padding: 0.6rem 1rem;
+  font-family: $font-family-sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--shadow-hover);
+  transition: top 0.15s ease;
+
+  &:focus {
+    top: 1rem;
+    text-decoration: none;
+    color: var(--accent);
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: inherit;
+}
+
+// Honor OS "reduce motion" — kill transitions/animations/smooth scroll
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+// ===========================================================================
+// Base typography — Source Sans 3 body, Source Serif 4 headings
+// ===========================================================================
+
+body {
+  background-color: var(--canvas);
+  font-family: $font-family-sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+  letter-spacing: 0.001em;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+// Headings: Source Serif 4 — an editorial display serif for a confident hierarchy
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-family-serif;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+  text-wrap: balance;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+  color: var(--heading);
+}
+
+h1 { font-size: 2.05rem; letter-spacing: -0.02em; margin-bottom: 1rem; }
+h2 { font-size: 1.6rem; margin-top: 2rem; margin-bottom: 0.75rem; }
+h3 { font-size: 1.28rem; margin-top: 1.5rem; margin-bottom: 0.6rem; }
+h4 { font-size: 1.12rem; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+h5 { font-size: 1rem; margin-top: 1rem; margin-bottom: 0.4rem; font-weight: 600; }
+h6 { font-size: 0.92rem; margin-top: 1rem; margin-bottom: 0.4rem; font-style: italic; font-weight: 500; }
+
+// Anchored sections must not hide under the fixed navbar
+section,
+div.section,
+h1, h2, h3, h4, h5, h6 {
+  scroll-margin-top: 4.5rem;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.12s ease;
+  &:hover { text-decoration: underline; color: var(--accent-hover); }
+}
+
+// Paragraphs: APA 7 body text rhythm
+p {
+  line-height: 1.7;
+  margin-bottom: 1rem;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
+// Editorial measure for prose columns
+main > .quarto-title-block,
+main > p,
+main > div.quarto-callout,
+main > div.sourceCode,
+main > ul, main > ol, main > dl,
+main > table,
+main > blockquote {
+  max-width: 72ch;
+}
+
+// Figures + captions
+main > figure, main > .figure {
+  max-width: 100%;
+}
+
+figure figcaption,
+.figure-caption {
+  font-family: $font-family-serif;
+  font-style: italic;
+  color: var(--text-faint);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  margin-top: 0.55rem;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+// SVG charts are matplotlib SVGs with a baked-in white canvas: in dark themes
+// they sit on a dark frame (--chart-frame) with a dark shadow so the data
+// stays high-contrast while the frame blends into the page.
+html[data-bs-theme="dark"] main figure,
+html[data-bs-theme="dark"] main .figure {
+  background: var(--chart-frame);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.6rem;
+  margin-bottom: 1.4rem;
+  box-shadow: var(--chart-shadow);
+
+  figcaption, .figure-caption {
+    color: var(--text-muted);
+  }
+}
+
+// SVG charts must scale proportionally (they carry fixed width/height attrs)
+figure img,
+img.svg {
+  max-width: 100%;
+  height: auto;
+}
+
+// Blockquotes (callout excerpts, pull quotes) — editorial serif
+blockquote {
+  font-family: $font-family-serif;
+  font-size: 1.08rem;
+  border-left: 3px solid var(--accent);
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 0.35rem 0 0.35rem 1.3rem;
+  margin-left: 0;
+  margin-bottom: 1rem;
+}
+
+// --- Buttons — unified system (APA 7: consistent, professional) ----------
+// Base button token applied across nav, GitHub access, chat toolbar,
+// sidebar toggle, page navigation, and form buttons.
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-outline-primary,
+.navbar .nav-link,
+.navbar .nav-link.dropdown-toggle,
+.github-btn,
+.chat-btn,
+.quarto-btn-toggle,
+.page-navigation .nav-page-link,
+.chat-expand-btn {
+  font-family: $font-family-sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  border-radius: 0.4rem !important;
+  line-height: 1.4;
+  transition: all 0.12s ease !important;
+  white-space: nowrap;
+}
+
+// Comfortable touch targets on touch devices
+@media (pointer: coarse) {
+  .chat-btn,
+  .github-btn,
+  .navbar .nav-link,
+  .quarto-btn-toggle.btn,
+  .nav-page-link,
+  .theme-switch .nav-link,
+  #quarto-back-to-top {
+    min-height: 44px;
+  }
+}
+
+// --- Navbar ----------------------------------------------------------------
+.navbar {
+  background: var(--navbar-bg);
+  border-bottom: 1px solid var(--navbar-border);
+  box-shadow: var(--navbar-shadow);
+  padding: 0.55rem 1rem !important;
+  min-height: auto;
+
+  .navbar-brand {
+    font-family: $font-family-serif;
+    font-size: 1.12rem;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    padding: 0.25rem 0;
+  }
+
+  // Top-level nav link buttons
+  .navbar-nav .nav-link {
+    padding: 0.42rem 0.65rem !important;
+    margin: 0 0.1rem;
+    color: var(--navbar-text) !important;
+    letter-spacing: 0.012em;
+
+    &:hover,
+    &.active {
+      color: var(--navbar-text-active) !important;
+      background: var(--navbar-hover-bg);
+      border-radius: 0.35rem;
+    }
+  }
+
+  // Dropdown toggle buttons — proper chevron spacing
+  .navbar-nav .nav-link.dropdown-toggle {
+    padding-right: 1.6rem !important;
+    position: relative;
+
+    &::after {
+      position: absolute;
+      right: 0.55rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.7rem;
+      opacity: 0.7;
+    }
+  }
+
+  // Right-side icon buttons (GitHub, theme switcher)
+  .navbar-nav.ms-auto .nav-link {
+    padding: 0.42rem 0.55rem !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: 0.15rem;
+
+    i.bi {
+      font-size: 1.05rem;
+      line-height: 1;
+    }
+
+    &:hover {
+      background: var(--navbar-icon-hover-bg);
+      border-radius: 0.35rem;
+    }
+  }
+
+  // Search overlay trigger
+  #quarto-search {
+    .form-control,
+    .aa-Autocomplete,
+    .aa-Form {
+      border-radius: 0.4rem;
+    }
+  }
+}
+
+// Theme switcher (navbar right)
+.theme-switch {
+  .theme-icon { margin-right: 0.2rem; }
+
+  .theme-menu {
+    min-width: 12.5rem;
+  }
+
+  .theme-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    i.bi { font-size: 0.95rem; width: 1.1rem; text-align: center; }
+
+    &.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+  }
+}
+
+@media (max-width: 575.98px) {
+  .theme-switch .theme-name { display: none; }
+}
+
+// Navbar dropdown menus — academic clean styling
+.dropdown-menu {
+  font-family: $font-family-sans-serif;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  box-shadow: 0 4px 16px var(--shadow-hover);
+  padding: 0.35rem 0;
+  margin-top: 0.35rem;
+
+  .dropdown-item {
+    padding: 0.45rem 1rem;
+    color: var(--text-body);
+    font-weight: 500;
+    border-radius: 0;
+    transition: background 0.1s ease, color 0.1s ease;
+
+    &:hover,
+    &.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+  }
+
+  .dropdown-divider {
+    margin: 0.25rem 0;
+    border-color: var(--surface-3);
+  }
+}
+
+// Hamburger / mobile toggle
+.navbar-toggler {
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--navbar-toggler-border);
+  border-radius: 0.4rem;
+
+  .navbar-toggler-icon {
+    width: 1.2em;
+    height: 1.2em;
+  }
+}
+
+// --- Secondary nav (sidebar toggle + breadcrumbs) -------------------------
+.quarto-secondary-nav {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+
+  .quarto-btn-toggle.btn {
+    font-family: $font-family-sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem !important;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.4rem;
+    background: var(--card);
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-right: 0.6rem;
+
+    &:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    i.bi { font-size: 0.95rem; }
+  }
+
+  .breadcrumb {
+    font-family: $font-family-sans-serif;
+    font-size: 0.82rem;
+    margin: 0;
+    padding: 0;
+
+    .breadcrumb-item {
+      a {
+        color: var(--text-faint);
+        &:hover { color: var(--accent); }
+      }
+      &.active { color: var(--primary); font-weight: 600; }
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+      color: var(--text-faint);
+      content: "›";
+      padding: 0 0.4rem;
+    }
+  }
+}
+
+// --- Hero (landing page) ---------------------------------------------------
+// Keep the Quarto <h1> title in the accessibility tree (visually hidden)
+// instead of display:none, and let the styled hero render the visual title.
+body.landing {
+  .title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--hero-grad-1) 0%, var(--hero-grad-2) 55%, var(--hero-grad-3) 100%);
+  color: var(--hero-text);
+  border-radius: 0.75rem;
+  padding: 2.8rem 2.4rem;
+  margin: 1.2rem 0 1.8rem;
+  position: relative;
+  overflow: hidden;
+
+  // Soft radial glow — subtle modern depth
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(60rem 24rem at 85% -10%, var(--hero-glow), transparent 70%);
+    pointer-events: none;
+  }
+
+  > * { position: relative; }
+
+  h1, .hero-title {
+    font-family: $font-family-serif;
+    color: var(--hero-text);
+    font-size: clamp(1.95rem, 2.5rem + 1vw, 3.1rem);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.8rem;
+    line-height: 1.12;
+    font-optical-sizing: auto;
+  }
+
+  .hero-subtitle {
+    font-family: $font-family-sans-serif;
+    font-size: clamp(1rem, 1.05rem + 0.2vw, 1.18rem);
+    color: var(--hero-text-muted);
+    max-width: 46rem;
+    line-height: 1.7;
+    letter-spacing: 0.002em;
+  }
+
+  .hero-badges {
+    margin-top: 1.4rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    .badge {
+      font-family: $font-family-sans-serif;
+      background: var(--hero-badge-bg);
+      border: 1px solid var(--hero-badge-border);
+      color: var(--hero-text);
+      font-weight: 600;
+      padding: 0.4rem 0.85rem;
+      border-radius: 0.4rem;
+      font-size: 0.82rem;
+      backdrop-filter: blur(4px);
+    }
+  }
+}
+
+// --- Stat cards ------------------------------------------------------------
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.9rem;
+  margin: 1.2rem 0 1.8rem;
+}
+
+.stat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 0.6rem;
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 1px 3px var(--shadow-sm);
+
+  .stat-value {
+    font-family: $font-family-serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--primary);
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    margin-top: 0.4rem;
+    font-family: $font-family-sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  .stat-foot {
+    margin-top: 0.4rem;
+    font-family: $font-family-sans-serif;
+    font-size: 0.78rem;
+    color: var(--text-faint);
+  }
+}
+
+// --- Section cards (landing navigation) ------------------------------------
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.9rem;
+  margin: 1.2rem 0 1.8rem;
+}
+
+.section-card {
+  display: block;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 1.1rem 1.2rem;
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 1px 3px var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px var(--shadow-hover);
+    border-color: var(--accent);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .section-card-title {
+    font-family: $font-family-sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--primary);
+    margin-bottom: 0.3rem;
+  }
+
+  .section-card-desc {
+    font-family: $font-family-serif;
+    font-size: 0.88rem;
+    color: var(--text-faint);
+    line-height: 1.5;
+  }
+}
+
+// --- Collapsible reasoning traces (misclassification appendix) --------------
+details.trace-group {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0.5rem;
+  margin: 0.7rem 0;
+  padding: 0.5rem 0.9rem;
+
+  summary {
+    font-family: $font-family-sans-serif;
+    font-weight: 600;
+    color: var(--primary);
+    cursor: pointer;
+    padding: 0.25rem 0;
+    font-size: 0.92rem;
+  }
+
+  h3.trace-file {
+    margin-top: 0.7rem;
+    font-size: 0.9rem;
+    code {
+      background: var(--surface-3);
+      color: var(--primary);
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.3rem;
+      font-size: 0.82em;
+    }
+  }
+
+  p.trace-meta {
+    font-size: 0.88rem;
+    strong { color: var(--primary); }
+  }
+
+  p.trace-label {
+    font-family: $font-family-sans-serif;
+    font-weight: 700;
+    color: var(--primary);
+    margin-top: 0.5rem;
+    font-size: 0.88rem;
+  }
+
+  p {
+    margin: 0.4rem 0;
+    font-size: 0.88rem;
+  }
+
+  ul { font-size: 0.88rem; }
+
+  code {
+    font-size: 0.8em;
+    color: var(--code);
+    background: var(--code-bg);
+    padding: 0 0.15rem;
+  }
+}
+
+// --- Tables ----------------------------------------------------------------
+// Responsive: wide tables scroll horizontally instead of breaking the layout
+main table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+table {
+  font-family: $font-family-sans-serif;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+
+  thead th {
+    background: var(--surface-3);
+    color: var(--heading);
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  td, th {
+    padding: 0.45rem 0.65rem;
+  }
+}
+
+// --- Callouts (Quarto) -----------------------------------------------------
+.callout {
+  border-radius: 0.45rem;
+  border-left-width: 3px;
+  font-size: 0.92rem;
+
+  .callout-title {
+    font-family: $font-family-sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+  }
+}
+
+// --- Code blocks -----------------------------------------------------------
+div.sourceCode {
+  border-radius: 0.45rem;
+  border: 1px solid var(--border);
+  background: var(--card);
+
+  pre {
+    font-family: $font-family-monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+}
+
+p code,
+li code,
+td code,
+code:not(.sourceCode) {
+  font-family: $font-family-monospace;
+  font-size: 0.83em;
+  color: var(--code);
+  background: var(--code-bg);
+  padding: 0.08rem 0.28rem;
+  border-radius: 0.25rem;
+}
+
+// Pandoc syntax-highlighting colors — light theme (defaults are fine) but
+// must be re-mapped for the three dark themes (the compiled highlight
+// stylesheet ships light colors only). Values come from the per-theme
+// --syn-* tokens (shared dark defaults, jade/synthwave accents).
+html[data-bs-theme="dark"] code.sourceCode span.co,
+html[data-bs-theme="dark"] code.sourceCode span.cv,
+html[data-bs-theme="dark"] code.sourceCode span.ch,
+html[data-bs-theme="dark"] code.sourceCode span.do,
+html[data-bs-theme="dark"] code.sourceCode span.wa { color: var(--syn-comment); }
+html[data-bs-theme="dark"] code.sourceCode span.kw,
+html[data-bs-theme="dark"] code.sourceCode span.cf { color: var(--syn-keyword); }
+html[data-bs-theme="dark"] code.sourceCode span.st,
+html[data-bs-theme="dark"] code.sourceCode span.sc,
+html[data-bs-theme="dark"] code.sourceCode span.ss,
+html[data-bs-theme="dark"] code.sourceCode span.fl { color: var(--syn-string); }
+html[data-bs-theme="dark"] code.sourceCode span.dv,
+html[data-bs-theme="dark"] code.sourceCode span.bn,
+html[data-bs-theme="dark"] code.sourceCode span.dt { color: var(--syn-number); }
+html[data-bs-theme="dark"] code.sourceCode span.fu,
+html[data-bs-theme="dark"] code.sourceCode span.in { color: var(--syn-func); }
+html[data-bs-theme="dark"] code.sourceCode span.at,
+html[data-bs-theme="dark"] code.sourceCode span.bu,
+html[data-bs-theme="dark"] code.sourceCode span.cn,
+html[data-bs-theme="dark"] code.sourceCode span.va { color: var(--syn-attr); }
+html[data-bs-theme="dark"] code.sourceCode span.pp { color: var(--syn-preproc); }
+html[data-bs-theme="dark"] code.sourceCode span.an { color: var(--syn-annot); }
+html[data-bs-theme="dark"] code.sourceCode span.ex,
+html[data-bs-theme="dark"] code.sourceCode span.er,
+html[data-bs-theme="dark"] code.sourceCode span.al { color: var(--syn-error); }
+html[data-bs-theme="dark"] code.sourceCode span.im,
+html[data-bs-theme="dark"] code.sourceCode span.op { color: var(--syn-op); }
+
+// --- Footers & misc --------------------------------------------------------
+footer.page-footer {
+  margin-top: 2.5rem;
+  border-top: 1px solid var(--border);
+  font-family: $font-family-sans-serif;
+  font-size: 0.82rem;
+  color: var(--text-faint);
+  padding: 1rem 0;
+}
+
+// Quarto's built-in back-to-top button — theme-aware
+#quarto-back-to-top {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--accent);
+  box-shadow: 0 4px 14px var(--shadow-hover);
+  transition: border-color 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+}
+
+// Reading progress bar (injected by assets/js/site-chrome.js)
+#reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0;
+  z-index: 3000;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  pointer-events: none;
+}
+
+// --- Scrollbar -------------------------------------------------------------
+@supports (scrollbar-width: thin) {
+  * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+  border: 2px solid var(--canvas);
+}
+
+// --- Small screens ---------------------------------------------------------
+@media (max-width: 576px) {
+  .hero {
+    padding: 1.8rem 1.1rem;
+    h1, .hero-title { font-size: 1.7rem; }
+  }
+  .navbar { padding: 0.4rem 0.6rem !important; }
+}
+
+// ---------------------------------------------------------------------------
+// Research memos — manuscript-style memorandum pages
+// ---------------------------------------------------------------------------
+
+div.quarto-title-block {
+  .title, .subtitle, .quarto-title-meta { margin-bottom: 0.4rem; }
+
+  .title {
+    font-family: $font-family-serif;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--heading);
+  }
+}
+
+p.rq-block,
+strong.rq-block {
+  display: block;
+  font-family: $font-family-serif;
+}
+
+// GitHub access buttons under the title block (landing + memos)
+.github-access {
+  margin: 1rem 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  .github-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.4rem;
+    border: 1px solid var(--border-strong);
+    background: var(--card);
+    color: var(--primary);
+    font-family: $font-family-sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+
+    &:hover {
+      border-color: var(--accent);
+      box-shadow: 0 2px 8px var(--shadow-hover);
+      text-decoration: none;
+      color: var(--accent);
+    }
+
+    i.bi { font-size: 0.9rem; }
+  }
+}
+
+// Memo footer — sources line
+.memo-sources {
+  margin-top: 1.2rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  font-family: $font-family-sans-serif;
+  font-size: 0.8rem;
+  color: var(--text-faint);
+}
+
+// ---------------------------------------------------------------------------
+// Floating sidebar + margin TOC polish
+// ---------------------------------------------------------------------------
+
+#quarto-sidebar {
+  font-family: $font-family-sans-serif;
+  font-size: 0.88rem;
+
+  .sidebar-section > .sidebar-item-container .sidebar-item-text {
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.01em;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+  }
+
+  .sidebar-item-text.sidebar-link {
+    padding: 0.28rem 0.5rem;
+    border-radius: 0.35rem;
+    font-size: 0.85rem;
+
+    &.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    &:hover { color: var(--accent); }
+  }
+}
+
+#quarto-margin-sidebar {
+  font-family: $font-family-sans-serif;
+
+  #toc-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+    font-weight: 700;
+  }
+
+  .nav-link {
+    font-size: 0.82rem;
+    padding: 0.15rem 0.35rem;
+    border-radius: 0.3rem;
+    color: var(--text-body);
+
+    &.active { color: var(--accent); font-weight: 600; }
+  }
+
+  .toc-actions {
+    margin-top: 0.8rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.5rem;
+
+    .toc-action {
+      font-size: 0.78rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--text-faint);
+
+      &:hover { color: var(--accent); }
+    }
+  }
+}
+
+// Page navigation (prev/next)
+nav.page-navigation {
+  margin-top: 2rem;
+
+  .nav-page-link {
+    font-family: $font-family-sans-serif;
+    border: 1px solid var(--border);
+    border-radius: 0.45rem;
+    background: var(--card);
+    padding: 0.7rem 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--primary);
+
+    &:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .nav-page-text { font-size: 0.82rem; color: var(--text-faint); font-weight: 400; }
+    .nav-page-arrow { font-size: 1.1rem; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Chat thread examples — LLaVA-style conversation player
+// ---------------------------------------------------------------------------
+
+.chat-intro {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1.1rem;
+  margin: 0.9rem 0 1.2rem;
+
+  code {
+    background: var(--surface-3);
+    color: var(--primary);
+    padding: 0.08rem 0.3rem;
+    border-radius: 0.25rem;
+    font-size: 0.82em;
+  }
+}
+
+.chat-demo { margin: 0.9rem 0 2rem; }
+
+.chat-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-bottom: 0.8rem;
+}
+
+.chat-btn {
+  font-family: $font-family-sans-serif;
+  background: var(--card);
+  color: var(--primary);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.4rem;
+  padding: 0.38rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 2px 6px var(--shadow-hover);
+  }
+}
+
+.chat-count {
+  font-family: $font-family-sans-serif;
+  font-weight: 600;
+  color: var(--text-faint);
+  font-size: 0.88rem;
+  min-width: 4rem;
+  text-align: center;
+}
+
+.chat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  box-shadow: 0 1px 3px var(--shadow-sm);
+  overflow: hidden;
+
+  &.chat-card-thread {
+    max-width: 760px;
+    margin: 0 auto;
+  }
+}
+
+.chat-card-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--surface-3);
+  background: var(--surface-2);
+
+  .chat-card-title {
+    font-family: $font-family-sans-serif;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.92rem;
+  }
+
+  .chat-card-meta {
+    margin-left: auto;
+    font-family: $font-family-sans-serif;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+}
+
+.chat-badge {
+  font-family: $font-family-sans-serif;
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 0.35rem;
+  text-transform: uppercase;
+}
+
+.chat-badge-ok, .chat-badge {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  border: 1px solid var(--ok-border);
+}
+
+.chat-badge-miss {
+  background: var(--miss-bg);
+  color: var(--miss-fg);
+  border: 1px solid var(--miss-border);
+}
+
+.chat-badge-illu {
+  background: var(--illu-bg);
+  color: var(--illu-fg);
+  border: 1px solid var(--illu-border);
+}
+
+.chat-history {
+  padding: 1rem;
+  background: var(--canvas);
+}
+
+.msg {
+  display: flex;
+  margin-bottom: 0.8rem;
+
+  &.msg-user, &.msg-model { justify-content: flex-start; }
+}
+
+.msg-bubble {
+  max-width: 92%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  box-shadow: 0 1px 2px var(--shadow-sm);
+  font-family: $font-family-serif;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.msg-model .msg-bubble {
+  border-left: 3px solid var(--accent);
+}
+
+.msg-user .msg-bubble {
+  border-left: 3px solid var(--text-faint);
+  background: var(--surface-2);
+}
+
+.msg-img {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 0.45rem;
+  border: 1px solid var(--border);
+  margin-bottom: 0.45rem;
+}
+
+.msg-pre {
+  margin: 0;
+  padding: 0.3rem 0.15rem;
+  background: transparent;
+  border: none;
+  font-family: $font-family-monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-body);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+
+  &.collapsed {
+    max-height: 320px;
+    overflow-y: hidden;
+    position: relative;
+  }
+}
+
+.chat-expand-row {
+  text-align: center;
+  padding: 0.5rem 0 0.8rem;
+  background: var(--canvas);
+
+  .chat-expand-btn { display: none; }
+}
+
+.chat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.9rem;
+  margin: 0.9rem 0 1.8rem;
+}
+
+.chat-card-ok { border-top: 3px solid var(--success); }
+.chat-card-miss { border-top: 3px solid var(--danger); }
+
+.chat-card-img {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-bottom: 1px solid var(--surface-3);
+  background: var(--card);
+}
+
+.chat-card-reason {
+  padding: 0.6rem 0.9rem 0.8rem;
+
+  pre {
+    margin: 0;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    color: var(--text-muted);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+}
+
+.illus-threads {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.9rem;
+  margin: 0.9rem 0 1.8rem;
+}
+
+.illus-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 1px 3px var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .illus-title {
+    font-family: $font-family-sans-serif;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
+  }
+
+  .illus-meta {
+    font-family: $font-family-sans-serif;
+    font-size: 0.76rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .illus-msg {
+    font-family: $font-family-serif;
+    font-size: 0.85rem;
+    color: var(--text-faint);
+    background: var(--surface-2);
+    border-radius: 0.4rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .msg-pre {
+    font-size: 0.74rem;
+    max-height: none;
+    overflow: visible;
+    flex: 1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Print styles
+// ---------------------------------------------------------------------------
+
+@media print {
+  #quarto-header,
+  #quarto-sidebar,
+  #quarto-margin-sidebar,
+  nav.quarto-secondary-nav,
+  nav.page-navigation,
+  .code-tools,
+  #reading-progress,
+  #quarto-back-to-top,
+  .theme-switch,
+  .skip-link {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main figure {
+    break-inside: avoid;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+}

@@ -1,0 +1,385 @@
+<div class="scatter-widget" style="position: relative; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; background: #ffffff; overflow: hidden; margin: 1.2em 0;">
+<div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-bottom: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px;">
+<input id="scatter-search" type="text" placeholder="Search a word… (Enter to jump)" autocomplete="off"
+       style="flex: 0 1 300px; min-width: 150px; padding: 5px 10px; border: 1px solid #c9d2e0; border-radius: 6px; font-size: 13px; color: #1b2a4a; background: #ffffff;" />
+<span id="scatter-count" style="color: #5b6577; white-space: nowrap;"></span>
+<button id="scatter-reset" type="button"
+        style="margin-left: auto; padding: 5px 12px; border: 1px solid #c9d2e0; border-radius: 6px; background: #ffffff; color: #1b2a4a; font-size: 12px; cursor: pointer;">Reset view</button>
+</div>
+<div id="scatter-canvas" style="position: relative; width: 100%; background: #ffffff;"></div>
+<div id="scatter-status" style="position: absolute; top: 52px; left: 14px; z-index: 10; font-size: 13px; color: #5b6577; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 12px; border: 1px solid #d5dbe6; pointer-events: none;">Loading interactive scatter…</div>
+<div id="scatter-tooltip" style="position: absolute; display: none; z-index: 20; pointer-events: none; max-width: 260px; background: rgba(255,255,255,0.97); border: 1px solid #c9d2e0; border-radius: 8px; padding: 8px 11px; font-size: 12.5px; color: #1b2a4a; line-height: 1.5; box-shadow: 0 4px 14px rgba(27,42,74,0.14);"></div>
+<div style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;">
+<span class="sc-chip" data-bias="fail" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#e08580;vertical-align:-2px;"></span> failure-biased</span>
+<span class="sc-chip" data-bias="neutral" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#b9c4d6;vertical-align:-2px;"></span> neutral</span>
+<span class="sc-chip" data-bias="ok" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#66c4a8;vertical-align:-2px;"></span> success-biased</span>
+<span class="sc-chip" data-bias="leak" style="cursor: pointer; user-select: none;"><span style="display:inline-block;width:14px;height:14px;border:2px solid #c9a227;border-radius:2px;vertical-align:-2px;"></span> prompt-leaked</span>
+<span style="margin-left:auto;color:#5b6577;">scroll to zoom · drag to pan · hover for counts · click to pin label · click legend to filter</span>
+</div>
+<style>
+.scatter-widget svg { font-family: var(--font-sans); display: block; }
+.scatter-widget .sc-chip.off { opacity: 0.35; }
+.scatter-widget .sc-tip-word { font-weight: 600; margin-bottom: 2px; }
+.scatter-widget .sc-tip-leak { font-weight: 600; font-size: 10.5px; color: #a57c12; background: #fdf3d7; border: 1px solid #e6d39a; border-radius: 8px; padding: 1px 7px; margin-left: 6px; vertical-align: 1px; }
+</style>
+</div>
+<script>
+(function () {
+  var statusEl = document.getElementById('scatter-status');
+  if (typeof d3 === 'undefined') {
+    if (statusEl) statusEl.textContent = 'D3 failed to load — see static SVG below.';
+    return;
+  }
+  var base = (window.location.pathname.match(/.*\//) || ['/'])[0];
+  fetch(base + '../charts/scattertext_style.json')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) {
+      var widgetEl = document.querySelector('.scatter-widget');
+      var canvasEl = document.getElementById('scatter-canvas');
+      var tooltipEl = document.getElementById('scatter-tooltip');
+      var countEl = document.getElementById('scatter-count');
+      var searchEl = document.getElementById('scatter-search');
+      var resetEl = document.getElementById('scatter-reset');
+      if (!widgetEl || !canvasEl) return;
+
+      var points = data.points.map(function (p) {
+        return {
+          word: p.word, fail: p.fail, ok: p.ok,
+          z: p.z, leak: p.leak,
+          // Static SVG drops out-of-grid words; here they render pinned to the
+          // grid edge so nothing vanishes in the interactive view.
+          fx: Math.max(0.3, Math.min(10000, p.freq_ok)),
+          fy: Math.max(0.3, Math.min(10000, p.freq_fail)),
+          bias: p.z > 0.5 ? 'fail' : (p.z < -0.5 ? 'ok' : 'neutral')
+        };
+      });
+      var biasKeys = ['fail', 'neutral', 'ok'];
+      var filters = { fail: true, neutral: true, ok: true, leak: true };
+      var query = '';
+      var pinned = {};   // word -> pinned word record (label pinned near its dot)
+      var currentTransform = d3.zoomIdentity;
+      var HEIGHT = 600;
+
+      function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      var fmtInt = d3.format(',');
+
+      function dotRadius(p) { return Math.min(10, 2 + 2.3 * Math.log1p(p.fail + p.ok)); }
+
+      function dotColor(p) {
+        return p.bias === 'fail' ? '#e08580' : p.bias === 'ok' ? '#66c4a8' : '#b9c4d6';
+      }
+
+      function tooltipHtml(p) {
+        return '<div class="sc-tip-word">' + esc(p.word) +
+               (p.leak ? ' <span class="sc-tip-leak">prompt-leaked</span>' : '') + '</div>' +
+               '<div>failed traces: <b>' + fmtInt(p.fail) + '</b> · correct: <b>' + fmtInt(p.ok) + '</b></div>' +
+               '<div>log-odds z = <b>' + (p.z >= 0 ? '+' : '') + p.z.toFixed(2) + '</b></div>' +
+               '<div>freq — failed <b>' + fmtInt(p.fy) + '/M</b> · correct <b>' + fmtInt(p.fx) + '/M</b></div>';
+      }
+
+      function showTooltip(event, p) {
+        var rect = widgetEl.getBoundingClientRect();
+        tooltipEl.innerHTML = tooltipHtml(p);
+        tooltipEl.style.display = 'block';
+        var x = event.clientX - rect.left;
+        var y = event.clientY - rect.top;
+        var tw = tooltipEl.offsetWidth || 240;
+        var th = tooltipEl.offsetHeight || 90;
+        var nx = x + 16 + tw > rect.width ? x - tw - 14 : x + 16;
+        var ny = y + 16 + th > rect.height ? Math.max(4, y - th - 10) : y + 16;
+        tooltipEl.style.left = Math.max(4, nx) + 'px';
+        tooltipEl.style.top = ny + 'px';
+      }
+
+      function hideTooltip() { tooltipEl.style.display = 'none'; }
+
+      function updateStatus() {
+        var visible = 0;
+        points.forEach(function (p) {
+          if (filters[p.bias] && (filters.leak || !p.leak)) visible++;
+        });
+        statusEl.textContent = fmtInt(points.length) + ' words · ' + fmtInt(visible) +
+                               ' visible · drag to pan · scroll to zoom';
+      }
+
+      function build() {
+        var width = Math.max(canvasEl.clientWidth || 900, 320);
+        var margin = { top: 44, right: 18, bottom: 52, left: 66 };
+        var innerW = width - margin.left - margin.right;
+        var innerH = HEIGHT - margin.top - margin.bottom;
+
+        var svg = d3.select(canvasEl).selectAll('svg').data([null])
+          .join('svg')
+          .attr('width', width)
+          .attr('height', HEIGHT)
+          .attr('role', 'img')
+          .attr('aria-label', 'Scattertext-style frequency scatter of reasoning-trace words');
+        svg.selectAll('*').remove();
+
+        var x = d3.scaleLog().domain([0.3, 10000]).range([0, innerW]);
+        var y = d3.scaleLog().domain([0.3, 10000]).range([innerH, 0]);
+        var tickFmt = function (v) { return v >= 1 ? d3.format('~s')(v) : String(v); };
+
+        var plot = svg.append('g')
+          .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        // Grid + axes (fixed, not zoomed)
+        var gGridX = plot.append('g').attr('class', 'sc-grid-x');
+        var gGridY = plot.append('g').attr('class', 'sc-grid-y');
+        var gAxisX = plot.append('g').attr('class', 'sc-axis-x');
+        var gAxisY = plot.append('g').attr('class', 'sc-axis-y');
+        var xAxis = d3.axisBottom(x).ticks(6, '~s').tickFormat(tickFmt)
+          .tickSize(0).tickPadding(8);
+        var yAxis = d3.axisLeft(y).ticks(6, '~s').tickFormat(tickFmt)
+          .tickSize(0).tickPadding(8);
+
+        // Dashed reference diagonal (fixed)
+        plot.append('line')
+          .attr('x1', x(0.3)).attr('y1', y(0.3))
+          .attr('x2', x(10000)).attr('y2', y(10000))
+          .attr('stroke', '#98a2b3').attr('stroke-width', 1)
+          .attr('stroke-dasharray', '6 5').attr('opacity', 0.7);
+
+        // Corner hints (fixed)
+        plot.append('text')
+          .attr('x', 10).attr('y', 18)
+          .attr('font-size', 12).attr('font-style', 'italic')
+          .attr('fill', '#8a94a6')
+          .text('top-left = failure hallmarks');
+        plot.append('text')
+          .attr('x', innerW - 10).attr('y', innerH - 12)
+          .attr('text-anchor', 'end')
+          .attr('font-size', 12).attr('font-style', 'italic')
+          .attr('fill', '#8a94a6')
+          .text('bottom-right = success drivers');
+
+        // Axis labels
+        plot.append('text')
+          .attr('x', innerW / 2).attr('y', innerH + 38)
+          .attr('text-anchor', 'middle').attr('font-size', 13)
+          .attr('fill', '#1b2a4a')
+          .text('Frequency per million tokens — CORRECT traces');
+        plot.append('text')
+          .attr('transform', 'translate(-46,' + (innerH / 2) + ') rotate(-90)')
+          .attr('text-anchor', 'middle').attr('font-size', 13)
+          .attr('fill', '#1b2a4a')
+          .text('Frequency per million tokens — FAILED traces');
+
+        // Zoomed content group
+        var gView = plot.append('g');
+
+        function zoomed(event) {
+          currentTransform = event.transform;
+          gView.attr('transform', currentTransform);
+          var zx = currentTransform.rescaleX(x);
+          var zy = currentTransform.rescaleY(y);
+          gAxisX.call(xAxis.scale(zx));
+          gAxisY.call(yAxis.scale(zy));
+          gGridX.call(d3.axisBottom(zx).ticks(6, '~s').tickSize(-innerH).tickFormat(''));
+          gGridY.call(d3.axisLeft(zy).ticks(6, '~s').tickSize(-innerW).tickFormat(''));
+          gGridX.selectAll('line').attr('stroke', '#e8ecf3');
+          gGridY.selectAll('line').attr('stroke', '#e8ecf3');
+          gGridX.selectAll('path').attr('stroke', 'none');
+          gGridY.selectAll('path').attr('stroke', 'none');
+        }
+
+        var zoom = d3.zoom()
+          .scaleExtent([1, 40])
+          .extent([[0, 0], [innerW, innerH]])
+          .translateExtent([[0, 0], [innerW, innerH]])
+          .clickDistance(4)
+          .on('zoom', zoomed);
+
+        // Plot background (inside zoom space): click clears pins
+        gView.append('rect')
+          .attr('width', innerW).attr('height', innerH)
+          .attr('fill', 'none').attr('pointer-events', 'all')
+          .on('click', function (event) {
+            if (event.detail > 1) return;
+            clearPins();
+          });
+
+        // Dots: circles (plain) + diamonds (prompt-leaked)
+        var gDots = gView.append('g');
+        var circle = gDots.selectAll('circle.dot').data(points).join('circle');
+        circle.attr('class', function (p) { return 'dot bias-' + p.bias + (p.leak ? ' leak' : ''); })
+          .attr('cx', function (p) { return x(p.fx); })
+          .attr('cy', function (p) { return y(p.fy); })
+          .attr('r', dotRadius)
+          .attr('fill', dotColor)
+          .attr('opacity', 0.62)
+          .attr('stroke', 'none')
+          .on('mouseenter', function (event, p) { showTooltip(event, p); })
+          .on('mousemove', function (event, p) { showTooltip(event, p); })
+          .on('mouseleave', hideTooltip)
+          .on('click', function (event, p) {
+            if (event.detail > 1) return;
+            togglePin(p);
+          });
+
+        var diamondPath = d3.symbol().type(d3.symbolDiamond);
+        var gDiamonds = gView.append('g');
+        var leaked = points.filter(function (p) { return p.leak; });
+        var diamond = gDiamonds.selectAll('path.dot').data(leaked).join('path');
+        diamond.attr('class', function (p) { return 'dot bias-' + p.bias + ' leak'; })
+          .attr('transform', function (p) { return 'translate(' + x(p.fx) + ',' + y(p.fy) + ')'; })
+          .attr('d', function (p) { return diamondPath.size(2 * dotRadius(p) * dotRadius(p))(); })
+          .attr('fill', dotColor)
+          .attr('stroke', '#c9a227').attr('stroke-width', 1.2)
+          .attr('opacity', 0.75)
+          .on('mouseenter', function (event, p) { showTooltip(event, p); })
+          .on('mousemove', function (event, p) { showTooltip(event, p); })
+          .on('mouseleave', hideTooltip)
+          .on('click', function (event, p) {
+            if (event.detail > 1) return;
+            togglePin(p);
+          });
+
+        // Pinned labels live inside zoom space so they follow their dots
+        var gPins = gView.append('g').attr('class', 'sc-pins');
+
+        function renderPins() {
+          gPins.selectAll('*').remove();
+          Object.keys(pinned).forEach(function (word) {
+            var p = pinned[word];
+            var px = x(p.fx), py = y(p.fy);
+            var lx = Math.min(px + 12, innerW - 10);
+            var ly = Math.max(py - 12, 12);
+            gPins.append('line')
+              .attr('x1', px).attr('y1', py).attr('x2', lx).attr('y2', ly)
+              .attr('stroke', '#1b2a4a').attr('stroke-width', 0.9).attr('opacity', 0.5);
+            var label = gPins.append('g').attr('transform', 'translate(' + lx + ',' + ly + ')');
+            var text = label.append('text')
+              .attr('x', 2).attr('y', 4)
+              .attr('font-size', 12).attr('font-weight', 'bold')
+              .attr('fill', '#1b2a4a')
+              .text(word);
+            var tw = text.node().getComputedTextLength();
+            label.insert('rect', 'text')
+              .attr('x', -3).attr('y', -10)
+              .attr('width', tw + 8).attr('height', 17)
+              .attr('rx', 4)
+              .attr('fill', '#ffffff').attr('stroke', '#c9d2e0')
+              .attr('stroke-width', 0.7).attr('opacity', 0.92);
+            label.raise();
+          });
+        }
+
+        function clearPins() {
+          pinned = {};
+          renderPins();
+          updateStatus();
+        }
+
+        function togglePin(p) {
+          if (pinned[p.word]) delete pinned[p.word];
+          else pinned[p.word] = p;
+          renderPins();
+          updateStatus();
+        }
+
+        function applyFilters() {
+          gDots.selectAll('circle.dot').each(function (p) {
+            var show = filters[p.bias] && (filters.leak || !p.leak);
+            this.style.display = show ? null : 'none';
+          });
+          gDiamonds.selectAll('path.dot').each(function (p) {
+            var show = filters[p.bias] && filters.leak;
+            this.style.display = show ? null : 'none';
+          });
+          updateStatus();
+        }
+
+        function applySearch() {
+          var q = query.toLowerCase();
+          gDots.selectAll('circle.dot').each(function (p) {
+            var m = q && p.word.toLowerCase().indexOf(q) !== -1;
+            d3.select(this)
+              .attr('opacity', q && !m ? 0.04 : 0.62)
+              .attr('stroke', m ? '#c9a227' : 'none')
+              .attr('stroke-width', m ? 1.4 : 0)
+              .attr('r', m ? dotRadius(p) + 1.5 : dotRadius(p));
+          });
+          gDiamonds.selectAll('path.dot').each(function (p) {
+            var m = q && p.word.toLowerCase().indexOf(q) !== -1;
+            d3.select(this).attr('opacity', q && !m ? 0.04 : 0.75);
+          });
+          if (q) {
+            var n = points.filter(function (p) { return p.word.toLowerCase().indexOf(q) !== -1; }).length;
+            countEl.textContent = n + (n === 1 ? ' match' : ' matches');
+          } else {
+            countEl.textContent = '';
+          }
+          updateStatus();
+        }
+
+        function jumpToWord(p) {
+          pinned[p.word] = p;
+          renderPins();
+          var k = 4;
+          var tx = innerW / 2 - k * x(p.fx);
+          var ty = innerH / 2 - k * y(p.fy);
+          svg.transition().duration(400)
+            .call(zoom.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+          updateStatus();
+        }
+
+        searchEl.oninput = function () {
+          query = searchEl.value.trim();
+          applySearch();
+        };
+        searchEl.onkeydown = function (event) {
+          if (event.key === 'Enter') {
+            var q = query.toLowerCase();
+            var match = points.filter(function (p) { return p.word.toLowerCase().indexOf(q) !== -1; })[0];
+            if (match) jumpToWord(match);
+          } else if (event.key === 'Escape') {
+            query = '';
+            searchEl.value = '';
+            applySearch();
+          }
+        };
+        resetEl.onclick = function () {
+          query = '';
+          searchEl.value = '';
+          pinned = {};
+          filters = { fail: true, neutral: true, ok: true, leak: true };
+          d3.selectAll('.scatter-widget .sc-chip').classed('off', false);
+          applySearch();
+          applyFilters();
+          renderPins();
+          svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
+        };
+        d3.selectAll('.scatter-widget .sc-chip').on('click', function (event) {
+          var bias = this.getAttribute('data-bias');
+          filters[bias] = !filters[bias];
+          d3.select(this).classed('off', !filters[bias]);
+          applyFilters();
+        });
+
+        svg.call(zoom).call(zoom.transform, currentTransform);
+        applyFilters();
+        renderPins();
+      }
+
+      function onResize() {
+        build();
+      }
+
+      var resizeTimer = null;
+      window.addEventListener('resize', function () {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(onResize, 200);
+      });
+
+      build();
+      updateStatus();
+    })
+    .catch(function (err) {
+      if (statusEl) statusEl.textContent = 'Could not load scatter data (' + err.message + ') — see static SVG below.';
+    });
+})();
+</script>

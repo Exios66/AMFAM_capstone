@@ -1,0 +1,53 @@
+---
+title: "Memo: How reliable is the classification pipeline at scale?"
+subtitle: "Research memorandum — failure-pipeline simulation"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
+date: "2026-08-05"
+---
+
+**Research question:** What fraction of rows fail to produce a usable prediction, and does the retry/fallback pipeline keep the failure rate tolerable when extrapolated to 800 / 25,000 / 320,000 images?
+
+**Formal write-up:** [`montecarlo/failure-pipeline.qmd`](../montecarlo/failure-pipeline.html) · [`reports/monte_carlo/failure_pipeline.md`](https://github.com/Exios66/AMFAM_capstone/blob/main/reports/monte_carlo/failure_pipeline.md)
+
+---
+
+## Answer, Response, + Summary of Results
+
+**With fallback enabled, the pipeline failure rate is ~0.11% — a 24× reduction over the observed 2.72% single-pass rate.** The fitted model: *P*(first success) = 0.946, provider transient/quota 429 failures ≈ 0, `max_tries` = 3, two API keys, fallback on.
+
+| Scale | Expected failures | 95% *CI* | *P*(>1%) | *P*(>5%) |
+|---:|---:|---:|---:|---:|
+| 800 | 1 | 0–3 | 0.000 | 0.000 |
+| 25,000 | 28 | 19–39 | 0.000 | 0.000 |
+| 320,000 | 364 | 328–402 | 0.000 | 0.000 |
+
+The dominant failure driver is the **first-attempt success rate** (94.6%), not retry count. Sensitivity sweep:
+
+| max_tries | fallback | failure rate | attempts/row |
+|---:|---|---:|---:|
+| 1 | off | 2.940% | 1.03 |
+| 1 | **on** | **0.114%** | 1.06 |
+| 3 | on | 0.114% | 1.06 |
+| 5 | on | 0.114% | 1.06 |
+
+::: {.callout-important title="Fallback is the Key"}
+Adding a fallback key reduces failure ~**24×**; raising `max_tries` beyond 3 adds nothing because the residual failures are persistent (content-filter / token-cap), not transient.
+:::
+
+**Conclusion.** The pipeline is **production-safe for failures**: even at 320K images, expected failures ≈ 364 with *P*(>5%) ≈ 0. Per-row failure rows are handled as explicit misses (the `failure` Braintrust scorer), so they do not silently contaminate accuracy.
+
+::: {.memo-sources}
+*Sources:* `reports/monte_carlo/failure_pipeline.md` · `src/evaluation.py` (ManifestStore resume) · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
+:::
+
+---
+
+## What questions or uncertainties remain?
+
+The model is fitted on `qwen3.7-flash`-specific failure data; other providers (gemini, kimi) have different transient/429 profiles and were not fitted. The 94.6% first-success rate will drift with provider status and prompt length (longer v11.8+ prompts push token caps). The residual failures are persistent, so no retry policy eliminates them — only a fundamentally different fallback (e.g., a cheaper non-reasoning model) would.
+
+## What other levers may also improve accuracy?
+
+Failure rows are separate from accuracy misses; the accuracy levers are covered in the [hardest-classes](hardest-classes.qmd), [ensemble](ensemble-voting.qmd), and [confidence-routing](confidence-routing.qmd) memos.

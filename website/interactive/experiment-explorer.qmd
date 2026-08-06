@@ -1,0 +1,260 @@
+---
+title: "Experiment Explorer"
+description: "Filter, search, and compare experiment runs by model, prompt version, sample size, and accuracy; inspect per-class and confusion-matrix views."
+format:
+  html:
+    toc: false
+observable:
+  libraries:
+    - d3@7
+    - "observablehq/plot@0.6"
+---
+
+Browse every recorded evaluation run. Data is parsed from the committed markdown reports (`docs/experiments/experiment_log.md`, `reports/experiment_reports/`, `reports/confusion_matrices/`) and ships with the site, so filtering and views run entirely in your browser.
+
+```{ojs}
+exp = FileAttachment("../data/experiments.json").json()
+perClass = FileAttachment("../data/per-class-accuracy.json").json()
+confusions = FileAttachment("../data/confusion-matrices.json").json()
+```
+
+```{ojs}
+models = [...new Set(exp.experiments.map(r => r.model_short))].sort()
+prompts = [...new Set(exp.experiments.map(r => r.prompt_version))].sort((a,b) => a.localeCompare(b, undefined, {numeric: true}))
+sizes = [...new Set(exp.experiments.map(r => r.images))].sort((a,b) => a - b)
+```
+
+## Filters
+
+```{ojs}
+viewof modelFilter = Inputs.select(["All", ...models], {label: "Model"})
+viewof promptFilter = Inputs.select(["All", ...prompts], {label: "Prompt version"})
+viewof sizeFilter = Inputs.select(["All", ...sizes], {label: "Sample size (images)"})
+viewof searchText = Inputs.text({label: "Free-text search (id, dataset)", placeholder: "e.g. v12retro or smoke", value: ""})
+viewof minAcc = Inputs.range([0, 100], {label: "Minimum accuracy (%)", value: 0, step: 1})
+```
+
+```{ojs}
+filtered = exp.experiments.filter(r =>
+  (modelFilter === "All" || r.model_short === modelFilter) &&
+  (promptFilter === "All" || r.prompt_version === promptFilter) &&
+  (sizeFilter === "All" || r.images === sizeFilter) &&
+  ((r.accuracy || 0) * 100) >= minAcc &&
+  (searchText === "" || `${r.id || ""} ${r.dataset || ""} ${r.name || ""}`.toLowerCase().includes(searchText.toLowerCase()))
+).sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0))
+```
+
+## Summary
+
+```{ojs}
+summary = {
+  const n = filtered.length;
+  const accs = filtered.map(r => r.accuracy || 0);
+  const imgs = d3.sum(filtered, r => r.images || 0);
+  return html`<div class="sum-grid">
+    <div><span class="k">Runs</span><span class="v">${n}</span></div>
+    <div><span class="k">Models</span><span class="v">${new Set(filtered.map(r => r.model_short)).size}</span></div>
+    <div><span class="k">Images classified</span><span class="v">${imgs.toLocaleString()}</span></div>
+    <div><span class="k">Best accuracy</span><span class="v">${n ? (d3.max(accs) * 100).toFixed(1) + "%" : "—"}</span></div>
+    <div><span class="k">Mean accuracy</span><span class="v">${n ? (d3.mean(accs) * 100).toFixed(1) + "%" : "—"}</span></div>
+    <div><span class="k">Worst accuracy</span><span class="v">${n ? (d3.min(accs) * 100).toFixed(1) + "%" : "—"}</span></div>
+  </div>`
+}
+```
+
+## Runs table (click headers to sort)
+
+```{ojs}
+table = Inputs.table(filtered, {
+  columns: [
+    {column: "model_short", label: "Model"},
+    {column: "prompt_version", label: "Prompt"},
+    {column: "images", label: "Images"},
+    {column: "accuracy", label: "Accuracy", format: a => a == null ? "—" : (a * 100).toFixed(1) + "%"},
+    {column: "correct", label: "Correct"},
+    {column: "total", label: "Total"},
+    {column: "expected_cost", label: "Expected $", format: v => v == null ? "—" : "$" + v.toFixed(4)},
+    {column: "actual_cost", label: "Actual $", format: v => v == null ? "—" : "$" + v.toFixed(4)},
+    {column: "id", label: "ID"},
+    {column: "dataset", label: "Dataset"}
+  ],
+  maxHeight: 400,
+  sort: "accuracy",
+  reverse: true
+})
+```
+
+```{ojs}
+viewof downloadCsv = Inputs.button("Download filtered results (CSV)", {
+  reduce: _ => {
+    const rows = filtered.map(r => ({
+      model: r.model_short,
+      prompt: r.prompt_version,
+      images: r.images,
+      accuracy: r.accuracy == null ? "" : (r.accuracy * 100).toFixed(2) + "%",
+      correct: r.correct ?? "",
+      total: r.total ?? "",
+      expected_cost_usd: r.expected_cost ?? "",
+      actual_cost_usd: r.actual_cost ?? "",
+      dataset: r.dataset ?? "",
+      id: r.id ?? ""
+    }));
+    const blob = new Blob([d3.csvFormat(rows)], {type: "text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "experiments.csv";
+    a.click();
+  }
+})
+```
+
+## Views
+
+### Accuracy by model
+
+```{ojs}
+byModel = d3.rollups(filtered, v => d3.mean(v, r => r.accuracy || 0), r => r.model_short)
+  .map(([model, accuracy]) => ({model, accuracy}))
+  .sort((a, b) => b.accuracy - a.accuracy)
+```
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.barX(byModel, {x: "accuracy", y: "model", sort: {x: "y", reverse: true}, fill: "#2a9d8f", title: d => (d.accuracy * 100).toFixed(1) + "%"}),
+    Plot.text(byModel, {x: "accuracy", y: "model", text: d => (d.accuracy * 100).toFixed(1) + "%", dx: 6, textAnchor: "start", fontSize: 11})
+  ],
+  height: byModel.length * 42 + 40,
+  marginLeft: 180,
+  marginRight: 80,
+  x: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean exact-match accuracy", domain: [0, Math.max(...byModel.map(d => d.accuracy)) * 1.12]},
+  y: {label: null},
+  style: {backgroundColor: "white", color: "#222"}
+})
+```
+
+### Accuracy by prompt version
+
+```{ojs}
+byPrompt = d3.rollups(filtered, v => d3.mean(v, r => r.accuracy || 0), r => r.prompt_version)
+  .map(([prompt, accuracy]) => ({prompt, accuracy}))
+  .sort((a, b) => a.prompt.localeCompare(b.prompt, undefined, {numeric: true}))
+```
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.barY(byPrompt, {x: "prompt", y: "accuracy", fill: "#e76f51", title: d => (d.accuracy * 100).toFixed(1) + "%"}),
+    Plot.ruleY([0])
+  ],
+  y: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean accuracy"},
+  x: {label: "Prompt version"},
+  style: {backgroundColor: "white", color: "#222"}
+})
+```
+
+### Accuracy vs sample size
+
+```{ojs}
+bySize = d3.rollups(filtered, v => d3.mean(v, r => r.accuracy || 0), r => r.images)
+  .map(([images, accuracy]) => ({images, accuracy}))
+  .sort((a, b) => a.images - b.images)
+```
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.line(bySize, {x: "images", y: "accuracy", curve: "linear", stroke: "#264653", strokeWidth: 2}),
+    Plot.dot(bySize, {x: "images", y: "accuracy", fill: "#264653", title: d => (d.accuracy * 100).toFixed(1) + "%"}),
+    Plot.ruleY([0])
+  ],
+  x: {label: "Sample size (images)", grid: true},
+  y: {tickFormat: p => (p * 100).toFixed(0) + "%", label: "Mean accuracy"},
+  style: {backgroundColor: "white", color: "#222"}
+})
+```
+
+### Per-class accuracy — pick a run
+
+```{ojs}
+viewof pcaKey = Inputs.select(Object.keys(perClass).sort(), {label: "Report", value: "qwen3.7-flash_v11.8_1600_balanced_1120_final" in perClass ? "qwen3.7-flash_v11.8_1600_balanced_1120_final" : Object.keys(perClass)[0]})
+```
+
+```{ojs}
+pcaRows = Object.entries(perClass[pcaKey] || {}).map(([cls, v]) => ({cls, accuracy: v.accuracy, correct: v.correct, total: v.total}))
+```
+
+```{ojs}
+abbrOf = (s) => (s === "scientific_publication" ? "sci_pub" : s === "scientific_report" ? "sci_rep" : (s || "").slice(0, 6))
+```
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.barY(pcaRows, {x: "cls", y: "accuracy", fill: (d) => d.accuracy >= 0.9 ? "#2a9d8f" : d.accuracy >= 0.7 ? "#e9c46a" : "#e76f51", sort: {x: "y"}, title: d => `${d.cls}: ${(d.accuracy * 100).toFixed(1)}% (${d.correct}/${d.total})`}),
+    Plot.ruleY([0])
+  ],
+  height: 420,
+  insetTop: 10,
+  insetBottom: 4,
+  marginBottom: 60,
+  style: {fontSize: 12, backgroundColor: "white", color: "#222"},
+  x: {label: null, tickRotate: -40, tickSize: 4, tickFormat: d => abbrOf(d), tickPadding: 6},
+  y: {grid: true, tickFormat: p => (p * 100).toFixed(0) + "%", label: "Accuracy"}
+})
+```
+
+### Confusion matrix — pick a run
+
+```{ojs}
+viewof confKey = Inputs.select(Object.keys(confusions).sort(), {label: "Confusion matrix", value: Object.keys(confusions)[0]})
+```
+
+```{ojs}
+confRows = {
+  const c = confusions[confKey] || {labels: [], matrix: []};
+  const out = [];
+  c.labels.forEach((exp, i) => c.labels.forEach((pred, j) => {
+    out.push({expected: exp, predicted: pred, count: c.matrix[i]?.[j] || 0});
+  }));
+  return out;
+}
+```
+
+```{ojs}
+Plot.plot({
+  marks: [
+    Plot.cell(confRows, {x: "predicted", y: "expected", fill: "count", title: d => `${d.expected} → ${d.predicted}: ${d.count}`}),
+    Plot.text(confRows, {x: "predicted", y: "expected", text: "count", fontSize: 9, fill: d => d.count > 0 ? "#222" : "transparent"})
+  ],
+  height: 640,
+  insetTop: 10,
+  marginBottom: 70,
+  marginLeft: 95,
+  style: {fontSize: 12, backgroundColor: "white", color: "#222"},
+  x: {label: "Predicted", tickRotate: -45, tickSize: 4, tickFormat: d => abbrOf(d), tickPadding: 6},
+  y: {label: "Expected", tickFormat: d => abbrOf(d)},
+  color: {scheme: "YlOrRd", legend: true, type: "linear"}
+})
+```
+
+::: {.callout-note}
+The table, charts, and CSV export always reflect the current filters. All values come from committed markdown reports — no API access required. Download the CSV to share the filtered subset with collaborators.
+:::
+
+<style>
+.sum-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; margin: 1rem 0; }
+.sum-grid .k { display: block; font-size: 0.8rem; color: var(--text-muted); }
+.sum-grid .v { font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) { .sum-grid { grid-template-columns: repeat(3, 1fr); } }
+
+.observablehq { margin: 0.4rem 0; }
+.observablehq > form, .observablehq > div:has(> form) { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.observablehq input[type="range"] { min-width: min(420px, 60vw); }
+.observablehq .observablehq-input { margin: 0; }
+.observablehq table { width: 100%; border-collapse: collapse; }
+.observablehq table th, .observablehq table td { padding: 0.35rem 0.7rem; white-space: nowrap; }
+.observablehq table td:nth-child(n+4) { white-space: normal; }
+.observablehq input[type="text"], .observablehq select { padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; }
+.observablehq { font-size: 0.95rem; }
+</style>
