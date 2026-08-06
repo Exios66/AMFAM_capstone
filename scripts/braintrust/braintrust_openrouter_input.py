@@ -20,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import random
 import re
@@ -39,10 +40,22 @@ from src.braintrust_utils import load_braintrust_dataset
 from src.env_utils import require_env
 from src.evaluation import ManifestStore, dataset_fingerprint, validate_dataset
 from src.image_utils import encode_image_base64
+from src.monte_carlo import uncertainty_phrases
 from src.notify import play_failure, play_success
-from src.openrouter_classifier import VALID_CLASSES, clean_prediction, extract_runner_up
+from src.openrouter_classifier import (
+    VALID_CLASSES,
+    clean_prediction,
+    extract_confidence,
+    extract_runner_up,
+)
 from src.openrouter_utils import OPENROUTER_BASE_URL, build_vision_messages
 from src.prompts import get_prompt, DEFAULT_PROMPT_VERSION
+from src.routing import (
+    escalation_reason,
+    select_escalation_fraction,
+    should_escalate,
+    single_pass_confidence,
+)
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -161,8 +174,14 @@ class AdaptiveThrottle:
         time.sleep(cooldown)
 
 
-def _build_extra_body(model: str, effort: str | None) -> dict:
-    """Build the request extra body based on model capabilities."""
+def _build_extra_body(model: str, effort: str | None, reasoning_budget: int | None = None) -> dict:
+    """Build the request extra body based on model capabilities.
+
+    ``reasoning_budget`` (OpenRouter ``budget_tokens``) raises the ceiling on
+    how many tokens the model may spend reasoning before answering — an upward
+    adjustment for runs where high-effort reasoning risks hitting the default
+    budget. Only sent when the provider's reasoning block accepts it.
+    """
     extra_body: dict = {}
     if "kimi" in model.lower():
         extra_body = {"reasoning": {"enabled": True, "effort": effort or "xhigh"}}
@@ -173,6 +192,8 @@ def _build_extra_body(model: str, effort: str | None) -> dict:
             "reasoning": {"enabled": True, "effort": effort or "high"},
             "include_reasoning": True,
         }
+    if reasoning_budget:
+        extra_body["reasoning"] = {**extra_body.get("reasoning", {}), "budget_tokens": reasoning_budget}
     return extra_body
 
 
@@ -347,6 +368,59 @@ def _response_cost(response) -> float:
         return 0.0
 
 
+def _run_escalation(
+    client_box: dict,
+    escalation_model: str,
+    classification_prompt: str,
+    image_b64: str,
+    tokens: int,
+    temperature: float,
+    reasoning_effort: str | None,
+    split_intro: bool,
+    throttle: AdaptiveThrottle,
+) -> dict:
+    """One retried call through the escalation (stronger) model.
+
+    Returns ``{predicted, raw, reasoning, finish_reason, cost, error}``. The
+    escalated prediction replaces the base prediction when valid; otherwise the
+    base prediction is kept (handoff never drops a usable answer).
+    """
+    esc_error = ""
+    for attempt in range(1, MAX_TRIES + 1):
+        throttle.wait_if_throttled()
+        try:
+            esc_response = client_box["client"].chat.completions.create(
+                model=escalation_model,
+                messages=build_vision_messages(classification_prompt, image_b64,
+                                               split_intro=split_intro),
+                max_tokens=min(tokens, MAX_TOKENS_CAP),
+                temperature=temperature,
+                extra_body=_build_extra_body(escalation_model, reasoning_effort),
+            )
+            esc_raw = esc_response.choices[0].message.content or ""
+            esc_pred = extract_prediction(esc_raw)
+            if esc_pred:
+                return {
+                    "predicted": esc_pred,
+                    "raw": esc_raw,
+                    "reasoning": _extract_reasoning(esc_response.choices[0].message),
+                    "finish_reason": esc_response.choices[0].finish_reason,
+                    "cost": _response_cost(esc_response),
+                    "error": "",
+                }
+        except Exception as e:  # noqa: BLE001 - escalation must never raise
+            esc_error = str(e)
+            time.sleep(_backoff_for(TRANSIENT_BACKOFF, attempt))
+    return {
+        "predicted": "",
+        "raw": "",
+        "reasoning": "",
+        "finish_reason": None,
+        "cost": 0.0,
+        "error": esc_error or "escalated model returned no valid class",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Braintrust Eval
 # ---------------------------------------------------------------------------
@@ -368,6 +442,13 @@ def run_eval(
     no_scorers: bool = False,
     braintrust_key: str | None = None,
     scorers: list[str] | None = None,
+    project_name: str = PROJECT_NAME,
+    reasoning_budget: int | None = None,
+    escalation_model: str | None = None,
+    escalate_threshold: float | None = None,
+    base_manifest: str | Path | None = None,
+    confidence_source: str = "blend",
+    split_intro: bool = True,
 ) -> None:
     """Run the classification prompt against the dataset and log to Braintrust."""
     validate_dataset(dataset)
@@ -419,6 +500,22 @@ def run_eval(
         )
         manifest.initialize()
 
+    # Confidence-gated escalation (tail-eval mode): the base single-pass run's
+    # per-row confidence + prediction are replayed from --base-manifest so the
+    # escalation pass re-scores only the low-confidence tail and never re-runs
+    # the base model.
+    base_rows: dict[str, dict] = {}
+    if base_manifest:
+        base_path = Path(base_manifest)
+        if not base_path.exists():
+            print(f"WARNING: base manifest not found: {base_path}", file=sys.stderr)
+        else:
+            for line in base_path.read_text(encoding="utf-8").splitlines()[1:]:
+                if line.strip():
+                    rec = json.loads(line)
+                    base_rows[rec["filename"]] = rec
+            print(f"Base manifest loaded: {len(base_rows)} rows from {base_path}")
+
     # Wrap OpenAI client pointed at OpenRouter with Braintrust logging. The
     # client lives in a mutable box so a key-quota 403 can fail over to the
     # alternate key without rebuilding the eval. Timeout prevents a stalled
@@ -454,7 +551,29 @@ def run_eval(
                 )
                 return cached["predicted"]
 
-        extra_body = _build_extra_body(model, reasoning_effort)
+        extra_body = _build_extra_body(model, reasoning_effort, reasoning_budget)
+
+        # Tail-eval replay: when a base manifest is supplied, the base pass is
+        # replayed from it (prediction, cost, runner-up, confidence) and the
+        # escalation model re-scores every row. This is what makes the
+        # --escalate-alpha tail eval cheap: the base model is never re-run.
+        base_replayed = False
+        base_row_cost = 0.0
+        base_runner_up = ""
+        base_confidence = None
+        base_prediction = ""
+        if base_rows:
+            base_rec = base_rows.get(filename)
+            base_prediction = ((base_rec or {}).get("predicted") or "").strip().lower()
+            if base_prediction in VALID_CLASSES:
+                base_replayed = True
+                base_row_cost = float((base_rec or {}).get("cost") or 0.0)
+                base_runner_up = ((base_rec or {}).get("runner_up") or "").strip().lower()
+                raw_conf = (base_rec or {}).get("confidence")
+                try:
+                    base_confidence = float(raw_conf) if raw_conf not in (None, "") else None
+                except (TypeError, ValueError):
+                    base_confidence = None
 
         # Retry with per-error backoff; grow max_tokens on capouts; fail over to
         # the alternate OpenRouter key on quota 403s; throttle on upstream 429s.
@@ -465,15 +584,20 @@ def run_eval(
         raw = ""
         finish_reason = None
         reasoning_text = ""
-        predicted = ""
+        predicted = base_prediction if base_replayed else ""
         key_switched = False
+        response = None
+        fallback_response = None
         for attempt in range(1, MAX_TRIES * max(1, len(keys)) + 1):
+            if base_replayed:
+                break
             attempts = attempt
             throttle.wait_if_throttled()
             try:
                 response = client_box["client"].chat.completions.create(
                     model=model,
-                    messages=build_vision_messages(classification_prompt, image_b64),
+                    messages=build_vision_messages(classification_prompt, image_b64,
+                                                   split_intro=split_intro),
                     max_tokens=tokens,
                     temperature=temperature,
                     extra_body=extra_body,
@@ -535,7 +659,8 @@ def run_eval(
             try:
                 fallback_response = fallback_client_box["client"].chat.completions.create(
                     model=fallback_model,
-                    messages=build_vision_messages(classification_prompt, image_b64),
+                    messages=build_vision_messages(classification_prompt, image_b64,
+                                                   split_intro=split_intro),
                     max_tokens=min(tokens, MAX_TOKENS_CAP),
                     temperature=temperature,
                     extra_body=_build_extra_body(fallback_model, reasoning_effort),
@@ -556,10 +681,61 @@ def run_eval(
         # to flag rows where the correct answer was the runner-up.
         runner_up = ""
         row_cost = 0.0
+        self_report = None
+        confidence = None
         if predicted:
-            runner_up = extract_runner_up(reasoning_text or raw)
+            runner_up = base_runner_up or extract_runner_up(reasoning_text or raw)
+            self_report = extract_confidence(reasoning_text or raw)
+            confidence = base_confidence
+            if confidence is None:
+                confidence = single_pass_confidence(
+                    self_report, predicted, runner_up, reasoning_text,
+                    source=confidence_source,
+                )
             last_response = fallback_response if used_fallback else response
-            row_cost = _response_cost(last_response)
+            row_cost = _response_cost(last_response) if last_response is not None else 0.0
+            cost_by_index[input_data["index"]] = row_cost
+
+        # Confidence-gated escalation: re-score the low-confidence tail through
+        # the escalation (stronger) model when configured. Two modes:
+        #   --escalate-threshold X  inline per-row decision (production/streaming)
+        #   --escalate-alpha + --base-manifest  tail eval: every row re-scores
+        routed = False
+        escalation_error = ""
+        escalated_cost = 0.0
+        reason = ""
+        if escalation_model and predicted:
+            if escalate_threshold is not None:
+                escalate_this = should_escalate(confidence, escalate_threshold)
+            else:
+                escalate_this = bool(base_manifest)
+            if escalate_this:
+                reason = escalation_reason(
+                    confidence, runner_up, predicted,
+                    uncertainty_phrases(reasoning_text or raw),
+                )
+                escalated = _run_escalation(
+                    client_box, escalation_model, classification_prompt, image_b64,
+                    tokens, temperature, reasoning_effort, split_intro, throttle,
+                )
+                if escalated["predicted"]:
+                    predicted = escalated["predicted"]
+                    raw = escalated["raw"] or raw
+                    reasoning_text = escalated["reasoning"] or reasoning_text
+                    finish_reason = escalated["finish_reason"] or finish_reason
+                    runner_up = extract_runner_up(reasoning_text) or runner_up
+                    routed = True
+                    escalated_cost = escalated["cost"]
+                else:
+                    # Handoff failed: keep the base prediction, still mark the
+                    # row as routed so the escalation attempt is accounted for.
+                    routed = True
+                    escalation_error = escalated["error"]
+                    print(
+                        f"WARNING: escalation failed for {filename}: {escalation_error}",
+                        file=sys.stderr,
+                    )
+            row_cost = (row_cost if not base_replayed else base_row_cost) + escalated_cost
             cost_by_index[input_data["index"]] = row_cost
 
         if not predicted:
@@ -600,6 +776,13 @@ def run_eval(
                 "fallback": used_fallback,
                 "runner_up": runner_up,
                 "cost": row_cost,
+                "routed": routed,
+                "confidence": confidence,
+                "self_report": self_report,
+                "escalation_reason": reason,
+                "escalated_cost": escalated_cost if routed else 0.0,
+                "escalated_model": escalation_model if routed else None,
+                "escalation_error": escalation_error,
             })
 
         # Log metadata for Braintrust UI — includes reasoning trace and prompt.
@@ -618,6 +801,11 @@ def run_eval(
                 "key_switched": key_switched,
                 "runner_up": runner_up,
                 "cost": row_cost,
+                "routed": routed,
+                "confidence": confidence,
+                "self_report": self_report,
+                "escalation_reason": reason,
+                "escalated_model": escalation_model if routed else None,
             }
         )
 
@@ -657,7 +845,7 @@ def run_eval(
         scores = [exact_match, failure, cost]
 
     result = braintrust.Eval(
-        PROJECT_NAME,
+        project_name,
         data=lambda: [
             {
                 "input": {
@@ -684,10 +872,18 @@ def run_eval(
             "reasoning": reasoning_effort or resolved_effort,
             "dataset": f"{DEFAULT_DATASET_PROJECT}/{dataset_name}",
             "manifest": str(manifest_path) if manifest_path else None,
+            "escalation_model": escalation_model,
+            "escalate_threshold": escalate_threshold,
+            "base_manifest": str(base_manifest) if base_manifest else None,
+            "confidence_source": confidence_source,
+            "split_intro": split_intro,
         },
         description=(
             f"{model} | prompt {prompt_version} | reasoning {reasoning_effort or resolved_effort} "
             f"| temperature {temperature} | "
+            + (f"escalation {escalation_model}" + (f" (threshold {escalate_threshold})" if escalate_threshold is not None else "")
+               if escalation_model else "no escalation")
+            + " | "
             + (f"Braintrust scorers: {', '.join(s.__name__ for s in scores)}"
                if scores else
                "no Braintrust scorers (scored locally via score_manifest)")
@@ -782,6 +978,34 @@ def main() -> None:
     parser.add_argument("--reasoning-effort", default=None,
                         help="Override reasoning effort (minimal/low/medium/high/xhigh/max); "
                              "defaults: qwen=high, kimi=xhigh, gemini=max")
+    parser.add_argument("--reasoning-budget-tokens", type=int, default=None,
+                        help="Raise the reasoning token ceiling (OpenRouter budget_tokens) above "
+                             "the provider's implicit high-effort budget; must be <= --max-tokens")
+    parser.add_argument("--escalation-model", default=None,
+                        help="Stronger model for confidence-gated escalation (e.g. "
+                             "google/gemini-2.5-pro); default: BRAINTRUST_ESCALATION_MODEL env")
+    parser.add_argument("--escalate-alpha", type=float, default=None,
+                        help="Escalate the lowest-confidence alpha fraction of the dataset "
+                             "(rank-based, matches the routing simulation). Requires "
+                             "--base-manifest from the base single-pass run")
+    parser.add_argument("--escalate-threshold", type=float, default=None,
+                        help="Escalate rows whose per-inference confidence is below this value "
+                             "(inline decision, single-eval mode). Mutually exclusive with "
+                             "--escalate-alpha")
+    parser.add_argument("--base-manifest", type=Path, default=None,
+                        help="Manifest of the base single-pass run; supplies per-row confidence "
+                             "and predictions for the --escalate-alpha tail eval")
+    parser.add_argument("--confidence-source", choices=("self-report", "heuristic", "blend"),
+                        default="blend",
+                        help="Per-inference confidence signal: self-report (the <confidence> tag "
+                             "from v18.1+ prompts), heuristic (uncertainty phrasing + runner-up "
+                             "disagreement), or blend (default)")
+    parser.add_argument("--no-system-intro", action="store_true",
+                        help="Send the whole prompt in one user message (legacy payload); by "
+                             "default the introduction context is offloaded to a system message")
+    parser.add_argument("--research-funding", action="store_true",
+                        help="Use the RESEARCH_FUNDING_API_KEY (reserved for large/significant runs) "
+                             "as the primary OpenRouter key instead of OPENROUTER_API_KEY")
     parser.add_argument("--experiment-name", default=None,
                         help="Braintrust experiment name (default: {model-slug}_p{prompt-version})")
     parser.add_argument("--manifest", type=Path, default=None,
@@ -812,6 +1036,8 @@ def main() -> None:
         org_id = agent_cfg.org_id
         api_base = agent_cfg.api_base.rstrip("/")
         scorers = parse_scorers(args.scorers) if args.scorers is not None else ["exact_match"]
+        dataset_key = agent_cfg.api_key
+        escalation_model_default = agent_cfg.escalation_model
     else:
         braintrust_key = os.environ.get("BRAINTRUST_API_KEY")
         project = args.project
@@ -821,6 +1047,16 @@ def main() -> None:
         org_id = ORG_ID
         api_base = BRAINTRUST_API_BASE
         scorers = parse_scorers(args.scorers)
+        dataset_key = os.environ.get("DATA_BRAINTRUST_KEY")
+        escalation_model_default = _CONFIG.escalation_model
+
+    # --research-funding: use the funding key as the primary OpenRouter key for
+    # this run (reserved for large/significant runs).
+    if args.research_funding:
+        funding_key = os.environ.get("RESEARCH_FUNDING_API_KEY")
+        if not funding_key:
+            sys.exit("Error: --research-funding requires RESEARCH_FUNDING_API_KEY in .env")
+        os.environ["OPENROUTER_API_KEY"] = funding_key
 
     # Loads .env and validates the required keys are present.
     get_api_keys(agent=args.agent)
@@ -828,11 +1064,11 @@ def main() -> None:
     if args.images_dir:
         dataset = load_dataset_images(args.images_dir)
     else:
-        # Load the dataset with the default BRAINTRUST_API_KEY; if a separate
-        # source-account key (DATA_BRAINTRUST_KEY) is configured, use it instead.
-        source_key = os.environ.get("DATA_BRAINTRUST_KEY")
+        # Agent runs read the dataset with the agent account key (the copied
+        # datasets live in the agent project); main runs use DATA_BRAINTRUST_KEY
+        # (or the default BRAINTRUST_API_KEY) as the source key.
         dataset = load_braintrust_dataset(
-            dataset_project, dataset_name, source_key, org_id=org_id, api_base=api_base
+            dataset_project, dataset_name, dataset_key, org_id=org_id, api_base=api_base
         )
 
     if args.samples_per_class:
@@ -847,6 +1083,50 @@ def main() -> None:
         sys.exit("No labeled images found to classify.")
 
     validate_dataset(dataset)
+
+    # Confidence-gated escalation (routing) configuration.
+    escalation_model = args.escalation_model or escalation_model_default or None
+    if escalation_model and args.escalate_alpha is not None and args.escalate_threshold is not None:
+        sys.exit("Error: use either --escalate-alpha or --escalate-threshold, not both")
+    if escalation_model and args.escalate_alpha is None and args.escalate_threshold is None:
+        sys.exit("Error: --escalation-model requires --escalate-alpha (tail eval) or "
+                 "--escalate-threshold (inline gate)")
+    if args.escalate_alpha is not None and not escalation_model:
+        sys.exit("Error: --escalate-alpha requires --escalation-model")
+    if args.escalate_threshold is not None and not escalation_model:
+        sys.exit("Error: --escalate-threshold requires --escalation-model")
+
+    # Tail eval (--escalate-alpha): rank the base run's per-row confidence and
+    # keep only the lowest ``alpha`` fraction of rows for the escalation pass.
+    if escalation_model and args.escalate_alpha is not None:
+        if not args.base_manifest:
+            sys.exit("Error: --escalate-alpha requires --base-manifest "
+                     "(the base single-pass run's manifest)")
+        if not args.base_manifest.exists():
+            sys.exit(f"Error: base manifest not found: {args.base_manifest}")
+        confidences: dict[str, float | None] = {}
+        for line in args.base_manifest.read_text(encoding="utf-8").splitlines()[1:]:
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            confidence = rec.get("confidence")
+            if isinstance(confidence, str):
+                try:
+                    confidence = float(confidence)
+                except ValueError:
+                    confidence = None
+            if rec.get("status") != "completed":
+                confidence = None  # failed base rows sort below every scored row
+            confidences[rec["filename"]] = confidence
+        tail = set(select_escalation_fraction(confidences, args.escalate_alpha))
+        n_before = len(dataset)
+        dropped = sum(1 for d in dataset if d["filename"] not in tail)
+        dataset = [d for d in dataset if d["filename"] in tail]
+        print(f"Escalation tail: {len(dataset)} of {n_before} images "
+              f"(alpha={args.escalate_alpha:.0%}); {dropped} rows outside the tail skipped")
+        if not dataset:
+            sys.exit("Error: escalation tail is empty — check that the base manifest covers the dataset")
+
     print(f"Running evaluation with {args.model} using prompt {args.prompt_version} on {len(dataset)} images")
     print(f"Evaluation project: {project} ({project_id}), Dataset from: {dataset_project}/{dataset_name}")
     run_eval(
@@ -866,6 +1146,13 @@ def main() -> None:
         no_scorers=args.no_scorers,
         braintrust_key=braintrust_key,
         scorers=scorers,
+        project_name=project,
+        reasoning_budget=args.reasoning_budget_tokens,
+        escalation_model=escalation_model,
+        escalate_threshold=args.escalate_threshold,
+        base_manifest=args.base_manifest if args.escalate_alpha is not None else None,
+        confidence_source=args.confidence_source,
+        split_intro=not args.no_system_intro,
     )
 
 

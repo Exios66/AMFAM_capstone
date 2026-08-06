@@ -157,6 +157,9 @@ def build_tasks(
         runner_up = (r.get("runner_up") or "").strip().lower()
         if not runner_up and reasoning:
             runner_up = (extract_runner_up(reasoning) or "").strip().lower()
+        metrics = metrics_by_filename.get(fn, {})
+        if not metrics and isinstance(r.get("cost"), (int, float)):
+            metrics = {"cost": r["cost"]}
         tasks.append({
             "expected": expected,
             "output": predicted,
@@ -164,7 +167,7 @@ def build_tasks(
             "reasoning": reasoning,
             "filename": fn,
             "runner_up": runner_up,
-            "metrics": metrics_by_filename.get(fn, {}),
+            "metrics": metrics,
         })
     return tasks, failures
 
@@ -268,11 +271,16 @@ def build_report(
     md.append("")
     md.append(f"### Overall")
     md.append("")
-    md.append(f"qwen3.7-flash with prompt **v11.8** classifies **{correct}/{total} "
-              f"({accuracy:.1f}%)** of the {total}-image `{dataset}` slice exactly. "
-              f"There are **{len(failures)} failed/empty rows** (failure rate "
-              f"{result['failure_rate']:.1%}) — the resilient retry loop recovered every "
-              f"transient provider error, so accuracy is measured over the full slice.")
+    md.append(f"`{model.split('/')[-1]}` with prompt **{prompt_version}** classifies "
+              f"**{correct}/{total} ({accuracy:.1f}%)** of the {total}-image `{dataset}` "
+              f"slice exactly.")
+    if len(failures):
+        md.append(f"There are **{len(failures)} failed/empty rows** (failure rate "
+                  f"{result['failure_rate']:.1%}) — the retry loop exhausted its attempts on "
+                  f"these (see 'Failed rows' below), and they count as misses.")
+    else:
+        md.append("The resilient retry loop recovered every transient provider error, so "
+                  "accuracy is measured over the full slice.")
     md.append("")
     md.append(f"**Near-miss analysis:** {result['near_miss']} of the {total - correct} misses "
               f"({result['near_miss_share_of_misses']:.1%}) were near-misses — the model got "
@@ -307,13 +315,16 @@ def build_report(
         md.append("")
     md.append("### Cost")
     md.append("")
+    cost_note = ""
+    if metrics["prompt_tokens_avg"]:
+        cost_note = (f"The gap is mostly prompt caching — {metrics['cached_tokens_avg']:,.0f} of "
+                     f"{metrics['prompt_tokens_avg']:,.0f} avg prompt tokens/row were cache hits "
+                     f"(cached input billed at ~10% of the input price). ")
     md.append(f"The run billed **${cost['actual_usd']:.4f}** actual vs "
               f"**${cost['expected_usd']:.4f}** list-price expected "
               f"({cost['pct_diff']:+.1f}%), averaging ${actual_per_image:.6f}/image. "
-              f"The gap is mostly prompt caching — {metrics['cached_tokens_avg']:,.0f} of "
-              f"{metrics['prompt_tokens_avg']:,.0f} avg prompt tokens/row were cache hits "
-              f"(cached input billed at ~10% of the input price). "
-              f"Extrapolated linearly: ${actual_per_image * 800:.2f} for 800 images, "
+              + cost_note
+              + f"Extrapolated linearly: ${actual_per_image * 800:.2f} for 800 images, "
               f"${actual_per_image * 25000:.2f} for 25,000, and "
               f"${actual_per_image * 320000:.2f} for a 320,000-image production sweep.")
     md.append("")
@@ -354,8 +365,8 @@ def main() -> None:
     parser.add_argument("--image-size", default="1024x1024")
     parser.add_argument("--reasoning", default="enabled (effort=high), trace logged")
     parser.add_argument("--no-backfill", action="store_true",
-                        help="Skip the Braintrust fetch; reasoning, token metrics, and "
-                             "billed cost will be empty")
+                        help="Skip the Braintrust fetch; reasoning and token metrics will be "
+                             "empty (billed cost still comes from the manifest's per-row cost)")
     args = parser.parse_args()
 
     metadata, final = load_manifest(args.manifest)
@@ -376,7 +387,12 @@ def main() -> None:
         print(f"  reasoning for {len(reasoning_by_filename)} rows, metrics for "
               f"{len(metrics_by_filename)} rows, billed cost sum ${actual_cost:.6f}")
     else:
-        print("Skipping Braintrust fetch (--no-backfill)")
+        actual_cost = sum(
+            float(r.get("cost") or 0) for r in final.values()
+            if isinstance(r.get("cost"), (int, float))
+        )
+        print(f"Skipping Braintrust fetch (--no-backfill); "
+              f"billed cost from manifest: ${actual_cost:.6f}")
 
     tasks, failures = build_tasks(final, reasoning_by_filename, metrics_by_filename)
     if not tasks:

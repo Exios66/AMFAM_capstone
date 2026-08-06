@@ -1,0 +1,49 @@
+---
+title: "Tides of the Trace"
+description: "A naval physics sandbox over the trace-language phrase net — word nodes become two warring fleets, oil embodies failure, clean water embodies success, and network connectivity raises the tide."
+format:
+  html:
+    toc: false
+resources:
+  - ../charts/phrase_net_differential.json
+---
+
+A physics sandbox built over the [trace-language phrase net](../montecarlo/trace-language.qmd) — the same 707 words and 600 differential bigrams, re-imagined as a sea. Every word node is a ship in one of two warring fleets; the water itself is dyed by each word's failure share. **Success is clean water; failure is oil.** You spill oil with your brush and it spreads like pollution; you raise the tide by connecting with the network — hovering, pinning, dragging, and searching for words, especially the highly-connected hubs — and a high tide washes the oil away and lets the success fleet sail. Ships come in **seven vessel classes by graph degree** (sloops to aircraft carriers), the biggest of which project **signal shields** of network strength; the sea floor hides **shoals and reefs**, and a **living weather system** (calm → breeze → squall → storm) drives waves, drift, fog, rain, and lightning.
+
+::: {=html}
+{{< include ../assets/html/tides-widget.html >}}
+::::
+
+### The metaphor
+
+| Trace-graph element | In the sea |
+|---|---|
+| Word node with low failure share | **Success fleet** — mint-hulled ships in clean water, drift toward the cleanest water |
+| Word node with high failure share | **Failure fleet** — coral-hulled ships that come from (and thrive in) oil |
+| Graph degree of a word | **Vessel class** — sloop → schooner → frigate → destroyer → cruiser → battleship → aircraft carrier; the more connected the word, the bigger the warship |
+| Prompt-leaked vocabulary (`leak`) | Gold **diamond pennant** flying above the mast |
+| Differential bigram edge | Faint **channel current** between ships, colored by its bias |
+| Failed reasoning traces | **Oil** — diffuses, drifts, and slows/pollutes success ships |
+| Network connectivity (hover, pin, search) | **Tide** — the more connected you are, the higher the water rises |
+| Graph hubs (high degree) | Ships that **raise the tide fastest** when you engage them |
+| Battleships & carriers (degree ≥ 11) | **Signal shields** — network strength projected as a field that scrubs oil, steers your fleet, and boosts the tide |
+| Dynamic sea floor (procedural shoals) | **Shoals & reefs** — pale shallow banks that slow ships and deflect the oil |
+| Weather system | **CALM → BREEZE → SQUALL → STORM** — waves, drift, oil advection, fog, rain, lightning, and tide amplitude all follow the front |
+
+### How to play
+
+- **Drag ships** — grab any vessel and drag it around the sea; release to fling it with its momentum. A dragged ship holds its connection (auto-pin) while you move it, scrubs oil from its hull and wake, and plows a clean lane through slicks. **Click without dragging still pins** (click again to release).
+- **Find a word** — type in the search box: matching ships light up with a spotlight; **Enter** locks onto the first match, holds the connection, and surges the tide. Misses report "not in these waters".
+- **Signal shields** — battleships and aircraft carriers project a pulsing shield ring whose radius follows network strength (degree + your current connection). Inside a shield, oil is cleansed and friendly ships are steered toward its center while enemy drift is pushed away; pin one to broadcast at full strength.
+- **Spill oil** — click and drag on the water to paint an oil slick (brush size slider). The slick advects with wind, tide current, and sea-floor slope, and lingers at low tide; at high tide it is flushed out of the sea.
+- **Choppy tide** — the tide now rides a natural oscillator with storm swells, so it visibly rises and falls even at a steady connection. Above ~55% the sea starts flushing oil; a storm surge at full connection washes the whole sea clean.
+- **Weather** — fronts drift through calm, breeze, squall, and storm on their own (weather auto). Switch it off to force a state with the dropdown: storms chop the tide, thicken fog, rain and lightning, and shove the oil around.
+- **Still waters** freezes the simulation; **reset sea** clears the oil.
+
+### Data provenance
+
+Same data as the [phrase-net widget](../montecarlo/trace-language.qmd): `website/charts/phrase_net_differential.json`, built from 3,101 reasoning traces (658 failed, 2,443 correct) in `reports/monte_carlo/corpus.jsonl` via `scripts/braintrust/trace_language_viz.py`. Ships and channels come straight from that file — nothing else is fetched, so the game is fully offline like the rest of the site.
+
+::: {.callout-note}
+Pure sandbox — there is no win or lose state. The two fleets "war" only in the ambient sense: success ships seek clean water and press right, failure ships seek oil and press left, and your tide, oil, shields, weather, and the sea floor decide who sails easily.
+:::

@@ -1660,6 +1660,54 @@ Runner-up: form, ruled out because check 4 specifically covers survey instrument
 
 PROMPT_V18 = PROMPT_V17_2 + _V18_EXEMPLAR_APPENDIX
 
+# v18.1: v18 + the two decision-rule fixes the corpus EDA points to
+# (prompt_enhancement_list.md §3/§9 Tier 1) plus an explicit confidence
+# self-report that the confidence-gated escalation router reads.
+#
+# 1. RUNNER-UP RESCUE — 27.7% of current-line misses have the CORRECT label as
+#    the model's stated runner-up (129/465): the model already knows the answer
+#    and overrides it. More exemplar text did not fix it (v18 measured -4.2pp);
+#    only a decision rule can. The rule forbids overriding a stated runner-up
+#    without new quoted evidence.
+# 2. FORM ANTI-ATTRACTOR — form is predicted 456x across the corpus vs a
+#    ~290/class balanced share (5 of the top 8 confusion pairs end in form).
+# 3. CONFIDENCE SELF-REPORT — a <confidence>0-100</confidence> line after the
+#    label so the router can gate escalation on the strength of evidence.
+_V18_1_OUTPUT_FORMAT_CONFIDENCE = """After the label, on its own line, output your confidence that the label is correct as an integer from 0 to 100:
+
+<confidence>87</confidence>
+
+Confidence measures the STRENGTH OF EVIDENCE behind your chosen label, not the page's difficulty in general: 80-100 means the deciding check had clear, quotable evidence on the page; 40-79 means the evidence was moderate or the checks conflicted; 0-39 means the page was ambiguous, degraded, illegible, or your checks pointed in different directions. When you name a Runner-up, your confidence must be lower than when the deciding check is unambiguous."""
+
+_V18_1_OUTPUT_FORMAT_END = ("The label must be lowercase, exactly one of the 16 strings above, "
+                            "no punctuation inside the tags, no explanation after them.")
+
+_V18_1_DECISION_DISCIPLINE = """
+
+## Final decision discipline
+
+- RUNNER-UP RESCUE: If your final label differs from the class you named as your Runner-up, do NOT commit to the final label unless you can quote NEW evidence on the page that makes the final label's case STRICTLY stronger than the runner-up's. When the runner-up is a plausible class you explicitly rejected, the disagreement is a warning flag: across the evaluation corpus the runner-up is the correct class in roughly 28% of misses. When evidence is balanced, or you cannot quote new evidence that beats the runner-up reasoning, commit to your runner-up instead.
+- FORM IS NEVER A DEFAULT: `form` is the most over-predicted class in the corpus (5 of the top 8 confusion pairs end in form). If your final label is `form`, walk back through checks 1-14 and confirm that NO earlier check showed positive evidence you overrode — if any did, you inverted the cascade and must commit to that earlier class. Choose `form` only when the page is genuinely a fill-in / record-keeping template with no stronger document function.
+- FINAL CHECK: Before writing the label, re-read your scratchpad. The label must be the class whose evidence you quoted most strongly — not the first class that seemed plausible, and not a class you reached before completing the checks."""
+
+PROMPT_V18_1 = PROMPT_V18.replace(
+    _V18_1_OUTPUT_FORMAT_END,
+    _V18_1_OUTPUT_FORMAT_END + "\n\n" + _V18_1_OUTPUT_FORMAT_CONFIDENCE,
+    1,
+)
+PROMPT_V18_1 = PROMPT_V18_1 + _V18_1_DECISION_DISCIPLINE
+
+# v19: vote-tally fork of v18.1 for the majority-vote agent experiment. Same
+# decision rules and confidence self-report; the preamble frames the model as
+# ONE INDEPENDENT VOTE in a K-member classifier committee so each agent's vote
+# is not biased toward imagined consensus. Kept as a separate version so the
+# main (v18.1) line is not contaminated by the vote framing.
+_V19_VOTE_PREAMBLE = """You are ONE INDEPENDENT VOTE in a committee of K classifier agents, each classifying the same page. Decide entirely on your own evidence — do not hedge, do not assume what the other agents will choose, do not seek consensus. Work through the checks independently and cast exactly one vote.
+
+"""
+
+PROMPT_V19 = _V19_VOTE_PREAMBLE + PROMPT_V18_1
+
 PROMPTS = {
     "v0": PROMPT_V0,
     "v1": PROMPT_V1,
@@ -1688,6 +1736,8 @@ PROMPTS = {
     "v17.1": PROMPT_V17_1,
     "v17.2": PROMPT_V17_2,
     "v18": PROMPT_V18,
+    "v18.1": PROMPT_V18_1,
+    "v19": PROMPT_V19,
 }
 
 DEFAULT_PROMPT_VERSION = "v17.2"

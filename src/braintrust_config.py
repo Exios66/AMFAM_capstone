@@ -49,6 +49,7 @@ class BraintrustConfig:
     model: str
     api_base: str
     qwen_experiments: tuple[str, ...]
+    escalation_model: str = ""
     api_key: str = ""
     data_api_key: str = ""
 
@@ -90,6 +91,7 @@ def _resolve(env_file: str | Path) -> dict:
         "model": get("BRAINTRUST_MODEL", DEFAULT_MODEL),
         "api_base": get("BRAINTRUST_API_BASE", DEFAULT_API_BASE),
         "qwen_experiments": experiments,
+        "escalation_model": get("BRAINTRUST_ESCALATION_MODEL", ""),
         "api_key": get("BRAINTRUST_API_KEY", ""),
         "data_api_key": get("DATA_BRAINTRUST_KEY", ""),
     }
@@ -127,6 +129,7 @@ def load_agent_config(env_file: str | Path = "braintrust.env") -> BraintrustConf
         model=base["model"],
         api_base=get("AGENT_BRAINTRUST_API_BASE", base["api_base"]),
         qwen_experiments=base["qwen_experiments"],
+        escalation_model=get("AGENT_BRAINTRUST_ESCALATION_MODEL", base["escalation_model"]),
         api_key=get("AGENT_BRAINTRUST_API_KEY", ""),
         data_api_key=base["data_api_key"],
     )

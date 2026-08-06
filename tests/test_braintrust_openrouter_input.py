@@ -123,3 +123,25 @@ class TestParseScorers:
 
         with pytest.raises(SystemExit):
             bi.parse_scorers("exact_match,bogus")
+
+
+class TestBuildExtraBody:
+    def test_qwen_high_without_budget(self):
+        body = bi._build_extra_body("qwen/qwen3.7-flash", "high")
+        assert body == {"reasoning": {"enabled": True, "effort": "high"},
+                        "include_reasoning": True}
+
+    def test_qwen_budget_tokens_added(self):
+        body = bi._build_extra_body("qwen/qwen3.7-flash", "high", 32768)
+        assert body["reasoning"]["budget_tokens"] == 32768
+        assert body["reasoning"]["effort"] == "high"
+        assert body["reasoning"]["enabled"] is True
+
+    def test_gemini_budget_tokens_added(self):
+        body = bi._build_extra_body("google/gemini-2.5-flash", "max", 8192)
+        assert body["reasoning"]["budget_tokens"] == 8192
+        assert body["reasoning"]["effort"] == "max"
+
+    def test_no_budget_keeps_existing_shape(self):
+        body = bi._build_extra_body("qwen/qwen3.7-flash", None)
+        assert "budget_tokens" not in body["reasoning"]

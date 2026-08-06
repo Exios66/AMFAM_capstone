@@ -201,6 +201,7 @@ class TestQuartoAssets:
             WEBSITE / "assets/html/theme-head.html",
             WEBSITE / "assets/css/custom.scss",
             WEBSITE / "assets/img/favicon.svg",
+            WEBSITE / "assets/html/tides-widget.html",
         ]
         missing = [str(p.relative_to(ROOT)) for p in expected if not p.exists()]
         assert not missing, f"missing interactive assets: {missing}"
@@ -454,3 +455,74 @@ class TestModelAb:
                 if not p.exists():
                     missing.append(im["image"])
         assert not missing, f"missing A/B thumbnails: {missing}"
+
+
+class TestTidesGame:
+    """The "Tides of the Trace" naval physics sandbox page and widget.
+
+    ``website/assets/html/tides-widget.html`` is a dependency-free canvas game
+    that consumes the same phrase-net data as the trace-language widgets and is
+    embedded in ``website/interactive/tides-game.qmd`` via the Quarto include
+    shortcode inside a raw-HTML fence. Like every injected widget it must keep
+    its HTML at column 0 (pandoc escapes 4+-space lines inside raw HTML blocks).
+    """
+
+    WIDGET = WEBSITE / "assets/html/tides-widget.html"
+    PAGE = WEBSITE / "interactive/tides-game.qmd"
+
+    def test_widget_exists_and_markers(self):
+        html = self.WIDGET.read_text(encoding="utf-8")
+        assert 'id="tides-canvas"' in html, "widget needs a canvas stage"
+        assert 'id="tides-status"' in html, "widget needs the loading status pill"
+        assert 'id="tides-search"' in html, "widget needs the word search box"
+        assert 'id="tides-gauge-mark"' in html, "widget needs the tide gauge"
+        assert "fetch(base + '../charts/phrase_net_differential.json')" in html, (
+            "widget must fetch the phrase-net data"
+        )
+
+    def test_advanced_mechanics_markers(self):
+        html = self.WIDGET.read_text(encoding="utf-8")
+        assert 'id="tides-weather-val"' in html, "widget needs the weather readout"
+        assert 'id="tides-weather-auto"' in html, "widget needs the weather auto toggle"
+        assert 'id="tides-weather-sel"' in html, "widget needs the weather force-state select"
+        assert "signal shield" in html.lower(), "battleship/carrier signal shields missing"
+        assert "sloop" in html and "carrier" in html, "vessel class ladder (sloop..carrier) missing"
+        assert "drag" in html.lower(), "sandbox ship dragging missing"
+        assert "terrSeed" in html, "procedural sea-floor terrain missing"
+        assert "TIER_NAMES" in html, "vessel tier mapping missing"
+
+    def test_page_includes_widget(self):
+        page = self.PAGE.read_text(encoding="utf-8")
+        assert 'title: "Tides of the Trace"' in page
+        assert "{{< include ../assets/html/tides-widget.html >}}" in page, (
+            "page must include the widget (single source of truth in assets/html/)"
+        )
+        assert "::: {=html}" in page, "widget HTML must sit in a raw-HTML fence"
+        assert "../charts/phrase_net_differential.json" in page, (
+            "page must declare the chart data as a resource"
+        )
+
+    def test_page_documents_new_mechanics(self):
+        page = self.PAGE.read_text(encoding="utf-8")
+        assert "drag ships" in page.lower(), "page must teach the sandbox drag"
+        assert "signal shield" in page.lower(), "page must document signal shields"
+        assert "weather" in page.lower(), "page must document the weather system"
+        assert "sloop" in page.lower() and "carrier" in page.lower(), (
+            "page must document the vessel class ladder"
+        )
+
+    def test_registered_in_navbar_and_sidebar(self):
+        cfg = yaml.safe_load((WEBSITE / "_quarto.yml").read_text(encoding="utf-8"))
+        navbar = cfg["website"]["navbar"]["left"]
+        menu = next(item for item in navbar if item.get("text") == "Interactive")
+        assert "interactive/tides-game.qmd" in menu["menu"], "missing from navbar menu"
+        sidebar = cfg["website"]["sidebar"]["contents"]
+        section = next(item for item in sidebar if item.get("section") == "Interactive")
+        assert "interactive/tides-game.qmd" in section["contents"], "missing from sidebar"
+
+    def test_widget_html_at_column_zero(self):
+        html = self.WIDGET.read_text(encoding="utf-8")
+        seg = html[: html.find("</script>")]
+        assert not any(re.match(r"^    <", ln) for ln in seg.splitlines()), (
+            "widget HTML must be at column 0 (pandoc escapes 4+-space lines)"
+        )

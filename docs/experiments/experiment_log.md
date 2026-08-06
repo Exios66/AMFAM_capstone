@@ -959,3 +959,19 @@ wanted; the experiment in Braintrust is partial and should not be used for compa
 | Expected cost | $0.6815 |
 | Actual cost | $0.4937 |
 
+---
+
+## Experiment: `gemini-2.5-flash-lite_v18_reasoning_160` — 160 images (10 per class × 16 classes)
+
+**Model:** `google/gemini-2.5-flash-lite`  
+**Prompt:** `v18`  
+**Dataset:** `fixed_size_sampled`  
+
+| Metric | Value |
+|---|---:|
+| **exact_match** | **112/160 (70.0%)** |
+| Failure rate | 3.8% |
+| Near-miss | 1 (2.4% of misses) |
+| Expected cost | $0.0000 (token metrics unavailable in manifest-only mode) |
+| Actual cost | $0.2855 |
+

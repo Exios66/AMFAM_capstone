@@ -292,6 +292,29 @@ exemplar verbosity. v18 is retained for reference but should not be promoted.
 
 **Token profile:** +1,714 chars vs v17.2 (50,678 → 52,392 chars; +3.4%).
 
+### gemini-2.5-flash-lite cross-model check (160 images, max reasoning, no Braintrust scorers)
+
+Ran v18 on the 160-image `fixed_size_sampled` slice with `google/gemini-2.5-flash-lite`
+at max reasoning (temp 0.2) using the research-funding OpenRouter key, with
+`--no-scorers` (rows logged to Braintrust and the local manifest; scored post-hoc
+via `score_manifest.py`):
+
+| Metric | v18 (gemini-2.5-flash-lite) | v11.8 (gemini-2.5-flash-lite, prior run) |
+|---|---|---|
+| exact_match | 112/160 (70.0%) | 139/160 (86.9%) |
+| failures | 6/160 (3.8%) — empty `finish_reason=error/stop` responses | 0 |
+| total cost | $0.29 (avg $0.0019/image) | — |
+
+v18's exemplar appendix scores **−16.9pp below v11.8 on the same model/slice** —
+consistent with the exemplar-slice verdict that the appendix hurts rather than
+helps. gemini also regressed badly on `form` (3/10), `advertisement` (5/10),
+`invoice` (5/10) and `budget` (5/10); `runner_up` coverage was only 3/154 rows,
+so near-miss analysis for this run is underpowered (gemini's reasoning format
+does not reliably yield a parsable runner-up). v18 remains experimental and is
+not promoted. (Experiment `gemini-2.5-flash-lite_v18_reasoning_160`,
+manifest `reports/manifests/gemini-2.5-flash-lite_v18_reasoning_160.jsonl`,
+report `reports/experiment_reports/gemini-2.5-flash-lite_v18_reasoning_160_final.md`.)
+
 ---
 
 ## v17.2 — Three-Slice Generalization (Aug 2026)

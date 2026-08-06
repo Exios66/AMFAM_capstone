@@ -74,6 +74,30 @@ class TestExtractRunnerUp:
         assert oc.extract_runner_up(text) == "letter"
 
 
+class TestExtractConfidence:
+    def test_returns_none_for_none_or_blank(self):
+        assert oc.extract_confidence(None) is None
+        assert oc.extract_confidence("") is None
+
+    def test_parses_tagged_value(self):
+        text = "<scratchpad>...\n</scratchpad>\n<label>invoice</label>\n<confidence>87</confidence>"
+        assert oc.extract_confidence(text) == pytest.approx(0.87)
+
+    def test_tag_case_insensitive(self):
+        assert oc.extract_confidence("<CONFIDENCE>50</CONFIDENCE>") == pytest.approx(0.5)
+
+    def test_clamps_out_of_range(self):
+        assert oc.extract_confidence("<confidence>250</confidence>") == pytest.approx(1.0)
+        assert oc.extract_confidence("<confidence>-5</confidence>") is None
+
+    def test_bare_integer_line_fallback(self):
+        text = "some reasoning\n<label>budget</label>\n33"
+        assert oc.extract_confidence(text) == pytest.approx(0.33)
+
+    def test_no_confidence_returns_none(self):
+        assert oc.extract_confidence("<label>invoice</label> no numbers here") is None
+
+
 class TestEncodeImage:
     def test_encodes_file_contents_to_base64(self, tmp_path):
         raw = b"\x89PNG fake bytes"

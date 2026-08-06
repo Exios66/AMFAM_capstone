@@ -73,6 +73,7 @@ website:
         menu:
           - interactive/cost-calculator.qmd
           - interactive/experiment-explorer.qmd
+          - interactive/tides-game.qmd
       - text: Chat Examples
         href: chats.qmd
       - text: Monte Carlo
@@ -179,6 +180,7 @@ website:
         contents:
           - interactive/cost-calculator.qmd
           - interactive/experiment-explorer.qmd
+          - interactive/tides-game.qmd
       - text: "Chat Examples"
         href: chats.qmd
   page-navigation: true

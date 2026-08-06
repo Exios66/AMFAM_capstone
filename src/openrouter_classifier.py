@@ -67,6 +67,29 @@ def extract_runner_up(text: str) -> str:
     return min(candidates, key=lambda pair: pair[0])[1]
 
 
+def extract_confidence(text: str) -> Union[float, None]:
+    """Extract the model's self-reported confidence (0-1) from a response.
+
+    The v18.1+ prompts ask for a ``<confidence>0-100</confidence>`` line after
+    the label. Returns the tagged value normalized to ``[0, 1]``, falling back
+    to a bare integer line (0-100) when the tag is absent, or ``None`` when no
+    usable value is present.
+    """
+    if not text:
+        return None
+    tag = re.search(r"<confidence>\s*(\d{1,3})\s*</confidence>", text, flags=re.IGNORECASE)
+    if tag:
+        value = int(tag.group(1))
+        return float(max(0, min(100, value))) / 100.0
+    for line in reversed(text.splitlines()):
+        line = line.strip()
+        if re.fullmatch(r"\d{1,3}", line):
+            value = int(line)
+            if 0 <= value <= 100:
+                return value / 100.0
+    return None
+
+
 def classify_image(api_key: str, image_path: Path, model: str = "openai/gpt-4o") -> dict:
     """
     Classify a document image using a vision model through OpenRouter API.

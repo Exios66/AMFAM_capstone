@@ -20,6 +20,25 @@ class PromptTests(unittest.TestCase):
         response = "Reasoning mentions budget and form.\n<label>invoice</label>"
         self.assertEqual(clean_prediction(response), "invoice")
 
+    def test_v18_1_is_registered_with_routing_improvements(self):
+        prompt = get_prompt("v18.1")
+        self.assertIn("v18.1", list_prompt_versions())
+        self.assertIn("RUNNER-UP RESCUE", prompt)
+        self.assertIn("FORM IS NEVER A DEFAULT", prompt)
+        self.assertIn("<confidence>87</confidence>", prompt)
+
+    def test_v18_1_keeps_v18_exemplar_base(self):
+        prompt = get_prompt("v18.1")
+        self.assertIn("PHS 398", prompt)  # v18 exemplar appendix retained
+        self.assertIn("MSDS", prompt)
+
+    def test_v19_is_vote_fork_of_v18_1(self):
+        v18_1 = get_prompt("v18.1")
+        v19 = get_prompt("v19")
+        self.assertIn("v19", list_prompt_versions())
+        self.assertIn("ONE INDEPENDENT VOTE", v19)
+        self.assertTrue(v19.endswith(v18_1), "v19 must be v18.1 with the vote preamble prepended")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,1413 @@
+<div class="tides-widget" style="position: relative; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; background: #ffffff; overflow: hidden; margin: 1.2em 0;">
+<div id="tides-stage" style="position: relative; background: #0f2337;">
+<canvas id="tides-canvas" style="display: block; width: 100%; height: 620px; touch-action: none; cursor: crosshair;"></canvas>
+<div id="tides-status" style="position: absolute; top: 10px; left: 14px; z-index: 10; font-size: 13px; color: #5b6577; background: rgba(255,255,255,0.92); padding: 4px 10px; border-radius: 12px; border: 1px solid #d5dbe6; pointer-events: none;">Scattering the fleets…</div>
+<div id="tides-gauge" style="position: absolute; top: 10px; right: 14px; z-index: 10; font-size: 12px; color: #1b2a4a; background: rgba(255,255,255,0.92); padding: 8px 10px; border-radius: 10px; border: 1px solid #d5dbe6; text-align: center; min-width: 78px; font-family: var(--font-sans);">
+<div style="font-weight: 700; letter-spacing: 0.08em; font-size: 10px; color: #5b6577;">TIDE</div>
+<div style="position: relative; width: 12px; height: 110px; margin: 4px auto 2px; background: linear-gradient(#66c4a8, #1a2f52); border-radius: 6px; border: 1px solid #c6cfdd; overflow: hidden;">
+<div id="tides-gauge-mark" style="position: absolute; left: -4px; width: 18px; height: 3px; background: #e08580; border-radius: 2px; top: 55px;"></div>
+</div>
+<div id="tides-tide-val" style="font-weight: 700; font-variant-numeric: tabular-nums;">12%</div>
+<div style="font-weight: 700; letter-spacing: 0.08em; font-size: 10px; color: #5b6577; margin-top: 6px;">CONNECTION</div>
+<div id="tides-conn-val" style="font-variant-numeric: tabular-nums;">0.0</div>
+<div style="font-weight: 700; letter-spacing: 0.08em; font-size: 10px; color: #5b6577; margin-top: 6px;">OIL</div>
+<div id="tides-oil-val" style="font-variant-numeric: tabular-nums;">0%</div>
+<div style="font-weight: 700; letter-spacing: 0.08em; font-size: 10px; color: #5b6577; margin-top: 6px;">WEATHER</div>
+<div id="tides-weather-val" style="font-variant-numeric: tabular-nums;">CALM</div>
+</div>
+<div id="tides-tip" style="position: absolute; z-index: 20; display: none; pointer-events: none; background: rgba(255,255,255,0.96); border: 1px solid #d5dbe6; border-radius: 8px; padding: 6px 10px; font-size: 12px; line-height: 1.5; color: #1b2a4a; box-shadow: 0 4px 14px rgba(20,40,80,0.18); max-width: 250px; font-family: var(--font-sans);"></div>
+</div>
+<div style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-family: var(--font-sans);">
+<input id="tides-search" type="text" placeholder="Find a word in these waters…" style="padding: 5px 10px; border: 1px solid #c6cfdd; border-radius: 14px; font-size: 13px; font-family: inherit; width: 230px; background: #fff; color: #1b2a4a;">
+<label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #5b6577;"><input id="tides-auto" type="checkbox" checked> auto tide</label>
+<label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #5b6577;">tide <input id="tides-tide-slider" type="range" min="0" max="100" value="40" style="width: 90px;"></label>
+<label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #5b6577;">oil brush <input id="tides-brush" type="range" min="1" max="8" value="3" style="width: 70px;"></label>
+<label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #5b6577;">waves <input id="tides-waves" type="range" min="0" max="2" step="0.1" value="1" style="width: 70px;"></label>
+<label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #5b6577;">drift <input id="tides-drift" type="range" min="0" max="2" step="0.1" value="1" style="width: 70px;"></label>
+<label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #5b6577;"><input id="tides-channels" type="checkbox" checked> channels</label>
+<label style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #5b6577;"><input id="tides-weather-auto" type="checkbox" checked> weather auto</label>
+<select id="tides-weather-sel" disabled style="padding: 3px 6px; border: 1px solid #c6cfdd; border-radius: 10px; font-size: 12px; font-family: inherit; background: #fff; color: #1b2a4a;">
+<option value="calm">calm</option>
+<option value="breeze">breeze</option>
+<option value="squall">squall</option>
+<option value="storm">storm</option>
+</select>
+<button id="tides-still" type="button" style="padding: 4px 10px; border: 1px solid #c6cfdd; border-radius: 12px; background: #fff; cursor: pointer; font-size: 12px; font-family: inherit;">still waters</button>
+<button id="tides-reset" type="button" style="padding: 4px 10px; border: 1px solid #c6cfdd; border-radius: 12px; background: #fff; cursor: pointer; font-size: 12px; font-family: inherit;">reset sea</button>
+<span style="font-size: 12px; color: #5b6577;">drag ships · click pins · search locks</span>
+<span id="tides-msg" style="font-size: 12px; color: #8a4a44; min-height: 16px;"></span>
+</div>
+<div style="padding: 8px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 12px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-family: var(--font-sans);">
+<span><span style="display:inline-block;width:14px;height:8px;border-radius:2px;background:#2a7f6a;vertical-align:-1px;"></span> success fleet (clean-water words)</span>
+<span><span style="display:inline-block;width:14px;height:8px;border-radius:2px;background:#7a3b38;vertical-align:-1px;"></span> failure fleet (oil-bound words)</span>
+<span><span style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:#c9a227;vertical-align:-1px;"></span> prompt-leaked pennant</span>
+<span><span style="display:inline-block;width:14px;height:8px;border-radius:2px;background:#101318;vertical-align:-1px;"></span> oil slick</span>
+<span>sloop → carrier by network degree</span>
+<span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:rgba(201,162,39,0.30);border:1px solid #c9a227;vertical-align:-1px;"></span> signal shield (battleship / carrier)</span>
+<span id="tides-live" style="margin-left: auto; color: #5b6577; font-variant-numeric: tabular-nums;">…</span>
+</div>
+</div>
+<script>
+(function () {
+  var statusEl = document.getElementById('tides-status');
+  var tipEl = document.getElementById('tides-tip');
+  var msgEl = document.getElementById('tides-msg');
+  var liveEl = document.getElementById('tides-live');
+  var canvas = document.getElementById('tides-canvas');
+  var stage = document.getElementById('tides-stage');
+  var ctx = canvas.getContext('2d');
+  var gaugeMark = document.getElementById('tides-gauge-mark');
+  var tideValEl = document.getElementById('tides-tide-val');
+  var connValEl = document.getElementById('tides-conn-val');
+  var oilValEl = document.getElementById('tides-oil-val');
+  var weatherValEl = document.getElementById('tides-weather-val');
+  var searchInput = document.getElementById('tides-search');
+  var autoBox = document.getElementById('tides-auto');
+  var tideSlider = document.getElementById('tides-tide-slider');
+  var brushSlider = document.getElementById('tides-brush');
+  var wavesSlider = document.getElementById('tides-waves');
+  var driftSlider = document.getElementById('tides-drift');
+  var channelsBox = document.getElementById('tides-channels');
+  var weatherAutoBox = document.getElementById('tides-weather-auto');
+  var weatherSel = document.getElementById('tides-weather-sel');
+  var stillBtn = document.getElementById('tides-still');
+  var resetBtn = document.getElementById('tides-reset');
+  if (!canvas || !ctx || !statusEl) return;
+  var base = (window.location.pathname.match(/.*\//) || ['/'])[0];
+
+  var COLS = 160, ROWS = 96, N = COLS * ROWS;
+  var MINT = [102, 196, 168], CORAL = [224, 133, 128], GOLD = [201, 162, 39];
+  var TOP = [150, 205, 215], BOTTOM = [18, 42, 74];
+  var GAUGE_H = 110;
+  var W = 0, H = 0, dpr = 1;
+
+  var data = null, ships = [], shipByWord = {}, nodeIdx = {}, maxDeg = 1;
+  var seaR = new Float32Array(N), seaG = new Float32Array(N), seaB = new Float32Array(N);
+  var seaBright = new Float32Array(N);
+  var terr = new Float32Array(N);
+  var terrSeed = ((Math.random() * 1e9) | 0);
+  var oilA = new Float32Array(N), oilB = new Float32Array(N);
+  var oil = oilA, oilNext = oilB;
+  var shieldMap = new Float32Array(N);
+  var seaCanvas = document.createElement('canvas'), seaCtx, seaImg;
+  var oilCanvas = document.createElement('canvas'), oilCtx, oilImg, oilData;
+  seaCanvas.width = COLS; seaCanvas.height = ROWS; seaCtx = seaCanvas.getContext('2d');
+  oilCanvas.width = COLS; oilCanvas.height = ROWS; oilCtx = oilCanvas.getContext('2d');
+  seaImg = seaCtx.createImageData(COLS, ROWS);
+  oilImg = oilCtx.createImageData(COLS, ROWS);
+  oilData = oilImg.data;
+
+  var tide = 0.12, tideTarget = 0.12, conn = 0, burst = 0;
+  var hoverShip = null, locked = null, painting = false, paused = false;
+  var surge = null, surgeTimer = 14 + Math.random() * 10, now = 0;
+  var swellAmp = 0, swellT = 0, swellTimer = 8 + Math.random() * 6;
+  var msgTimer = null, frame = 0;
+  var pointer = { x: -100, y: -100 };
+  var query = '';
+  var dragShip = null, pressStart = null, lastPtr = null, dragMoved = false;
+  var shields = [];
+
+  var WEATHER = [
+    { id: 'calm', label: 'CALM', wave: 0.35, windX: 0.0, windY: 0.0, oilSpd: 0.5, fog: 0.02, rain: 0, light: 0, tideAmp: 0.05, gust: 0.15, dark: 0.0 },
+    { id: 'breeze', label: 'BREEZE', wave: 0.70, windX: 0.45, windY: 0.15, oilSpd: 0.8, fog: 0.05, rain: 0, light: 0, tideAmp: 0.08, gust: 0.40, dark: 0.04 },
+    { id: 'squall', label: 'SQUALL', wave: 1.30, windX: -0.60, windY: 0.35, oilSpd: 1.2, fog: 0.16, rain: 0.55, light: 0, tideAmp: 0.12, gust: 0.75, dark: 0.12 },
+    { id: 'storm', label: 'STORM', wave: 2.10, windX: -0.90, windY: 0.55, oilSpd: 1.6, fog: 0.30, rain: 0.95, light: 0.5, tideAmp: 0.18, gust: 1.30, dark: 0.22 }
+  ];
+  var wFrom = WEATHER[0], wTo = WEATHER[0], wBlend = 1, wTrans = 6;
+  var weatherTimer = 24 + Math.random() * 14;
+  var weatherAuto = true;
+  var terrOX = 0, terrOY = 0;
+
+  function hashStr(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0) / 4294967295;
+  }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function hash2(x, y, seed) {
+    var h = ((x * 374761393 + y * 668265263 + seed * 974711) | 0);
+    h = ((h ^ (h >>> 13)) * 1274126177) | 0;
+    h = h ^ (h >>> 16);
+    return (h >>> 0) / 4294967295;
+  }
+  function fade(t) { return t * t * (3 - 2 * t); }
+  function noise2(x, y, seed) {
+    var xi = Math.floor(x), yi = Math.floor(y);
+    var xf = x - xi, yf = y - yi;
+    var u = fade(xf), v = fade(yf);
+    var a = hash2(xi, yi, seed), b = hash2(xi + 1, yi, seed);
+    var c = hash2(xi, yi + 1, seed), d = hash2(xi + 1, yi + 1, seed);
+    return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+  }
+  function fbm2(x, y, seed) {
+    return noise2(x, y, seed) * 0.62 + noise2(x * 2.13 + 31.7, y * 2.13 - 17.3, seed + 3) * 0.38;
+  }
+  function oilAt(ux, uy) {
+    var x = clamp(Math.round(ux * COLS), 0, COLS - 1), y = clamp(Math.round(uy * ROWS), 0, ROWS - 1);
+    return oil[y * COLS + x];
+  }
+  function cellOil(cx, cy) {
+    if (cx < 0 || cx >= COLS || cy < 0 || cy >= ROWS) return 0;
+    return oil[cy * COLS + cx];
+  }
+  function cellBright(cx, cy) {
+    if (cx < 0 || cx >= COLS || cy < 0 || cy >= ROWS) return 0.5;
+    return seaBright[cy * COLS + cx];
+  }
+  function terrAt(cx, cy) {
+    if (cx < 0 || cx >= COLS || cy < 0 || cy >= ROWS) return 0.5;
+    return terr[cy * COLS + cx];
+  }
+  function weatherParams() {
+    var e = wBlend * wBlend * (3 - 2 * wBlend);
+    return {
+      wave: lerp(wFrom.wave, wTo.wave, e),
+      windX: lerp(wFrom.windX, wTo.windX, e),
+      windY: lerp(wFrom.windY, wTo.windY, e),
+      oilSpd: lerp(wFrom.oilSpd, wTo.oilSpd, e),
+      fog: lerp(wFrom.fog, wTo.fog, e),
+      rain: lerp(wFrom.rain, wTo.rain, e),
+      light: lerp(wFrom.light, wTo.light, e),
+      tideAmp: lerp(wFrom.tideAmp, wTo.tideAmp, e),
+      gust: lerp(wFrom.gust, wTo.gust, e),
+      dark: lerp(wFrom.dark, wTo.dark, e)
+    };
+  }
+  function weatherIndex(id) {
+    for (var i = 0; i < WEATHER.length; i++) if (WEATHER[i].id === id) return i;
+    return 0;
+  }
+  function setWeather(id) {
+    wFrom = wTo;
+    wTo = WEATHER[weatherIndex(id)];
+    wBlend = 0;
+    wTrans = 5 + Math.random() * 4;
+  }
+  function pickWeather() {
+    var cur = wTo.id;
+    var table = { calm: ['breeze'], breeze: ['calm', 'squall'], squall: ['breeze', 'storm'], storm: ['squall'] };
+    var list = table[cur];
+    var next = list[(Math.random() * list.length) | 0];
+    var eff = conn + burst * 0.15;
+    if (eff > 12 && Math.random() < 0.5) next = (Math.random() < 0.5) ? 'squall' : 'storm';
+    if (eff > 20 && Math.random() < 0.7) next = 'storm';
+    setWeather(next);
+  }
+  function updateWeather(dt) {
+    if (weatherAuto) {
+      weatherTimer -= dt;
+      if (weatherTimer <= 0) {
+        pickWeather();
+        weatherTimer = 26 + Math.random() * 16 - conn * 0.5;
+      }
+    }
+    if (wBlend < 1) wBlend = Math.min(1, wBlend + dt / wTrans);
+    terrOX += dt * 0.012;
+    terrOY -= dt * 0.009;
+  }
+
+  function resize() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = stage.clientWidth || 1000;
+    H = stage.clientHeight || 620;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  if (window.ResizeObserver) { new ResizeObserver(resize).observe(stage); }
+
+  function tierOf(deg) {
+    if (deg <= 1) return 0;
+    if (deg <= 3) return 1;
+    if (deg <= 5) return 2;
+    if (deg <= 7) return 3;
+    if (deg <= 10) return 4;
+    if (deg <= 12) return 5;
+    return 6;
+  }
+  var TIER_NAMES = ['sloop', 'schooner', 'frigate', 'destroyer', 'cruiser', 'battleship', 'aircraft carrier'];
+
+  function buildShips() {
+    var wMax = 1;
+    data.nodes.forEach(function (n) { var t = n.fail + n.ok; if (t > wMax) wMax = t; });
+    data.nodes.forEach(function (n, i) {
+      var deg = 0;
+      nodeIdx[n.id] = i;
+      var total = n.fail + n.ok;
+      var sx = 0.12 + 0.76 * clamp(n.share, 0, 1) + (hashStr(n.id) * 0.08 - 0.04);
+      var sy = 0.10 + 0.80 * hashStr(n.id + '|y');
+      ships.push({
+        id: n.id, fail: n.fail, ok: n.ok, share: n.share, leak: !!n.leak,
+        fleet: n.share >= 0.5 ? 'fail' : 'ok',
+        deg: 0, size: 7 + 9 * Math.log1p(total) / Math.log1p(wMax),
+        sx: sx, sy: sy, x: sx, y: sy, vx: 0, vy: 0,
+        phase: hashStr(n.id + '|p') * Math.PI * 2, oilExp: 0, pinned: false
+      });
+      shipByWord[n.id] = ships[i];
+    });
+    data.edges.forEach(function (e) {
+      var a = shipByWord[e.from], b = shipByWord[e.to];
+      if (a) a.deg++;
+      if (b) b.deg++;
+    });
+    ships.forEach(function (s) { if (s.deg > maxDeg) maxDeg = s.deg; });
+    ships.forEach(function (s) {
+      s.tier = tierOf(s.deg);
+      var tw = 1 + s.tier * 0.28;
+      s.size = Math.min(24, s.size * (0.78 + 0.32 * Math.log1p(1 + s.deg) / Math.log1p(1 + maxDeg)) * tw);
+    });
+  }
+
+  function scatterLayout() {
+    var n = ships.length;
+    var cols = Math.ceil(Math.sqrt(n * 1.6));
+    var rows = Math.ceil(n / cols);
+    var order = [];
+    for (var i = 0; i < n; i++) order.push(i);
+    for (var j = n - 1; j > 0; j--) {
+      var k = Math.floor(hashStr(ships[j].id + '|shuf') * (j + 1));
+      var tmp = order[j]; order[j] = order[k]; order[k] = tmp;
+    }
+    order.forEach(function (idx, slot) {
+      var col = slot % cols, row = (slot / cols) | 0;
+      var s = ships[idx];
+      var jx = hashStr(s.id + '|jx') * 0.60 + 0.20;
+      var jy = hashStr(s.id + '|jy') * 0.60 + 0.20;
+      s.sx = (col + jx) / cols;
+      s.sy = 0.055 + 0.89 * (row + jy) / rows;
+      s.sx = clamp(s.sx, 0.04, 0.96);
+      s.sy = clamp(s.sy, 0.06, 0.94);
+      s.vx = 0; s.vy = 0;
+    });
+    var cell = 0.05;
+    var vel = ships.map(function () { return { x: 0, y: 0 }; });
+    for (var it = 0; it < 90; it++) {
+      var grid = {};
+      for (var m = 0; m < n; m++) {
+        var k2 = Math.floor(ships[m].sx / cell) + ':' + Math.floor(ships[m].sy / cell);
+        (grid[k2] = grid[k2] || []).push(m);
+      }
+      for (var a = 0; a < n; a++) {
+        var sa = ships[a];
+        var gx = Math.floor(sa.sx / cell), gy = Math.floor(sa.sy / cell);
+        var fx = 0, fy = 0;
+        for (var nx = gx - 1; nx <= gx + 1; nx++) {
+          for (var ny = gy - 1; ny <= gy + 1; ny++) {
+            var list = grid[nx + ':' + ny];
+            if (!list) continue;
+            for (var q = 0; q < list.length; q++) {
+              var b2 = list[q];
+              if (b2 === a) continue;
+              var dx = sa.sx - ships[b2].sx, dy = sa.sy - ships[b2].sy;
+              var r2 = dx * dx + dy * dy;
+              var minD = (sa.size + ships[b2].size) / W * 0.32 + 0.0016;
+              if (r2 < minD * minD) {
+                var r = Math.sqrt(r2) || 1e-3;
+                var f = 0.0045 * (1 - r / minD);
+                fx += (dx / r) * f; fy += (dy / r) * f;
+              }
+            }
+          }
+        }
+        if (sa.sx < 0.07) fx += 0.003;
+        if (sa.sx > 0.93) fx -= 0.003;
+        if (sa.sy < 0.09) fy += 0.003;
+        if (sa.sy > 0.91) fy -= 0.003;
+        vel[a].x = (vel[a].x + fx) * 0.52;
+        vel[a].y = (vel[a].y + fy) * 0.52;
+        sa.sx = clamp(sa.sx + vel[a].x, 0.03, 0.97);
+        sa.sy = clamp(sa.sy + vel[a].y, 0.05, 0.95);
+      }
+      if (it % 15 === 0) statusEl.textContent = 'Scattering the fleets… ' + Math.round(100 * it / 90) + '%';
+    }
+    for (var pass = 0; pass < 3; pass++) {
+      for (var p = 0; p < n; p++) {
+        for (var q2 = p + 1; q2 < n; q2++) {
+          var a = ships[p], b = ships[q2];
+          var dx3 = b.sx - a.sx, dy3 = b.sy - a.sy;
+          var d2 = dx3 * dx3 + dy3 * dy3;
+          var minD = (a.size + b.size) / W * 0.32 + 0.0016;
+          if (d2 >= minD * minD) continue;
+          if (d2 < 1e-12) {
+            var ang = hashStr(a.id + '|sep') * Math.PI * 2;
+            a.sx -= Math.cos(ang) * minD * 0.5; a.sy -= Math.sin(ang) * minD * 0.5;
+            b.sx += Math.cos(ang) * minD * 0.5; b.sy += Math.sin(ang) * minD * 0.5;
+          } else {
+            var d = Math.sqrt(d2);
+            var push = (minD - d) * 0.5;
+            var ux = dx3 / d, uy = dy3 / d;
+            a.sx -= ux * push; a.sy -= uy * push;
+            b.sx += ux * push; b.sy += uy * push;
+          }
+          a.sx = clamp(a.sx, 0.03, 0.97); a.sy = clamp(a.sy, 0.05, 0.95);
+          b.sx = clamp(b.sx, 0.03, 0.97); b.sy = clamp(b.sy, 0.05, 0.95);
+        }
+      }
+    }
+  }
+
+  function buildTerrain() {
+    for (var y = 0; y < ROWS; y++) {
+      for (var x = 0; x < COLS; x++) {
+        var i = y * COLS + x;
+        var t = fbm2(x * 0.07, y * 0.07, terrSeed);
+        t = t * t * (3 - 2 * t);
+        terr[i] = clamp(t * 1.18 - 0.09, 0.04, 1);
+      }
+    }
+  }
+
+  function initSeaGrid() {
+    var wMax = 1;
+    ships.forEach(function (s) { var t = s.fail + s.ok; if (t > wMax) wMax = t; });
+    for (var y = 0; y < ROWS; y++) {
+      var rowF = 1 - y / (ROWS - 1);
+      for (var x = 0; x < COLS; x++) {
+        var i = y * COLS + x;
+        seaR[i] = lerp(BOTTOM[0], TOP[0], rowF);
+        seaG[i] = lerp(BOTTOM[1], TOP[1], rowF);
+        seaB[i] = lerp(BOTTOM[2], TOP[2], rowF);
+      }
+    }
+    ships.forEach(function (s) {
+      var w = Math.log1p(s.fail + s.ok) / Math.log1p(wMax);
+      var rCells = 3 + 8 * w;
+      var tintR = lerp(MINT[0], CORAL[0], s.share);
+      var tintG = lerp(MINT[1], CORAL[1], s.share);
+      var tintB = lerp(MINT[2], CORAL[2], s.share);
+      var cxp = s.sx * COLS, cyp = s.sy * ROWS;
+      var rr = Math.ceil(rCells);
+      for (var dy = -rr; dy <= rr; dy++) {
+        for (var dx = -rr; dx <= rr; dx++) {
+          var d2 = dx * dx + dy * dy;
+          if (d2 > rCells * rCells) continue;
+          var fall = 1 - Math.sqrt(d2) / rCells;
+          var x = Math.round(cxp + dx), y = Math.round(cyp + dy);
+          if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
+          var i = y * COLS + x;
+          var f = Math.min(0.5, fall * 0.45 * (0.3 + 1.3 * w));
+          seaR[i] += (tintR - seaR[i]) * f;
+          seaG[i] += (tintG - seaG[i]) * f;
+          seaB[i] += (tintB - seaB[i]) * f;
+        }
+      }
+    });
+    for (var k = 0; k < seaR.length; k++) {
+      seaBright[k] = (seaR[k] + seaG[k] + seaB[k]) / 765;
+    }
+  }
+
+  function seedOil() {
+    ships.forEach(function (s) {
+      if (s.fleet !== 'fail' || hashStr(s.id + '|oil') > 0.5) return;
+      var cxp = s.sx * COLS, cyp = s.sy * ROWS;
+      var r = 2 + Math.round(s.size / 3);
+      for (var dy = -r; dy <= r; dy++) {
+        for (var dx = -r; dx <= r; dx++) {
+          if (dx * dx + dy * dy > r * r) continue;
+          var x = Math.round(cxp + dx), y = Math.round(cyp + dy);
+          if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
+          oil[y * COLS + x] = Math.max(oil[y * COLS + x], 0.35 * (1 - Math.sqrt(dx * dx + dy * dy) / r));
+        }
+      }
+    });
+  }
+
+  function buildShields() {
+    shields.length = 0;
+    shieldMap.fill(0);
+    var connN = Math.min(1, conn / 12);
+    for (var i = 0; i < ships.length; i++) {
+      var s = ships[i];
+      if (s.tier < 5) continue;
+      var rPx = ((s.tier - 5) * 30 + s.deg * 7 + 46) * Math.min(1.15, W / 1100) * (0.55 + 0.45 * connN);
+      if (s.pinned) rPx += 14;
+      var sh = { sx: s.sx, sy: s.sy, x: s.x, y: s.y, rPx: rPx, r: rPx / W, tier: s.tier, deg: s.deg, phase: s.phase, fleet: s.fleet, leak: s.leak, pinned: s.pinned };
+      shields.push(sh);
+      var cxp = s.sx * COLS, cyp = s.sy * ROWS;
+      var rr = Math.ceil(sh.r * COLS);
+      var str = s.tier === 6 ? 1.35 : 1.0;
+      for (var dy = -rr; dy <= rr; dy++) {
+        for (var dx = -rr; dx <= rr; dx++) {
+          if (dx * dx + dy * dy > rr * rr) continue;
+          var x = Math.round(cxp + dx), y = Math.round(cyp + dy);
+          if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
+          var i2 = y * COLS + x;
+          if (shieldMap[i2] < str) shieldMap[i2] = str;
+        }
+      }
+    }
+  }
+
+  function updateOil(dt) {
+    var wp = weatherParams();
+    var currentX = (tide - 0.45) * 1.5;
+    var ax = wp.windX * 1.1 + currentX;
+    var ay = wp.windY * 0.7;
+    var sx = clamp(ax * 0.30 * dt * 60, -0.7, 0.7);
+    var sy = clamp((ay * 0.22 + Math.sin(now * 0.4 + 3.1) * 0.06) * dt * 60, -0.4, 0.4);
+    var sum = Math.abs(sx) + Math.abs(sy);
+    if (sum > 0.9) { sx *= 0.9 / sum; sy *= 0.9 / sum; }
+    var wash = Math.exp(-(0.02 + 2.2 * Math.max(0, tide - 0.5) + 14 * Math.max(0, tide - 0.7) * Math.max(0, tide - 0.7)) * dt);
+    var inBand;
+    var EPS = 0.0005;
+    oilNext.fill(0);
+    for (var y = 0; y < ROWS; y++) {
+      for (var x = 0; x < COLS; x++) {
+        var i = y * COLS + x;
+        var v = oil[i];
+        if (v < EPS) continue;
+        v *= wash * Math.exp(-shieldMap[i] * 1.7 * dt);
+        inBand = surge && Math.abs(x / COLS - surge.x) < 0.10;
+        if (inBand) v *= Math.exp(-2.4 * dt);
+        if (v < EPS) continue;
+        var moveX = v * Math.abs(sx), moveY = v * Math.abs(sy);
+        oilNext[i] += v - moveX - moveY;
+        if (moveX > 0) {
+          var nx = x + (sx > 0 ? 1 : -1);
+          if (nx >= 0 && nx < COLS) oilNext[y * COLS + nx] += moveX;
+        }
+        if (moveY > 0) {
+          var ny = y + (sy > 0 ? 1 : -1);
+          if (ny >= 0 && ny < ROWS) oilNext[ny * COLS + x] += moveY;
+        }
+      }
+    }
+    var k = 0.06;
+    for (var yy = 0; yy < ROWS; yy++) {
+      for (var xx = 0; xx < COLS; xx++) {
+        var idx = yy * COLS + xx;
+        var p = oilNext[idx];
+        if (p < EPS) { oil[idx] = 0; continue; }
+        var up = oilNext[(yy > 0 ? yy - 1 : yy) * COLS + xx];
+        var dn = oilNext[(yy < ROWS - 1 ? yy + 1 : yy) * COLS + xx];
+        var lf = oilNext[yy * COLS + (xx > 0 ? xx - 1 : xx)];
+        var rt = oilNext[yy * COLS + (xx < COLS - 1 ? xx + 1 : xx)];
+        oil[idx] = p * (1 - 4 * k) + (up + dn + lf + rt) * k;
+      }
+    }
+    var tmp = oil; oil = oilNext; oilNext = tmp;
+    for (var s2 = 0; s2 < ships.length; s2++) {
+      var s = ships[s2];
+      var cxp = Math.round(s.sx * COLS), cyp = Math.round(s.sy * ROWS);
+      var r = Math.ceil(s.size * 0.16);
+      var scr = Math.exp(-(0.45 + (s.tier >= 3 ? 0.65 : 0)) * dt - (s === dragShip && dragMoved ? 2.2 * dt : 0));
+      for (var dy = -r; dy <= r; dy++) {
+        for (var dx = -r; dx <= r; dx++) {
+          var x = cxp + dx, y = cyp + dy;
+          if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
+          var i2 = y * COLS + x;
+          if (oil[i2] < 0.0005) continue;
+          oil[i2] *= scr;
+        }
+      }
+    }
+  }
+
+  function buildOilImage() {
+    for (var i = 0; i < N; i++) {
+      var a = oil[i];
+      if (a >= 0.004) {
+        oilData[i * 4] = 10; oilData[i * 4 + 1] = 18; oilData[i * 4 + 2] = 30;
+        oilData[i * 4 + 3] = a * 230;
+      } else {
+        oilData[i * 4 + 3] = 0;
+      }
+    }
+    oilCtx.putImageData(oilImg, 0, 0);
+  }
+
+  function paintOilAt(px, py) {
+    var cxp = px / W * COLS, cyp = py / H * ROWS;
+    var r = parseInt(brushSlider.value, 10);
+    for (var dy = -r; dy <= r; dy++) {
+      for (var dx = -r; dx <= r; dx++) {
+        if (dx * dx + dy * dy > r * r) continue;
+        var x = Math.round(cxp + dx), y = Math.round(cyp + dy);
+        if (x < 0 || x >= COLS || y < 0 || y >= ROWS) continue;
+        var i = y * COLS + x;
+        oil[i] = Math.min(1, oil[i] + 0.3);
+      }
+    }
+  }
+
+  function favorGrad(s) {
+    var cx = clamp(Math.floor(s.sx * COLS), 1, COLS - 2);
+    var cy = clamp(Math.floor(s.sy * ROWS), 1, ROWS - 2);
+    var f = function (x, y) { return cellBright(x, y) - 0.9 * cellOil(x, y); };
+    return { x: (f(cx + 1, cy) - f(cx - 1, cy)) / 2, y: (f(cx, cy + 1) - f(cx, cy - 1)) / 2 };
+  }
+
+  function updateShips(dt) {
+    var wp = weatherParams();
+    var dm = parseFloat(driftSlider.value);
+    var push = 0.004 + 0.02 * tide;
+    var windU = wp.windX * 0.011 * dm, windV = wp.windY * 0.008 * dm;
+    var tideU = (tide - 0.45) * 0.018 * dm;
+    var cell = 0.06;
+    var grid = {};
+    for (var i = 0; i < ships.length; i++) {
+      var k = Math.floor(ships[i].sx / cell) + ':' + Math.floor(ships[i].sy / cell);
+      (grid[k] = grid[k] || []).push(i);
+    }
+    for (var j = 0; j < ships.length; j++) {
+      var s = ships[j];
+      var isDrag = (s === dragShip && dragMoved);
+      if (!isDrag) {
+        var g = favorGrad(s);
+        var dir = s.fleet === 'ok' ? 1 : -1;
+        var nux = (noise2(s.sx * 3.1 + now * 0.05, s.sy * 3.1, 41) - 0.5) * 2 * 0.010 * dm;
+        var nuy = (noise2(s.sx * 3.1 - now * 0.04, s.sy * 3.1, 57) - 0.5) * 2 * 0.010 * dm;
+        var gx = g.x * dir * 0.014 + windU + tideU + nux;
+        var gy = g.y * dir * 0.014 + windV + nuy;
+        gx += (noise2(s.sx * 5 + now * 0.6, s.sy * 5, 73) - 0.5) * 2 * wp.gust * 0.006 * dm;
+        for (var si = 0; si < shields.length; si++) {
+          var sh = shields[si];
+          var dx = s.sx - sh.sx, dy = s.sy - sh.sy;
+          var d2 = dx * dx + dy * dy;
+          if (d2 < sh.r * sh.r) {
+            var inv = Math.sqrt(d2) || 1e-3;
+            var f = (1 - inv / sh.r) * 0.006 * dir;
+            gx += (dx / inv) * f; gy += (dy / inv) * f;
+          }
+        }
+        s.vx = s.vx * 0.88 + gx;
+        s.vy = s.vy * 0.88 + gy;
+        var tf = 0.35 + 0.65 * terrAt(Math.round(s.sx * COLS), Math.round(s.sy * ROWS));
+        s.vx *= tf; s.vy *= tf;
+      } else {
+        s.vx *= 0.86; s.vy *= 0.86;
+      }
+      var gx2 = Math.floor(s.sx / cell), gy2 = Math.floor(s.sy / cell);
+      var fx = 0, fy = 0;
+      for (var nx = gx2 - 1; nx <= gx2 + 1; nx++) {
+        for (var ny = gy2 - 1; ny <= gy2 + 1; ny++) {
+          var list = grid[nx + ':' + ny];
+          if (!list) continue;
+          for (var q = 0; q < list.length; q++) {
+            var b2 = list[q];
+            if (b2 === j) continue;
+            var dx2 = s.sx - ships[b2].sx, dy2 = s.sy - ships[b2].sy;
+            var r2 = dx2 * dx2 + dy2 * dy2;
+            var minD = (s.size + ships[b2].size) / W * 0.32 + 0.0016;
+            if (r2 < minD * minD) {
+              var r3 = Math.sqrt(r2) || 1e-3;
+              var f2 = 0.0009 * (1 - r3 / minD);
+              fx += (dx2 / r3) * f2; fy += (dy2 / r3) * f2;
+            }
+          }
+        }
+      }
+      s.vx += fx; s.vy += fy;
+      var mag = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+      var cap = isDrag ? 0.008 : 0.0055;
+      if (mag > cap) { s.vx *= cap / mag; s.vy *= cap / mag; }
+      if (!isDrag) {
+        s.sx = clamp(s.sx + s.vx, 0.03, 0.97);
+        s.sy = clamp(s.sy + s.vy, 0.05, 0.95);
+      }
+      if (oilAt(s.sx, s.sy) > 0.22) {
+        s.oilExp = Math.min(1, s.oilExp + 0.5 * dt);
+      } else {
+        s.oilExp = Math.max(0, s.oilExp - 0.3 * dt);
+      }
+      var chop = 0.65 + 0.35 * wp.wave;
+      s.x = s.sx + Math.sin(now * 0.9 + s.phase) * 0.004 * (1 + tide) * chop;
+      s.y = s.sy + Math.sin(now * 0.6 + s.phase * 1.7) * 0.0035 * (1 + tide) * chop;
+    }
+  }
+
+  function updateTide(dt) {
+    var t = 0;
+    if (hoverShip) t += 1 + hoverShip.deg / 4;
+    for (var i = 0; i < ships.length; i++) {
+      var s = ships[i];
+      if (s.pinned && s !== locked) t += 1 + s.deg / 4;
+      if (s.tier >= 5 && s.pinned) t += 1.5 + s.deg * 0.2;
+    }
+    if (locked) t += 3 + locked.deg / 2;
+    conn += (t - conn) * Math.min(1, 2.0 * dt);
+    burst *= Math.exp(-0.5 * dt);
+    if (autoBox.checked) {
+      var eff = conn + burst * 0.15;
+      tideTarget = clamp(0.10 + 0.78 * (1 - Math.exp(-eff / 10)), 0.05, 1);
+    } else {
+      tideTarget = parseFloat(tideSlider.value) / 100;
+    }
+    var wp = weatherParams();
+    swellTimer -= dt;
+    if (swellTimer <= 0) {
+      swellAmp = 0.10 + 0.22 * Math.random() * (1 + wp.tideAmp * 3);
+      swellT = 0;
+      swellTimer = 8 + Math.random() * 10;
+    }
+    swellT += dt;
+    var swell = swellAmp * Math.exp(-swellT * 0.7);
+    var oscAmp = 1 + wp.tideAmp * 4.5;
+    var osc = (Math.sin(now * 2 * Math.PI / 45) * 0.07 +
+      Math.sin(now * 2 * Math.PI / 29 + 1.7) * 0.055 +
+      Math.sin(now * 2 * Math.PI / 17 + 0.9) * 0.035 +
+      Math.sin(now * 2 * Math.PI / 141 + 0.4) * 0.05) * oscAmp;
+    osc *= 0.55 + 0.45 * (1 - Math.abs(tideTarget - 0.5));
+    tide = clamp(tideTarget + osc + swell, 0.02, 1);
+  }
+
+  function updateSurge(dt) {
+    var wp = weatherParams();
+    if (surge) {
+      surge.x += surge.sp * dt;
+      if (surge.x > 1.2) {
+        surge = null;
+        surgeTimer = 14 + Math.random() * 12 - wp.tideAmp * 40;
+      }
+    } else {
+      surgeTimer -= dt;
+      if (surgeTimer <= 0) surge = { x: -0.18, sp: 0.34 + 0.3 * tide + wp.windX * 0.12 };
+    }
+  }
+
+  function drawSea() {
+    var wp = weatherParams();
+    var d = seaImg.data;
+    var glintY = 0.5 + 0.36 * Math.sin(now * 0.06);
+    var caust = 7 + 12 * wp.wave;
+    var ox = terrOX * 4, oy = terrOY * 4;
+    for (var i = 0; i < N; i++) {
+      var cx = i % COLS, cy = (i / COLS) | 0;
+      var rowF = 1 - cy / (ROWS - 1);
+      var ti = terr[((cy + Math.round(oy)) % ROWS + ROWS) % ROWS * COLS + ((cx + Math.round(ox)) % COLS + COLS) % COLS];
+      var depth = 0.42 + 0.58 * ti;
+      var r = seaR[i] * depth, g = seaG[i] * depth, b = seaB[i] * depth;
+      if (ti < 0.4) {
+        var sh = (0.4 - ti) / 0.4;
+        r += sh * 24; g += sh * 48; b += sh * 60;
+      }
+      var n1 = fbm2(cx * 0.085 + now * 0.05, cy * 0.085 - now * 0.033, 7);
+      var n2 = fbm2(cx * 0.17 - now * 0.062, cy * 0.17 + now * 0.028, 13);
+      var ca = (n1 * 0.62 + n2 * 0.38 - 0.5) * 2 * caust;
+      r += ca; g += ca * 0.96; b += ca * 0.9;
+      var dyG = Math.abs(rowF - glintY);
+      if (dyG < 0.09) {
+        var sp = hash2((cx * 2.3) | 0, (cy * 2.3) | 0, 99);
+        if (sp > 0.78) {
+          var gl = (1 - dyG / 0.09) * (sp - 0.78) / 0.22 * 36;
+          r += gl; g += gl; b += gl * 0.92;
+        }
+      }
+      var dark = 1 - wp.rain * 0.16 - wp.fog * 0.10 - wp.dark * 0.25;
+      r *= dark; g *= dark; b *= dark;
+      d[i * 4] = r < 0 ? 0 : (r > 255 ? 255 : r);
+      d[i * 4 + 1] = g < 0 ? 0 : (g > 255 ? 255 : g);
+      d[i * 4 + 2] = b < 0 ? 0 : (b > 255 ? 255 : b);
+      d[i * 4 + 3] = 255;
+    }
+    seaCtx.putImageData(seaImg, 0, 0);
+    ctx.drawImage(seaCanvas, 0, 0, W, H);
+    var gloom = Math.max(0, 0.28 - tide) * 0.55;
+    if (gloom > 0.01) { ctx.fillStyle = 'rgba(8,16,34,' + gloom.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    var lift = Math.max(0, tide - 0.28) * 0.5;
+    if (lift > 0.01) { ctx.fillStyle = 'rgba(150,225,200,' + lift.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    var fogA = wp.fog * 0.55;
+    if (fogA > 0.01) { ctx.fillStyle = 'rgba(215,228,238,' + fogA.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+    var darkA = wp.dark * 0.35;
+    if (darkA > 0.01) { ctx.fillStyle = 'rgba(10,18,38,' + darkA.toFixed(3) + ')'; ctx.fillRect(0, 0, W, H); }
+  }
+
+  function drawOil() {
+    buildOilImage();
+    ctx.drawImage(oilCanvas, 0, 0, W, H);
+  }
+
+  function drawSurge() {
+    if (!surge || surge.x < -0.05) return;
+    var x0 = (surge.x - 0.10) * W, x1 = (surge.x + 0.10) * W;
+    var grad = ctx.createLinearGradient(x0, 0, x1, 0);
+    grad.addColorStop(0, 'rgba(200,235,225,0)');
+    grad.addColorStop(0.5, 'rgba(200,235,225,0.14)');
+    grad.addColorStop(1, 'rgba(200,235,225,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x0, 0, x1 - x0, H);
+  }
+
+  function drawEdges() {
+    if (!channelsBox.checked) return;
+    var connNorm = Math.min(1, conn / 15);
+    var ea = 0.015 + 0.055 * connNorm + 0.04 * tide;
+    if (ea < 0.02) return;
+    ctx.lineWidth = 0.8;
+    for (var i = 0; i < data.edges.length; i++) {
+      var e = data.edges[i];
+      var a = shipByWord[e.from], b = shipByWord[e.to];
+      if (!a || !b) continue;
+      ctx.strokeStyle = e.bias === 'ok' ? 'rgba(102,196,168,' + ea.toFixed(3) + ')' : 'rgba(224,133,128,' + ea.toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.moveTo(a.x * W, a.y * H);
+      ctx.lineTo(b.x * W, b.y * H);
+      ctx.stroke();
+    }
+  }
+
+  function drawShields() {
+    for (var i = 0; i < shields.length; i++) {
+      var sh = shields[i];
+      var cx = sh.x * W, cy = sh.y * H;
+      var pulse = 0.045 * Math.sin(now * 2.3 + sh.phase);
+      var rr = sh.rPx * (1 + pulse);
+      var col = sh.leak ? GOLD : (sh.fleet === 'ok' ? MINT : CORAL);
+      var alpha = 0.24 + 0.14 * Math.sin(now * 2.3 + sh.phase) + (sh.pinned ? 0.22 : 0);
+      var grad = ctx.createRadialGradient(cx, cy, rr * 0.35, cx, cy, rr);
+      grad.addColorStop(0, 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',0.05)');
+      grad.addColorStop(1, 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + clamp(alpha, 0, 1).toFixed(3) + ')';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rr * 0.72, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  function smokeAt(px, py, oilExp, phase) {
+    for (var k = 0; k < 3; k++) {
+      var ox = Math.sin(now * 2 + phase + k * 2.1) * (0.8 + k * 0.7);
+      var oy = -(k * 2.8 + (now * 6 % 4));
+      var a = Math.max(0, 0.30 - k * 0.09);
+      ctx.fillStyle = 'rgba(' + Math.round(lerp(120, 40, oilExp)) + ',' + Math.round(lerp(124, 42, oilExp)) + ',' + Math.round(lerp(128, 44, oilExp)) + ',' + a.toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.arc(px + ox, py + oy, 1.1 + k * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawVessel(s) {
+    var x = s.x * W, y = s.y * H;
+    var bob = Math.sin(now * 0.9 + s.phase) * 2.2 * (0.6 + tide) * (0.75 + 0.5 * (weatherParams().wave / 2.1));
+    var rock = Math.sin(now * 0.7 + s.phase * 1.3) * 0.05;
+    var tilt = s.fleet === 'ok' ? -s.oilExp * 0.28 : 0;
+    var L = s.size;
+    var hullR, hullG, hullB, strokeC, deckC;
+    if (s.fleet === 'ok') {
+      hullR = lerp(42, 62, s.oilExp); hullG = lerp(127, 46, s.oilExp); hullB = lerp(106, 40, s.oilExp);
+      strokeC = '#1c5c4c'; deckC = '#4fae8f';
+      tilt -= s.oilExp * 0.28;
+    } else {
+      hullR = 122; hullG = 59; hullB = 56;
+      strokeC = '#582722'; deckC = '#a85a52';
+    }
+    ctx.save();
+    ctx.translate(x, y + bob);
+    ctx.rotate(rock + tilt);
+    var HW = L * (0.30 + s.tier * 0.025);
+    ctx.fillStyle = 'rgb(' + Math.round(hullR) + ',' + Math.round(hullG) + ',' + Math.round(hullB) + ')';
+    ctx.strokeStyle = strokeC;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-HW, L * 0.26);
+    ctx.lineTo(-L * 0.44, -L * 0.10);
+    ctx.lineTo(-L * 0.30, -L * 0.34);
+    ctx.lineTo(L * 0.30, -L * 0.34);
+    ctx.lineTo(L * 0.44, -L * 0.10);
+    ctx.lineTo(HW, L * 0.26);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    if (s.tier <= 2) {
+      ctx.fillStyle = deckC;
+      ctx.fillRect(-L * 0.16, -L * 0.20, L * 0.32, L * 0.30);
+    }
+    var mastX = 0, mastTop = -L * 0.55;
+    if (s.tier === 0) {
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(0, -L * 0.10); ctx.lineTo(0, -L * 0.85); ctx.stroke();
+      ctx.fillStyle = 'rgba(244,246,248,0.92)';
+      ctx.beginPath();
+      ctx.moveTo(0, -L * 0.82);
+      ctx.lineTo(-L * 0.40, -L * 0.16);
+      ctx.lineTo(L * 0.12, -L * 0.10);
+      ctx.closePath();
+      ctx.fill();
+      mastTop = -L * 0.82;
+    } else if (s.tier === 1) {
+      var m1 = -L * 0.14, m2 = L * 0.14;
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 0.9;
+      [m1, m2].forEach(function (mx) {
+        ctx.beginPath(); ctx.moveTo(mx, -L * 0.12); ctx.lineTo(mx, -L * 0.72); ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(244,246,248,0.9)';
+      [m1, m2].forEach(function (mx) {
+        ctx.beginPath();
+        ctx.moveTo(mx, -L * 0.70);
+        ctx.lineTo(mx - L * 0.22, -L * 0.34);
+        ctx.lineTo(mx + L * 0.06, -L * 0.30);
+        ctx.closePath();
+        ctx.fill();
+      });
+      mastTop = -L * 0.70;
+    } else if (s.tier === 2) {
+      var ms = [-L * 0.20, 0, L * 0.20];
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 0.8;
+      ms.forEach(function (mx) {
+        ctx.beginPath(); ctx.moveTo(mx, -L * 0.12); ctx.lineTo(mx, -L * 0.66); ctx.stroke();
+        ctx.fillStyle = 'rgba(246,248,250,0.9)';
+        ctx.fillRect(mx - L * 0.14, -L * 0.60, L * 0.28, L * 0.18);
+        ctx.fillRect(mx - L * 0.11, -L * 0.36, L * 0.22, L * 0.16);
+      });
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(L * 0.44, -L * 0.10); ctx.lineTo(L * 0.62, -L * 0.22); ctx.stroke();
+      mastTop = -L * 0.66;
+    } else if (s.tier === 3) {
+      ctx.fillStyle = deckC;
+      ctx.fillRect(-L * 0.20, -L * 0.30, L * 0.40, L * 0.18);
+      ctx.fillStyle = '#3a4a5e';
+      ctx.fillRect(-L * 0.05, -L * 0.46, L * 0.10, L * 0.18);
+      ctx.fillStyle = '#4a5a6e';
+      ctx.fillRect(-L * 0.30, -L * 0.34, L * 0.10, L * 0.12);
+      ctx.fillRect(L * 0.20, -L * 0.34, L * 0.10, L * 0.12);
+      smokeAt(-L * 0.0, -L * 0.46, s.oilExp, s.phase);
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(L * 0.16, -L * 0.28); ctx.lineTo(L * 0.16, -L * 0.62); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(L * 0.16, -L * 0.62); ctx.lineTo(L * 0.24, -L * 0.62); ctx.stroke();
+      mastTop = -L * 0.62;
+    } else if (s.tier === 4) {
+      ctx.fillStyle = deckC;
+      ctx.fillRect(-L * 0.22, -L * 0.32, L * 0.44, L * 0.20);
+      ctx.fillStyle = '#3a4a5e';
+      ctx.fillRect(-L * 0.14, -L * 0.48, L * 0.28, L * 0.18);
+      ctx.fillStyle = '#4a5a6e';
+      ctx.fillRect(-L * 0.32, -L * 0.36, L * 0.10, L * 0.14);
+      ctx.fillRect(-L * 0.06, -L * 0.36, L * 0.10, L * 0.14);
+      ctx.fillRect(L * 0.22, -L * 0.36, L * 0.10, L * 0.14);
+      smokeAt(-L * 0.02, -L * 0.48, s.oilExp, s.phase);
+      smokeAt(L * 0.10, -L * 0.48, s.oilExp, s.phase + 2);
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(L * 0.18, -L * 0.30); ctx.lineTo(L * 0.18, -L * 0.68); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(L * 0.18, -L * 0.68); ctx.lineTo(L * 0.28, -L * 0.68); ctx.stroke();
+      mastTop = -L * 0.68;
+    } else if (s.tier === 5) {
+      ctx.fillStyle = deckC;
+      ctx.fillRect(-L * 0.26, -L * 0.26, L * 0.52, L * 0.20);
+      ctx.fillStyle = '#4a5a6e';
+      [-L * 0.30, L * 0.20].forEach(function (tx) {
+        ctx.fillRect(tx, -L * 0.34, L * 0.14, L * 0.12);
+        ctx.fillRect(tx + L * 0.03, -L * 0.42, L * 0.10, L * 0.10);
+      });
+      ctx.fillStyle = '#3a4a5e';
+      ctx.fillRect(-L * 0.08, -L * 0.50, L * 0.24, L * 0.26);
+      smokeAt(L * 0.10, -L * 0.46, s.oilExp, s.phase);
+      ctx.strokeStyle = strokeC; ctx.lineWidth = 0.9;
+      ctx.beginPath(); ctx.moveTo(-L * 0.22, -L * 0.24); ctx.lineTo(-L * 0.22, -L * 0.64); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-L * 0.22, -L * 0.64); ctx.lineTo(-L * 0.12, -L * 0.64); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-L * 0.22, -L * 0.40); ctx.lineTo(-L * 0.32, -L * 0.40); ctx.stroke();
+      mastTop = -L * 0.64;
+    } else {
+      ctx.fillStyle = deckC;
+      ctx.fillRect(-L * 0.44, -L * 0.26, L * 0.88, L * 0.20);
+      ctx.fillStyle = 'rgba(232,236,240,0.95)';
+      ctx.beginPath();
+      ctx.moveTo(-L * 0.40, -L * 0.22);
+      ctx.lineTo(-L * 0.30, -L * 0.34);
+      ctx.lineTo(L * 0.32, -L * 0.34);
+      ctx.lineTo(L * 0.40, -L * 0.22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(90,110,130,0.5)';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(-L * 0.30, -L * 0.30);
+      ctx.lineTo(L * 0.32, -L * 0.30);
+      ctx.stroke();
+      ctx.fillStyle = '#3a4a5e';
+      ctx.fillRect(L * 0.16, -L * 0.30, L * 0.14, L * 0.22);
+      ctx.fillRect(L * 0.20, -L * 0.38, L * 0.06, L * 0.10);
+      smokeAt(L * 0.23, -L * 0.38, s.oilExp, s.phase);
+      mastTop = -L * 0.38;
+    }
+    var penn = s.leak ? GOLD : (s.fleet === 'ok' ? MINT : [224, 82, 74]);
+    ctx.fillStyle = 'rgb(' + penn[0] + ',' + penn[1] + ',' + penn[2] + ')';
+    ctx.beginPath();
+    ctx.moveTo(0, mastTop);
+    ctx.lineTo(-L * 0.20, mastTop + L * 0.10);
+    ctx.lineTo(0, mastTop + L * 0.18);
+    ctx.closePath();
+    ctx.fill();
+    if (s.leak) {
+      ctx.save();
+      ctx.translate(0, mastTop - L * 0.08);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = 'rgb(' + GOLD[0] + ',' + GOLD[1] + ',' + GOLD[2] + ')';
+      ctx.fillRect(-L * 0.08, -L * 0.08, L * 0.16, L * 0.16);
+      ctx.restore();
+    }
+    if (s.fleet === 'fail' && s.oilExp > 0.3) {
+      ctx.fillStyle = 'rgba(70,70,80,' + (0.35 * s.oilExp).toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.arc(-L * 0.3 + Math.sin(now * 3 + s.phase) * 2, -L * 0.55, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(L * 0.25 + Math.cos(now * 2.6 + s.phase) * 2, -L * 0.7, 1.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawShip(s, dim) {
+    var sp = Math.sqrt(s.vx * s.vx + s.vy * s.vy);
+    if (sp > 0.0006 || (s === dragShip && dragMoved)) {
+      var x = s.x * W, y = s.y * H;
+      var wake = Math.min(1, sp * 260 + (s === dragShip && dragMoved ? 0.8 : 0));
+      var a = 0.22 * wake;
+      ctx.fillStyle = 'rgba(240,250,252,' + a.toFixed(3) + ')';
+      var bx = -s.vx / (sp || 1) * 6, by = -s.vy / (sp || 1) * 6;
+      for (var w = 1; w <= 2; w++) {
+        ctx.beginPath();
+        ctx.arc(x + bx * w, y + by * w - 2, 2.6 - w * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.save();
+    ctx.globalAlpha = dim ? 0.16 : 1;
+    drawVessel(s);
+    ctx.restore();
+  }
+
+  function drawBeam(s) {
+    var x = s.x * W, y = s.y * H;
+    var bh = Math.min(H * 0.32, 130);
+    var grad = ctx.createLinearGradient(0, y - bh, 0, y - s.size * 0.7);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(255,255,255,0.45)');
+    ctx.strokeStyle = grad; ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(x, y - bh);
+    ctx.lineTo(x, y - s.size * 0.7);
+    ctx.stroke();
+    var pr = s.size * (0.72 + 0.16 * Math.sin(now * 4));
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, pr, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawLabels() {
+    ctx.font = '600 12px "Source Sans 3", sans-serif';
+    ctx.textAlign = 'center';
+    var seen = {};
+    function label(s) {
+      if (seen[s.id]) return;
+      seen[s.id] = true;
+      var x = s.x * W, y = s.y * H - s.size * 0.9;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(s.id, x + 1, y + 1);
+      ctx.fillStyle = '#1b2a4a';
+      ctx.fillText(s.id, x, y);
+    }
+    if (hoverShip && hoverShip !== locked) label(hoverShip);
+    if (locked) label(locked);
+    ships.forEach(function (s) { if (s.pinned && s !== locked) label(s); });
+  }
+
+  function drawWaves() {
+    var wm = parseFloat(wavesSlider.value);
+    if (wm <= 0.01) return;
+    var wp = weatherParams();
+    var amp = (2 + 8 * tide) * wm * wp.wave;
+    var count = 24;
+    ctx.lineWidth = 1;
+    for (var i = 0; i < count; i++) {
+      var y0 = (i + 0.5) * H / count;
+      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+      ctx.beginPath();
+      var prevY = 0;
+      for (var x = 0; x <= W; x += 40) {
+        var yy = y0 + Math.sin(x * 0.01 + now * 1.4 + i * 0.7) * amp * 0.5 +
+          Math.sin(x * 0.021 + now * 2.1 + i * 1.3) * amp * 0.25;
+        if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+        if (x > 0 && amp > 3.2 && yy < prevY && hash2(i, x / 40, 31) > 0.72) {
+          ctx.fillStyle = 'rgba(255,255,255,' + (0.20 + 0.12 * Math.min(1, amp / 14)).toFixed(2) + ')';
+          ctx.beginPath();
+          ctx.arc(x, yy, 1.5 + Math.min(3, amp * 0.12), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        prevY = yy;
+      }
+      ctx.stroke();
+    }
+  }
+
+  function drawRain() {
+    var wp = weatherParams();
+    if (wp.rain <= 0.01) return;
+    var count = Math.round(wp.rain * 70);
+    ctx.lineWidth = 1;
+    for (var k = 0; k < count; k++) {
+      var x = hash2(k, 7, 11) * W;
+      var y = (hash2(k, 13, 23) * H + now * (240 + hash2(k, 19, 29) * 160)) % (H + 60) - 30;
+      ctx.strokeStyle = 'rgba(200,220,235,' + (0.10 + 0.10 * wp.rain).toFixed(2) + ')';
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 3, y + 10);
+      ctx.stroke();
+    }
+  }
+
+  var flashT = 0, flashTimer = 4 + Math.random() * 6;
+  function drawLightning() {
+    var wp = weatherParams();
+    if (wp.light <= 0.01) return;
+    flashTimer -= 1 / 60;
+    if (flashTimer <= 0) {
+      flashT = 0.22;
+      flashTimer = 4 + Math.random() * 9 - wp.light * 4;
+    }
+    if (flashT <= 0) return;
+    ctx.fillStyle = 'rgba(210,228,255,' + (flashT * 0.5 * wp.light).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+    if (flashT > 0.10) {
+      var bx = 0.2 * W + hash2(Math.floor(now * 3), 5, 77) * 0.6 * W;
+      ctx.strokeStyle = 'rgba(235,244,255,' + (flashT * 1.6).toFixed(3) + ')';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(bx, 0);
+      var yy2 = 0, xx2 = bx;
+      while (yy2 < H * 0.55) {
+        yy2 += 22 + hash2(Math.floor(yy2), 3, 79) * 30;
+        xx2 += (hash2(Math.floor(yy2), 4, 81) - 0.5) * 44;
+        ctx.lineTo(xx2, yy2);
+      }
+      ctx.stroke();
+    }
+    flashT -= 0.008;
+  }
+
+  function drawFrame() {
+    ctx.clearRect(0, 0, W, H);
+    drawSea();
+    drawOil();
+    drawSurge();
+    drawEdges();
+    drawShields();
+    if (locked) drawBeam(locked);
+    if (hoverShip && hoverShip !== locked && !hoverShip.pinned) drawBeam(hoverShip);
+    var matches = null;
+    if (query) {
+      matches = [];
+      for (var i = 0; i < ships.length; i++) {
+        if (ships[i].id.indexOf(query) !== -1) matches.push(ships[i]);
+      }
+    }
+    var inMatch = {};
+    if (matches) for (var m = 0; m < matches.length; m++) inMatch[matches[m].id] = true;
+    for (var j = 0; j < ships.length; j++) {
+      var s = ships[j];
+      var dim = matches ? !inMatch[s.id] : false;
+      drawShip(s, dim);
+    }
+    if (matches) {
+      for (var q = 0; q < matches.length; q++) drawBeam(matches[q]);
+    }
+    if (hoverShip && hoverShip !== locked) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.arc(hoverShip.x * W, hoverShip.y * H, hoverShip.size * 0.75, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    if (locked) {
+      ctx.strokeStyle = 'rgb(' + GOLD[0] + ',' + GOLD[1] + ',' + GOLD[2] + ')'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(locked.x * W, locked.y * H, locked.size * 0.9, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    drawLabels();
+    drawWaves();
+    drawRain();
+    drawLightning();
+    gaugeMark.style.top = ((GAUGE_H - 3) * (1 - tide)).toFixed(1) + 'px';
+    tideValEl.textContent = Math.round(tide * 100) + '%';
+    connValEl.textContent = (conn + burst * 0.15).toFixed(1);
+    weatherValEl.textContent = wTo.label + (wBlend < 1 ? '→' + wFrom.label : '');
+    var oilPct = 0;
+    for (var o = 0; o < N; o++) oilPct += oil[o];
+    oilPct = oilPct / N;
+    oilValEl.textContent = Math.round(oilPct * 100) + '%';
+    frame++;
+    if (frame % 15 === 0) {
+      liveEl.textContent = ships.length + ' ships · ' + data.edges.length + ' channels · tide ' +
+        Math.round(tide * 100) + '% · oil ' + Math.round(oilPct * 100) + '% · ' + wTo.label.toLowerCase();
+    }
+  }
+
+  function shipAt(px, py) {
+    var best = null, bestD = Infinity;
+    for (var i = 0; i < ships.length; i++) {
+      var s = ships[i];
+      var dx = s.x * W - px, dy = s.y * H - py;
+      var d2 = dx * dx + dy * dy;
+      var thr = s.size * 0.75 + 10;
+      if (d2 < thr * thr && d2 < bestD) { bestD = d2; best = s; }
+    }
+    return best;
+  }
+
+  function moveTip(px, py) {
+    var w = tipEl.offsetWidth || 220, h = tipEl.offsetHeight || 90;
+    var left = px + 16, top = py + 16;
+    if (left + w > W - 8) left = px - w - 12;
+    if (top + h > H - 8) top = py - h - 12;
+    tipEl.style.left = left + 'px';
+    tipEl.style.top = top + 'px';
+  }
+
+  function showTip(s) {
+    var shieldLine = s.tier >= 5 ? '<br>vessel: <b>' + TIER_NAMES[s.tier] + '</b> — ' +
+      (s.pinned ? 'signal shield <b>broadcasting</b> (network strength)' : 'signal shield active — pin to broadcast') : '';
+    tipEl.innerHTML = '<b>' + s.id + '</b> · <b>' + TIER_NAMES[s.tier] + '</b><br>' +
+      'fleet: <b>' + (s.fleet === 'ok' ? 'success (clean water)' : 'failure (oil-bound)') + '</b><br>' +
+      'failed traces: <b>' + s.fail + '</b> · correct: <b>' + s.ok + '</b><br>' +
+      'failure share: <b>' + (s.share * 100).toFixed(1) + '%</b><br>' +
+      'network degree: <b>' + s.deg + '</b> · ' +
+      (s.leak ? '<i>prompt-leaked vocabulary</i>' : 'ordinary vocabulary') +
+      shieldLine +
+      '<br><span style="color:#5b6577;">' +
+      (s.pinned ? 'click again to release (connection held)' : 'click to pin — drag to move · hubs raise the tide') + '</span>';
+    tipEl.style.display = 'block';
+    moveTip(pointer.x, pointer.y);
+  }
+
+  function hideTip() { tipEl.style.display = 'none'; }
+
+  function clearQuery() {
+    query = '';
+    searchInput.value = '';
+  }
+
+  function releaseLock() {
+    if (locked) locked.pinned = false;
+    locked = null;
+    clearQuery();
+    hideTip();
+  }
+
+  function onMove(ev) {
+    var rect = canvas.getBoundingClientRect();
+    pointer.x = ev.clientX - rect.left;
+    pointer.y = ev.clientY - rect.top;
+    if (painting) paintOilAt(pointer.x, pointer.y);
+    if (dragShip) {
+      if (!dragMoved) {
+        var dxp = pointer.x - pressStart.x, dyp = pointer.y - pressStart.y;
+        if (dxp * dxp + dyp * dyp > 49) {
+          dragMoved = true;
+          if (!dragShip.pinned) dragShip.pinned = true;
+          msgEl.textContent = 'dragging “' + dragShip.id + '” — connection held while moving';
+          clearTimeout(msgTimer);
+          msgTimer = setTimeout(function () { msgEl.textContent = ''; }, 2400);
+        }
+      }
+      if (dragMoved) {
+        var tgtX = clamp(pointer.x / W, 0.03, 0.97);
+        var tgtY = clamp(pointer.y / H, 0.05, 0.95);
+        var tf = 0.30 + 0.70 * terrAt(Math.round(tgtX * COLS), Math.round(tgtY * ROWS));
+        dragShip.sx += (tgtX - dragShip.sx) * Math.min(1, 0.55 * tf);
+        dragShip.sy += (tgtY - dragShip.sy) * Math.min(1, 0.55 * tf);
+        if (lastPtr) {
+          var dtx = (pointer.x - lastPtr.x) / W, dty = (pointer.y - lastPtr.y) / H;
+          dragShip.vx = clamp(dtx * 3, -0.008, 0.008);
+          dragShip.vy = clamp(dty * 3, -0.008, 0.008);
+        }
+        lastPtr = { x: pointer.x, y: pointer.y, t: ev.timeStamp || 0 };
+      }
+    }
+    hoverShip = dragShip ? null : shipAt(pointer.x, pointer.y);
+    canvas.style.cursor = hoverShip || dragShip ? 'grab' : 'crosshair';
+    if (hoverShip) showTip(hoverShip); else if (!locked && !dragShip) hideTip();
+  }
+
+  canvas.addEventListener('pointerdown', function (ev) {
+    var rect = canvas.getBoundingClientRect();
+    pointer.x = ev.clientX - rect.left;
+    pointer.y = ev.clientY - rect.top;
+    var s = shipAt(pointer.x, pointer.y);
+    if (s) {
+      dragShip = s;
+      pressStart = { x: pointer.x, y: pointer.y };
+      lastPtr = { x: pointer.x, y: pointer.y, t: ev.timeStamp || 0 };
+      dragMoved = false;
+      try { canvas.setPointerCapture(ev.pointerId); } catch (e) { }
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
+    if (locked) releaseLock();
+    canvas.setPointerCapture(ev.pointerId);
+    painting = true;
+    paintOilAt(pointer.x, pointer.y);
+  });
+  canvas.addEventListener('pointermove', onMove);
+  canvas.addEventListener('pointerup', function (ev) {
+    if (dragShip) {
+      var s2 = dragShip;
+      var wasDrag = dragMoved;
+      if (!wasDrag) {
+        s2.pinned = !s2.pinned;
+        if (locked === s2 && !s2.pinned) releaseLock();
+        if (s2.pinned) {
+          if (locked) releaseLock();
+          msgEl.textContent = 'pinned “' + s2.id + '” — connection held while pinned';
+          clearTimeout(msgTimer);
+          msgTimer = setTimeout(function () { msgEl.textContent = ''; }, 2600);
+        } else {
+          msgEl.textContent = 'released “' + s2.id + '”';
+          clearTimeout(msgTimer);
+          msgTimer = setTimeout(function () { msgEl.textContent = ''; }, 2000);
+        }
+      } else {
+        var vx = 0, vy = 0;
+        if (lastPtr) {
+          var dt = Math.max(1 / 60, (ev.timeStamp - lastPtr.t) / 1000);
+          vx = clamp(((pointer.x - lastPtr.x) / W) / dt * 0.35, -0.8, 0.8);
+          vy = clamp(((pointer.y - lastPtr.y) / H) / dt * 0.35, -0.8, 0.8);
+        }
+        if (Math.abs(vx) > 0.01 || Math.abs(vy) > 0.01) {
+          s2.vx = vx; s2.vy = vy;
+        }
+        msgEl.textContent = '“' + s2.id + '” cast off — watch the drift';
+        clearTimeout(msgTimer);
+        msgTimer = setTimeout(function () { msgEl.textContent = ''; }, 2400);
+      }
+      dragShip = null;
+      dragMoved = false;
+      pressStart = null;
+      lastPtr = null;
+      try { canvas.releasePointerCapture(ev.pointerId); } catch (e) { }
+      return;
+    }
+    painting = false;
+  });
+  canvas.addEventListener('pointercancel', function () {
+    painting = false;
+    dragShip = null;
+    dragMoved = false;
+    pressStart = null;
+    lastPtr = null;
+  });
+  canvas.addEventListener('pointerleave', function () {
+    painting = false;
+    if (!dragShip) hoverShip = null;
+    if (!locked && !dragShip) hideTip();
+  });
+
+  function runSearch() {
+    query = searchInput.value.trim().toLowerCase();
+    if (!query) {
+      if (locked) releaseLock();
+      hideTip();
+      msgEl.textContent = '';
+      return;
+    }
+    var found = null;
+    for (var i = 0; i < ships.length; i++) {
+      if (ships[i].id.toLowerCase().indexOf(query) !== -1) { found = ships[i]; break; }
+    }
+    if (!found) {
+      msgEl.textContent = '“' + query + '” not in these waters';
+      clearTimeout(msgTimer);
+      msgTimer = setTimeout(function () { msgEl.textContent = ''; }, 2600);
+    }
+  }
+  searchInput.addEventListener('input', runSearch);
+  searchInput.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter') return;
+    var q = searchInput.value.trim().toLowerCase();
+    if (!q) return;
+    var found = null;
+    for (var i = 0; i < ships.length; i++) {
+      if (ships[i].id.toLowerCase().indexOf(q) !== -1) { found = ships[i]; break; }
+    }
+    if (found) {
+      if (locked) { locked.pinned = false; }
+      locked = found;
+      locked.pinned = true;
+      burst = 3 + locked.deg / 2;
+      searchInput.value = locked.id;
+      query = locked.id.toLowerCase();
+      msgEl.textContent = 'locked on “' + locked.id + '” — tide surge from network connection (+' + burst.toFixed(1) + ')';
+      clearTimeout(msgTimer);
+      msgTimer = setTimeout(function () { msgEl.textContent = ''; }, 3200);
+    }
+  });
+
+  autoBox.addEventListener('change', function () { tideSlider.disabled = autoBox.checked; });
+  tideSlider.disabled = true;
+  weatherAutoBox.addEventListener('change', function () {
+    weatherAuto = weatherAutoBox.checked;
+    weatherSel.disabled = weatherAuto;
+    if (weatherAuto) weatherTimer = 22 + Math.random() * 14;
+  });
+  weatherSel.addEventListener('change', function () {
+    if (weatherAuto) return;
+    setWeather(weatherSel.value);
+  });
+  stillBtn.addEventListener('click', function () {
+    paused = !paused;
+    stillBtn.textContent = paused ? 'resume' : 'still waters';
+    if (!paused) lastTime = 0;
+  });
+  resetBtn.addEventListener('click', function () {
+    oil.fill(0);
+    ships.forEach(function (s) { s.oilExp = 0; });
+    burst = 0;
+    msgEl.textContent = 'sea reset — oil cleared';
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(function () { msgEl.textContent = ''; }, 2200);
+  });
+
+  var lastTime = 0;
+  function loop(ts) {
+    requestAnimationFrame(loop);
+    if (!lastTime) lastTime = ts;
+    var dt = Math.min(0.05, (ts - lastTime) / 1000);
+    lastTime = ts;
+    if (paused) return;
+    now = ts / 1000;
+    updateWeather(dt);
+    updateTide(dt);
+    updateSurge(dt);
+    buildShields();
+    updateOil(dt);
+    updateShips(dt);
+    drawFrame();
+  }
+
+  fetch(base + '../charts/phrase_net_differential.json')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (d) {
+      data = d;
+      resize();
+      buildShips();
+      scatterLayout();
+      buildTerrain();
+      initSeaGrid();
+      seedOil();
+      statusEl.textContent = data.nodes.length + ' ships · ' + data.edges.length + ' channels · ' +
+        (maxDeg === 1 ? '' : 'hubs up to degree ' + maxDeg + ' · ') +
+        'drag ships, click to pin, search to lock';
+      requestAnimationFrame(loop);
+    })
+    .catch(function (err) {
+      resize();
+      ctx.fillStyle = '#0f2337';
+      ctx.fillRect(0, 0, W, H);
+      statusEl.textContent = 'Could not load graph data (' + err.message + ') — refresh to retry.';
+    });
+})();
+</script>
