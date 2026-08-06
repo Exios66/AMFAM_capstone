@@ -22,6 +22,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.patches import Patch
 
 ROOT = Path(__file__).resolve().parents[2]
 CHARTS_DIR = ROOT / "website" / "charts"
@@ -60,6 +61,10 @@ ACCENT_LIGHT = "#dbe6fb"
 GOOD = "#1e9e5a"
 BAD = "#d64545"
 GRID = "#e8ecf3"
+MINT = "#66c4a8"
+CORAL = "#e08580"
+MUTED_GOLD = "#c9a227"
+EDGE_GRAY = "#a0a8b8"
 
 plt.rcParams.update(
     {
@@ -887,8 +892,8 @@ def _blend(lo, hi, t):
 
 
 def _trace_node_rgb(share: float) -> str:
-    lo = np.array([0.12, 0.62, 0.35])
-    hi = np.array([0.84, 0.27, 0.27])
+    lo = np.array([int(MINT[i:i + 2], 16) for i in (1, 3, 5)]) / 255.0
+    hi = np.array([int(CORAL[i:i + 2], 16) for i in (1, 3, 5)]) / 255.0
     rgb = _blend(lo, hi, max(0.0, min(1.0, share)))
     return "#" + "".join(f"{int(round(c * 255)):02x}" for c in rgb)
 
@@ -904,8 +909,8 @@ def chart_trace_logodds(out_name: str) -> None:
     ok_biased = [w for w in words if w["z"] <= 0][:30][::-1]
     fig, (ax_f, ax_o) = plt.subplots(1, 2, figsize=(15, 10.5))
     for ax, items, color, title in (
-        (ax_f, fail_biased, BAD, "Most likely in FAILED traces"),
-        (ax_o, ok_biased, GOOD, "Most likely in CORRECT traces"),
+        (ax_f, fail_biased, CORAL, "Most likely in FAILED traces"),
+        (ax_o, ok_biased, MINT, "Most likely in CORRECT traces"),
     ):
         y = np.arange(len(items))
         ax.barh(y, [w["z"] for w in items], color=color, height=0.68, zorder=3)
@@ -945,7 +950,7 @@ def chart_trace_scatter(out_name: str) -> None:
     ys = [max(p["freq_fail"], 0.5) for p in points]
     sizes = [16 + 7 * np.log1p(p["fail"] + p["ok"]) for p in points]
     zs = [z_by_word.get(p["word"], 0.0) for p in points]
-    colors = [BAD if z > 0.5 else GOOD if z < -0.5 else "#b9c4d6" for z in zs]
+    colors = [CORAL if z > 0.5 else MINT if z < -0.5 else "#b9c4d6" for z in zs]
     ax.scatter(xs, ys, s=sizes, c=colors, alpha=0.55, edgecolors="none",
                rasterized=True, zorder=2)
     lim = [0.3, 10 ** 4]
@@ -992,11 +997,11 @@ def chart_trace_scatter(out_name: str) -> None:
             zorder=5,
         )
     handles = [
-        plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc=BAD, mec="none", alpha=0.7,
+        plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc=CORAL, mec="none", alpha=0.7,
                    label="Failure-biased (z > 0.5)"),
         plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc="#b9c4d6", mec="none", alpha=0.7,
                    label="Neutral (−0.5 ≤ z ≤ 0.5)"),
-        plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc=GOOD, mec="none", alpha=0.7,
+        plt.Line2D([0], [0], marker="o", ls="", markersize=9, mfc=MINT, mec="none", alpha=0.7,
                    label="Success-biased (z < −0.5)"),
     ]
     ax.legend(handles=handles, loc="upper right", fontsize=10, framealpha=0.95,
@@ -1024,10 +1029,10 @@ def chart_phrase_net(out_name: str) -> None:
     sizes = [200 + 70 * np.log1p(stats[n]["fail"]) for n in G.nodes()]
     rgb = np.array([_hex_to_rgb(_trace_node_rgb(stats[n]["share"])) for n in G.nodes()])
     nx.draw_networkx_nodes(G, pos, ax=ax, node_size=sizes, node_color=rgb,
-                           edgecolors="#333333", linewidths=0.8)
+                           edgecolors="#5b6577", linewidths=0.8)
     plain = [(a, b) for a, b in G.edges() if (a, b) not in cycle_edges]
     looped = [(a, b) for a, b in G.edges() if (a, b) in cycle_edges]
-    for edge_list, color, alpha in ((plain, "#888888", 0.45), (looped, BAD, 1.0)):
+    for edge_list, color, alpha in ((plain, EDGE_GRAY, 0.45), (looped, CORAL, 1.0)):
         if not edge_list:
             continue
         widths = [0.8 + 4.5 * (G[a][b]["weight"] - zmin) / (zmax - zmin)
@@ -1040,7 +1045,7 @@ def chart_phrase_net(out_name: str) -> None:
         nx.draw_networkx_nodes(G, pos, ax=ax, nodelist=leak_nodes,
                                node_size=[sizes[list(G.nodes()).index(n)]
                                           for n in leak_nodes],
-                               node_color="none", edgecolors="#d4a017",
+                               node_color="none", edgecolors=MUTED_GOLD,
                                linewidths=2.0, node_shape="D")
     # Label only the most frequent failure words so the static rendering stays
     # legible; the interactive widget carries full word-by-word detail.
@@ -1070,9 +1075,19 @@ def chart_phrase_net(out_name: str) -> None:
     ax.set_title(
         f"Differential phrase net — bi-grams over-represented in failed traces\n"
         f"({G.number_of_nodes()} words, {G.number_of_edges()} edges, "
-        f"{len(cycle_edges)} cycle edges in red)",
+        f"{len(cycle_edges)} cycle edges in coral)",
         fontsize=13, fontweight="bold",
     )
+    handles = [
+        Patch(fc=MINT, edgecolor="none", label="Success-biased (low failure share)"),
+        Patch(fc=CORAL, edgecolor="none", label="Failure-biased (high failure share)"),
+        plt.Line2D([0], [0], marker="D", ls="", mfc="none", mec=MUTED_GOLD, mew=2,
+                   markersize=9, label="Prompt-leaked word"),
+        plt.Line2D([0], [0], color=CORAL, lw=2.5, label="Structural-loop edge"),
+        plt.Line2D([0], [0], color=EDGE_GRAY, lw=1.5, label="Differential edge"),
+    ]
+    ax.legend(handles=handles, loc="lower right", fontsize=9.5, framealpha=0.95,
+              title="Phrase net", title_fontsize=10.5)
     ax.axis("off")
     _save(fig, out_name)
 

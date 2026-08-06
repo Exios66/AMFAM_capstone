@@ -214,6 +214,18 @@ class TestQuartoAssets:
         for edge in graph["edges"]:
             assert edge_keys <= set(edge), f"edge missing keys: {edge}"
 
+    def test_phrase_net_widget_tooltips_are_dom_elements(self):
+        # vis-network 9.1.9 renders STRING tooltips via innerText, so HTML
+        # markup shows literally (e.g. "<b>60</b>"); element titles are
+        # appended as DOM and render formatted. Tooltips must go through
+        # tooltipHtml(), never be raw HTML strings.
+        html = (WEBSITE / "assets/html/phrase-net.html").read_text(encoding="utf-8")
+        assert "function tooltipHtml(html)" in html
+        assert "el.innerHTML = html" in html
+        assert html.count("title: tooltipHtml(") == 2, "node + edge titles must be DOM elements"
+        for m in re.finditer(r"title:\s*([^,()]+)", html):
+            assert "tooltipHtml" in m.group(1), f"raw tooltip title: {m.group(1)}"
+
     def test_website_data_json_structure(self):
         expected = {
             "chat-examples.json": {"correct", "misclassified", "generated_at"},
