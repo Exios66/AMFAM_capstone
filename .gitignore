@@ -62,6 +62,9 @@ fixed_size_sampled_480/
 *.log
 reports/manifests/
 
+# Regenerable Braintrust span cache for the A/B comparator build
+archive/model_ab/
+
 # Quarto site build output
 website/_site/
 website/.quarto/

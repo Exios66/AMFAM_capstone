@@ -143,14 +143,14 @@ website:
           - cost/cost-projections.qmd
       - section: "Research Memos"
         contents:
-          - text: "Core findings"
+          - section: "Core findings"
             contents:
               - memos/accuracy-arc.qmd
               - memos/generalization-falloff.qmd
               - memos/model-comparison.qmd
               - memos/cost-per-image.qmd
               - memos/hardest-classes.qmd
-          - text: "Monte Carlo robustness"
+          - section: "Monte Carlo robustness"
             contents:
               - memos/ensemble-voting.qmd
               - memos/confidence-routing.qmd

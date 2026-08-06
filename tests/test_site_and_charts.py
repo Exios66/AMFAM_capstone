@@ -394,3 +394,63 @@ class TestNotebookPages:
             site = (WEBSITE / "notebooks" / f"{name}.ipynb").read_bytes()
             repo = (ROOT / "notebooks" / f"{name}.ipynb").read_bytes()
             assert site == repo, f"site/repo notebooks out of sync: {name}"
+
+
+class TestModelAb:
+    """The A/B model & prompt comparator data layer and its chat-page widget.
+
+    ``website/data/model-ab.json`` groups real logged reasoning traces by source
+    image, with >=2 distinct (model, prompt) runs each — either prompt-evolution
+    (qwen3.7-flash v0 vs v11.8) or cross-model (the four models on the shared
+    160-image slice at v11.8). The widget lives on ``chats.qmd`` and, like every
+    injected widget, must keep its HTML at column 0 (pandoc escapes 4+-space
+    indented lines inside raw HTML blocks).
+    """
+
+    def test_model_ab_structure(self):
+        path = WEBSITE / "data" / "model-ab.json"
+        assert path.exists(), "missing model-ab.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        images = data["images"]
+        assert isinstance(images, list) and len(images) >= 10, "want a useful number of images"
+        axes = set()
+        for im in images:
+            assert im["filename"] and im["expected"] and im["axis"]
+            assert im["image"], "every image needs a fetched thumbnail"
+            axes.add(im["axis"])
+            runs = im["runs"]
+            assert len(runs) >= 2, "each image needs >=2 runs"
+            combos = {(r["model"], r["prompt"]) for r in runs}
+            assert len(combos) == len(runs), "runs must be deduplicated per (model, prompt)"
+            for r in runs:
+                assert r["model_short"] and r["prompt"]
+                assert r["correct"] in (True, False)
+                assert r["reasoning"] and r["reasoning_len"] >= len(r["reasoning"]) > 0
+                assert r["predicted"] or r.get("no_label"), "predicted or explicit no-label"
+        assert axes >= {"prompt_evolution", "cross_model"}, "both A/B axes represented"
+        # cross-model images should carry at least 3 distinct models
+        for im in images:
+            if im["axis"] == "cross_model":
+                assert len({r["model"] for r in im["runs"]}) >= 3, "cross-model needs >=3 models"
+
+    def test_model_ab_widget_injected_and_column_zero(self):
+        chats = (WEBSITE / "chats.qmd").read_text(encoding="utf-8")
+        assert "Model & Prompt A/B Comparator" in chats
+        assert "fetch(base + 'data/model-ab.json')" in chats, "widget must fetch the AB data"
+        start = chats.find('class="ab-widget"')
+        assert start != -1, "ab widget must be injected into chats.qmd"
+        end = chats.find("</script>", start)
+        seg = chats[start:end]
+        assert not any(re.match(r"^    <", ln) for ln in seg.splitlines()), (
+            "widget HTML must be at column 0 (pandoc escapes 4+-space lines)"
+        )
+
+    def test_model_ab_images_exist(self):
+        data = json.loads((WEBSITE / "data" / "model-ab.json").read_text(encoding="utf-8"))
+        missing = []
+        for im in data["images"]:
+            if im["image"]:
+                p = (WEBSITE / im["image"]).resolve()
+                if not p.exists():
+                    missing.append(im["image"])
+        assert not missing, f"missing A/B thumbnails: {missing}"

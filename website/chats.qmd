@@ -257,5 +257,281 @@ The labeled-field skeleton with blanks is the strongest concrete evidence on the
 </div>
 :::
 
+
+## Model & Prompt A/B Comparator
+
+Same document image, two lenses. **Prompt evolution** shows qwen3.7-flash working the same page under the original v0 prompt vs the refined v11.8 cascade (the two disagree on nearly half the shared slice); **cross-model** shows gemini-2.5-flash-lite, kimi-k2.6, qwen3.5-35b-a3b and qwen3.7-flash all running v11.8 on the shared 160-image slice. Pick any two runs and read their reasoning side by side — where they diverge is where the prompt or the model changes the decision.
+
+<div class="ab-widget" style="position: relative; width: 100%; border: 1px solid #d5dbe6; border-radius: 8px; background: #ffffff; overflow: hidden; margin: 1.2em 0;">
+<div class="ab-toolbar" style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 9px 14px; border-bottom: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px;">
+<span class="ab-chip" data-filter="all" style="cursor: pointer; user-select: none; padding: 3px 10px; border-radius: 14px; border: 1px solid #c9d2e0; background: #ffffff; color: #1b2a4a; font-weight: 600;">All</span>
+<span class="ab-chip" data-filter="prompt_evolution" style="cursor: pointer; user-select: none; padding: 3px 10px; border-radius: 14px; border: 1px solid #c9d2e0; background: #ffffff; color: #1b2a4a;">Prompt evolution (v0 → v11.8)</span>
+<span class="ab-chip" data-filter="cross_model" style="cursor: pointer; user-select: none; padding: 3px 10px; border-radius: 14px; border: 1px solid #c9d2e0; background: #ffffff; color: #1b2a4a;">Cross-model (v11.8)</span>
+<label style="display: inline-flex; align-items: center; gap: 5px; color: #5b6577; cursor: pointer;"><input id="ab-flips" type="checkbox" style="accent-color: #2d6cdf;"> flips only</label>
+<span style="margin-left: auto; color: #5b6577;" id="ab-pos-label"></span>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid #d5dbe6; background: #ffffff;">
+<button id="ab-prev" type="button" style="padding: 5px 12px; border: 1px solid #c9d2e0; border-radius: 6px; background: #ffffff; color: #1b2a4a; font-size: 12px; cursor: pointer;">&#8592; Previous</button>
+<span id="ab-count" style="color: #5b6577; font-variant-numeric: tabular-nums; min-width: 64px; text-align: center;">1 / 20</span>
+<button id="ab-next" type="button" style="padding: 5px 12px; border: 1px solid #c9d2e0; border-radius: 6px; background: #ffffff; color: #1b2a4a; font-size: 12px; cursor: pointer;">Next &#8594;</button>
+<span id="ab-expected" class="ab-badge" style="display: inline-block; padding: 3px 10px; border-radius: 12px; background: #eef2f8; color: #1b2a4a; font-weight: 600; font-size: 12px;"></span>
+<span id="ab-axis" style="color: #5b6577; font-size: 12px; font-style: italic;"></span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 14px; padding: 14px;">
+<div class="ab-image-col" style="flex: 0 0 260px; max-width: 300px; display: flex; flex-direction: column; gap: 6px;">
+<img id="ab-img" alt="document under comparison" style="width: 100%; border: 1px solid #e3e8f0; border-radius: 6px; background: #ffffff;" />
+<div id="ab-filename" style="font-size: 11.5px; color: #5b6577; word-break: break-all; line-height: 1.4;"></div>
+<div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5b6577;">
+<span>A run</span>
+<select id="ab-laneA" style="flex: 1; min-width: 0; padding: 3px 6px; border: 1px solid #c9d2e0; border-radius: 6px; font-size: 12px;"></select>
+</div>
+<div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5b6577;">
+<span>B run</span>
+<select id="ab-laneB" style="flex: 1; min-width: 0; padding: 3px 6px; border: 1px solid #c9d2e0; border-radius: 6px; font-size: 12px;"></select>
+</div>
+<button id="ab-swap" type="button" style="padding: 5px 10px; border: 1px solid #c9d2e0; border-radius: 6px; background: #ffffff; color: #1b2a4a; font-size: 12px; cursor: pointer;">Swap A &#8596; B</button>
+</div>
+<div style="flex: 1 1 520px; min-width: 0; display: flex; flex-wrap: wrap; gap: 12px;">
+<div class="ab-lane" data-lane="A" style="flex: 1 1 44%; min-width: 300px; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;">
+<div class="ab-lane-head" style="padding: 9px 12px; border-bottom: 1px solid #e3e8f0; background: #f7f9fc; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12.5px;">
+<span class="ab-lane-label" style="font-weight: 700; color: #1b2a4a;">A</span>
+<span class="ab-lane-model" style="font-weight: 600; color: #1b2a4a;"></span>
+<span class="ab-lane-prompt" style="color: #5b6577;"></span>
+<span class="ab-lane-verdict" style="margin-left: auto; font-weight: 600;"></span>
+</div>
+<div class="ab-lane-meta" style="padding: 6px 12px; border-bottom: 1px solid #e3e8f0; background: #ffffff; font-size: 12px; color: #5b6577; display: flex; gap: 12px; flex-wrap: wrap;"></div>
+<pre class="ab-lane-reason" style="flex: 1; margin: 0; padding: 10px 12px; max-height: 380px; overflow-y: auto; font-family: var(--font-sans, 'Source Sans 3', sans-serif); font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; background: #ffffff;"></pre>
+</div>
+<div class="ab-lane" data-lane="B" style="flex: 1 1 44%; min-width: 300px; border: 1px solid #e3e8f0; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column;">
+<div class="ab-lane-head" style="padding: 9px 12px; border-bottom: 1px solid #e3e8f0; background: #f7f9fc; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 12.5px;">
+<span class="ab-lane-label" style="font-weight: 700; color: #1b2a4a;">B</span>
+<span class="ab-lane-model" style="font-weight: 600; color: #1b2a4a;"></span>
+<span class="ab-lane-prompt" style="color: #5b6577;"></span>
+<span class="ab-lane-verdict" style="margin-left: auto; font-weight: 600;"></span>
+</div>
+<div class="ab-lane-meta" style="padding: 6px 12px; border-bottom: 1px solid #e3e8f0; background: #ffffff; font-size: 12px; color: #5b6577; display: flex; gap: 12px; flex-wrap: wrap;"></div>
+<pre class="ab-lane-reason" style="flex: 1; margin: 0; padding: 10px 12px; max-height: 380px; overflow-y: auto; font-family: var(--font-sans, 'Source Sans 3', sans-serif); font-size: 12px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; background: #ffffff;"></pre>
+</div>
+</div>
+</div>
+<div class="ab-verdict" style="padding: 10px 14px; border-top: 1px solid #d5dbe6; background: #f7f9fc; font-size: 13px; color: #333; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center;">
+<label style="display: inline-flex; align-items: center; gap: 5px; color: #1b2a4a; cursor: pointer; font-weight: 600;"><input id="ab-diff" type="checkbox" style="accent-color: #2d6cdf;"> highlight reasoning differences</label>
+<span id="ab-diff-summary" style="color: #5b6577;"></span>
+<span style="margin-left:auto;color:#5b6577;" id="ab-hint">pick an image, choose any two runs — same document, different reasoning</span>
+</div>
+<style>
+.ab-widget .ab-lane-reason .d-line { display: block; padding: 0 2px; }
+.ab-widget .ab-lane-reason .d-same { background: transparent; }
+.ab-widget .ab-lane-reason .d-diff { background: #fdf3d7; }
+.ab-widget .ab-lane-reason .d-pad { background: #f2f4f8; color: #a0a8b8; }
+.ab-widget .ab-chip.active { background: #2d6cdf; border-color: #2d6cdf; color: #ffffff; }
+.ab-widget .ab-pill-ok { background: #e7f6ec; color: #1d7a3e; border: 1px solid #bfe6cd; }
+.ab-widget .ab-pill-miss { background: #fdeeee; color: #b03030; border: 1px solid #f2c9c9; }
+.ab-widget .ab-pill-nl { background: #eef2f8; color: #5a6b85; border: 1px solid #d4dce8; }
+.ab-widget .ab-pill { padding: 1px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; }
+</style>
+</div>
+<script>
+(function () {
+  var status = document.getElementById('ab-count');
+  var base = (window.location.pathname.match(/.*\//) || ['/'])[0];
+  fetch(base + 'data/model-ab.json')
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (data) { init(data); })
+    .catch(function (err) {
+      var el = document.querySelector('.ab-widget');
+      if (el && status) el.querySelector('.ab-toolbar').insertAdjacentHTML('afterend',
+        '<div style="padding:12px 14px;color:#b03030;">Could not load A/B data (' + err.message + ').</div>');
+    });
+
+  var state = { filter: 'all', flipsOnly: false, idx: 0, laneA: 0, laneB: 1, diff: false };
+
+  function filtered(images) {
+    var out = images.filter(function (im) {
+      if (state.filter !== 'all' && im.axis !== state.filter) return false;
+      if (state.flipsOnly && !hasFlip(im)) return false;
+      return true;
+    });
+    return out;
+  }
+
+  function hasFlip(im) {
+    var ok = im.runs.some(function (r) { return r.correct; });
+    var miss = im.runs.some(function (r) { return !r.correct; });
+    return ok && miss;
+  }
+
+  function shortModel(m) { return m.split('/').pop(); }
+
+  function runLabel(r, i, total) {
+    var m = r.model_short || shortModel(r.model);
+    return (r.prompt ? m + ' \u00b7 ' + r.prompt : m) + ' \u2014 ' + (r.predicted || '(no label)') + (r.correct ? ' \u2713' : ' \u2717');
+  }
+
+  function init(data) {
+    var images = data.images;
+    var widgetEl = document.querySelector('.ab-widget');
+    var imgEl = document.getElementById('ab-img');
+    var fnEl = document.getElementById('ab-filename');
+    var expEl = document.getElementById('ab-expected');
+    var axisEl = document.getElementById('ab-axis');
+    var laneASel = document.getElementById('ab-laneA');
+    var laneBSel = document.getElementById('ab-laneB');
+    var laneAEl = widgetEl.querySelector('[data-lane="A"]');
+    var laneBEl = widgetEl.querySelector('[data-lane="B"]');
+    var diffChk = document.getElementById('ab-diff');
+    var swapBtn = document.getElementById('ab-swap');
+    var hintEl = document.getElementById('ab-hint');
+
+    function current() {
+      var list = filtered(images);
+      if (!list.length) return null;
+      return list[Math.min(state.idx, list.length - 1)];
+    }
+
+    function render() {
+      var list = filtered(images);
+      if (state.idx >= list.length) state.idx = list.length - 1;
+      if (state.idx < 0) state.idx = 0;
+      var n = list.length;
+      document.getElementById('ab-count').textContent = n ? (state.idx + 1) + ' / ' + n : '0 / 0';
+      if (!n) {
+        hintEl.textContent = 'No images match the current filters.';
+        return;
+      }
+      var im = list[state.idx];
+      expEl.textContent = 'expected: ' + im.expected;
+      axisEl.textContent = im.axis === 'cross_model' ? 'cross-model \u00b7 four models on the shared 160-image slice at v11.8' : 'prompt evolution \u00b7 qwen3.7-flash, same image';
+      if (im.image) { imgEl.src = im.image; imgEl.style.display = ''; } else { imgEl.style.display = 'none'; }
+      fnEl.textContent = im.filename;
+
+      // lane dropdowns
+      var opts = im.runs.map(function (r, i) { return '<option value="' + i + '">' + runLabel(r, i, im.runs.length) + '</option>'; }).join('');
+      laneASel.innerHTML = opts;
+      laneBSel.innerHTML = opts;
+      if (state.laneA >= im.runs.length) state.laneA = 0;
+      if (state.laneB >= im.runs.length || state.laneB === state.laneA) state.laneB = state.laneA === 0 ? 1 : 0;
+      laneASel.value = state.laneA;
+      laneBSel.value = state.laneB;
+
+      renderLane(laneAEl, im.runs[state.laneA], im.expected);
+      renderLane(laneBEl, im.runs[state.laneB], im.expected);
+      if (state.diff) applyDiff(laneAEl, laneBEl);
+      renderVerdict(im);
+      hintEl.textContent = 'pick an image, choose any two runs \u2014 same document, different reasoning';
+    }
+
+    function pill(r, expected) {
+      if (r.no_label) return '<span class="ab-pill ab-pill-nl">NO LABEL</span>';
+      return r.correct
+        ? '<span class="ab-pill ab-pill-ok">OK</span>'
+        : '<span class="ab-pill ab-pill-miss">MISS</span>';
+    }
+
+    function renderLane(laneEl, r, expected) {
+      var model = laneEl.querySelector('.ab-lane-model');
+      var prompt = laneEl.querySelector('.ab-lane-prompt');
+      var verdict = laneEl.querySelector('.ab-lane-verdict');
+      var meta = laneEl.querySelector('.ab-lane-meta');
+      var pre = laneEl.querySelector('.ab-lane-reason');
+      model.textContent = r.model_short || shortModel(r.model);
+      prompt.textContent = r.prompt || '';
+      var pred = r.predicted ? r.predicted : '(no parseable label)';
+      verdict.innerHTML = pill(r, expected) + ' ' + pred + (r.predicted && r.predicted !== expected ? ' \u2192 ' + expected + '? no \u2014 expected ' + expected : '');
+      var bits = ['predicted: <b>' + pred + '</b>', 'expected: <b>' + expected + '</b>', r.reasoning_len + ' chars'];
+      if (r.runner_up) bits.push('runner-up: <b>' + r.runner_up + '</b>');
+      meta.innerHTML = bits.map(function (b) { return '<span>' + b + '</span>'; }).join('');
+      pre.textContent = r.reasoning || '(no reasoning captured)';
+    }
+
+    function renderVerdict(im) {
+      var a = im.runs[state.laneA], b = im.runs[state.laneB];
+      if (!a || !b) return;
+      var summary = document.getElementById('ab-diff-summary');
+      var agree = (a.predicted || '') === (b.predicted || '');
+      var txt = agree
+        ? 'Both runs land on <b>' + (a.predicted || '(no label)') + '</b>' + (a.correct ? ' \u2014 and both are correct.' : ' \u2014 and both miss.')
+        : 'Runs <b>disagree</b>: ' + (a.predicted || '(no label)') + ' vs ' + (b.predicted || '(no label)') + '.';
+      summary.innerHTML = txt;
+    }
+
+    function lineStates(tA, tB) {
+      var la = tA.split('\n'), lb = tB.split('\n');
+      var max = Math.max(la.length, lb.length);
+      var out = [];
+      for (var i = 0; i < max; i++) {
+        var x = la[i] || '', y = lb[i] || '';
+        var cls = x === y ? (x ? 'd-same' : 'd-pad') : 'd-diff';
+        out.push({ a: x, b: y, cls: cls, i: i });
+      }
+      return out;
+    }
+
+    function applyDiff(laneAEl, laneBEl) {
+      var pa = laneAEl.querySelector('.ab-lane-reason');
+      var pb = laneBEl.querySelector('.ab-lane-reason');
+      var lines = lineStates(pa.textContent || '', pb.textContent || '');
+      pa.innerHTML = '';
+      pb.innerHTML = '';
+      lines.forEach(function (ln) {
+        var da = document.createElement('span'); da.className = 'd-line ' + ln.cls; da.textContent = ln.a || '\u00a0';
+        var db = document.createElement('span'); db.className = 'd-line ' + ln.cls; db.textContent = ln.b || '\u00a0';
+        pa.appendChild(da); pb.appendChild(db);
+      });
+      var diffs = lines.filter(function (l) { return l.cls === 'd-diff'; }).length;
+      var sum = document.getElementById('ab-diff-summary');
+      sum.innerHTML = sum.innerHTML + ' \u00b7 <b>' + diffs + '</b> differing line' + (diffs === 1 ? '' : 's');
+    }
+
+    function clearDiff() {
+      var pa = laneAEl.querySelector('.ab-lane-reason');
+      var pb = laneBEl.querySelector('.ab-lane-reason');
+      pa.querySelectorAll('.d-line').forEach(function (s) { s.remove(); });
+      pb.querySelectorAll('.d-line').forEach(function (s) { s.remove(); });
+    }
+
+    // controls
+    widgetEl.querySelectorAll('.ab-chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        widgetEl.querySelectorAll('.ab-chip').forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+        state.filter = chip.getAttribute('data-filter');
+        state.idx = 0;
+        render();
+      });
+    });
+    document.getElementById('ab-flips').addEventListener('change', function (e) {
+      state.flipsOnly = e.target.checked;
+      state.idx = 0;
+      render();
+    });
+    document.getElementById('ab-prev').addEventListener('click', function () {
+      state.idx = (state.idx - 1 + Math.max(1, filtered(images).length)) % Math.max(1, filtered(images).length);
+      render();
+    });
+    document.getElementById('ab-next').addEventListener('click', function () {
+      state.idx = (state.idx + 1) % Math.max(1, filtered(images).length);
+      render();
+    });
+    laneASel.addEventListener('change', function (e) { state.laneA = parseInt(e.target.value, 10); if (state.laneB === state.laneA) { state.laneB = state.laneA === 0 ? 1 : 0; laneBSel.value = state.laneB; } render(); });
+    laneBSel.addEventListener('change', function (e) { state.laneB = parseInt(e.target.value, 10); if (state.laneA === state.laneB) { state.laneA = state.laneB === 0 ? 1 : 0; laneASel.value = state.laneA; } render(); });
+    swapBtn.addEventListener('click', function () {
+      var t = state.laneA; state.laneA = state.laneB; state.laneB = t;
+      laneASel.value = state.laneA; laneBSel.value = state.laneB;
+      render();
+    });
+    diffChk.addEventListener('change', function (e) {
+      state.diff = e.target.checked;
+      render();
+    });
+
+    // default: pick the axis with a flip first
+    render();
+  }
+})();
+</script>
+
+
+
 All real traces were logged to the Braintrust project; each conversation card shows the source document image
 (from the `fixed_size_sampled` slice), the prompt version, and the model that produced the trace.

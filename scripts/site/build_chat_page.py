@@ -22,6 +22,22 @@ sys.path.insert(0, str(ROOT))
 DATA_FILE = ROOT / "website" / "data" / "chat-examples.json"
 OUT_FILE = ROOT / "website" / "chats.qmd"
 
+MODEL_AB_WIDGET = (
+    ROOT / "website" / "assets" / "html" / "model-ab-widget.html"
+).read_text(encoding="utf-8")
+
+MODEL_AB_SECTION = (
+    "\n## Model & Prompt A/B Comparator\n\n"
+    "Same document image, two lenses. **Prompt evolution** shows qwen3.7-flash "
+    "working the same page under the original v0 prompt vs the refined v11.8 "
+    "cascade (the two disagree on nearly half the shared slice); **cross-model** "
+    "shows gemini-2.5-flash-lite, kimi-k2.6, qwen3.5-35b-a3b and qwen3.7-flash "
+    "all running v11.8 on the shared 160-image slice. Pick any two runs and read "
+    "their reasoning side by side — where they diverge is where the prompt or the "
+    "model changes the decision.\n\n"
+    "<!-- AB-WIDGET-PLACEHOLDER -->\n"
+)
+
 ILLUSTRATIVE_THREADS = [
     {
         "kind": "illustrative",
@@ -335,9 +351,14 @@ printed form. Step to them in the player above (they are tagged *Illustrative*),
 </div>
 :::
 
+__MODEL_AB_SECTION__
+
 All real traces were logged to the Braintrust project; each conversation card shows the source document image
 (from the `fixed_size_sampled` slice), the prompt version, and the model that produced the trace.
 """
+
+    html = html.replace("__MODEL_AB_SECTION__", MODEL_AB_SECTION)
+    html = html.replace("<!-- AB-WIDGET-PLACEHOLDER -->", MODEL_AB_WIDGET)
 
     OUT_FILE.write_text(html)
     print(f"wrote {OUT_FILE} ({len(convs)} conversations: {len(real['correct'])} correct, {len(real['misclassified'])} misses, {len(ILLUSTRATIVE_THREADS)} illustrative)")
