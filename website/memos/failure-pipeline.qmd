@@ -1,7 +1,9 @@
 ---
 title: "Memo: How reliable is the classification pipeline at scale?"
 subtitle: "Research memorandum — failure-pipeline simulation"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 

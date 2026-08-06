@@ -1,7 +1,9 @@
 ---
 title: "Memo: Which reasoning trigger words make the model stop too early?"
 subtitle: "Research memorandum — hasty-stop analysis"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 

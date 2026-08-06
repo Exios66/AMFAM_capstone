@@ -1,0 +1,77 @@
+{
+  "models": [
+    {
+      "model": "moonshotai/kimi-k3",
+      "prompt_tokens": 11996,
+      "completion_tokens": 20,
+      "total_tokens": 12016,
+      "actual_cost_per_image": 0.0039312,
+      "prompt_cost_per_image": 0.0036312,
+      "completion_cost_per_image": 0.0003,
+      "projections": {
+        "800": 3.14,
+        "25000": 98.28,
+        "320000": 1257.98
+      },
+      "input_price_per_m": 0.302701,
+      "output_price_per_m": 15.0,
+      "model_short": "kimi-k3"
+    },
+    {
+      "model": "anthropic/claude-fable-5",
+      "prompt_tokens": 5313,
+      "completion_tokens": 6,
+      "total_tokens": 5319,
+      "actual_cost_per_image": 0.05343,
+      "prompt_cost_per_image": 0.05313,
+      "completion_cost_per_image": 0.0003,
+      "projections": {
+        "800": 42.74,
+        "25000": 1335.75,
+        "320000": 17097.6
+      },
+      "input_price_per_m": 10.0,
+      "output_price_per_m": 50.0,
+      "model_short": "claude-fable-5"
+    },
+    {
+      "model": "x-ai/grok-4.5",
+      "prompt_tokens": 2954,
+      "completion_tokens": 53,
+      "total_tokens": 3007,
+      "actual_cost_per_image": 0.0060084,
+      "prompt_cost_per_image": 0.0056904,
+      "completion_cost_per_image": 0.000318,
+      "projections": {
+        "800": 4.81,
+        "25000": 150.21,
+        "320000": 1922.69
+      },
+      "input_price_per_m": 1.926337,
+      "output_price_per_m": 6.0,
+      "model_short": "grok-4.5"
+    },
+    {
+      "model": "nex-agi/nex-n2-pro",
+      "prompt_tokens": 13231,
+      "completion_tokens": 5,
+      "total_tokens": 13236,
+      "actual_cost_per_image": 0.0033128,
+      "prompt_cost_per_image": 0.0033078,
+      "completion_cost_per_image": 5e-06,
+      "projections": {
+        "800": 2.65,
+        "25000": 82.82,
+        "320000": 1060.08
+      },
+      "input_price_per_m": 0.250004,
+      "output_price_per_m": 1.0,
+      "model_short": "nex-n2-pro"
+    }
+  ],
+  "meta": {
+    "generated_from": "docs/experiments/1pic_cost_estimation.md",
+    "note": "token counts and billed cost are OpenRouter-reported metrics; input/output prices are derived from those metrics.",
+    "count": 4
+  }
+}

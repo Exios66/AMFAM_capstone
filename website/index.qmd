@@ -1,7 +1,11 @@
 ---
 title: "RVL-CDIP Document Classifier"
 subtitle: "A prompt-engineering lab over the RVL-CDIP benchmark — 16-class document intelligence via OpenRouter vision models and Braintrust evals"
-author: "Jack J. Burleson"
+author:
+  - name: "Jack J. Burleson"
+    url: "https://github.com/Exios66"
+  - name: "Grant Mooslin"
+    url: "https://github.com/gmooslin"
 date: "2026-08-05"
 keywords: "RVL-CDIP, document classification, prompt engineering, OpenRouter, Braintrust, vision language models, exact-match evaluation, Monte Carlo, ensemble voting, cost analysis"
 format:

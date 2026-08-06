@@ -4,6 +4,8 @@ project:
   resources:
     - charts/
     - assets/
+    - data/
+    - figures/
 
 execute:
   enabled: false
@@ -61,6 +63,12 @@ website:
           - memos/hasty-stop-words.qmd
           - memos/failure-pipeline.qmd
           - memos/exemplar-mining.qmd
+      - text: Interactive
+        menu:
+          - interactive/cost-calculator.qmd
+          - interactive/experiment-explorer.qmd
+      - text: Manuscript
+        href: manuscript.qmd
       - text: Monte Carlo
         menu:
           - montecarlo/overview.qmd
@@ -77,6 +85,7 @@ website:
           - notebooks/01_env_setup_and_single_image.ipynb
           - notebooks/02_balanced_sampling_and_braintrust_upload.ipynb
           - notebooks/03_watchers_evaluators_full_experiment.ipynb
+          - notebooks/04_interactive_cost_and_experiments.ipynb
       - text: Appendix
         menu:
           - appendix/misclassifications.qmd
@@ -155,6 +164,14 @@ website:
           - notebooks/01_env_setup_and_single_image.ipynb
           - notebooks/02_balanced_sampling_and_braintrust_upload.ipynb
           - notebooks/03_watchers_evaluators_full_experiment.ipynb
+          - notebooks/04_interactive_cost_and_experiments.ipynb
+      - section: "Interactive"
+        contents:
+          - interactive/cost-calculator.qmd
+          - interactive/experiment-explorer.qmd
+      - section: "Manuscript"
+        contents:
+          - manuscript.qmd
   page-navigation: true
   page-footer:
     left: "RVL-CDIP Document Classifier — AMFAM capstone project"

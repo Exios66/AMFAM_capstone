@@ -1,7 +1,9 @@
 ---
 title: "Memo: Does confidence-gated escalation (routing) help?"
 subtitle: "Research memorandum — routing & abstention simulation"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 

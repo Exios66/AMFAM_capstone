@@ -1,7 +1,9 @@
 ---
 title: "Memo: Which OpenRouter model performs best on the shared slice?"
 subtitle: "Research memorandum — cross-model comparison"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 

@@ -1,7 +1,9 @@
 ---
 title: "Memo: What does document classification cost per image?"
 subtitle: "Research memorandum — cost estimation"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 

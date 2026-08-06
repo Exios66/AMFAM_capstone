@@ -1,7 +1,9 @@
 ---
 title: "Memo: Does prompt engineering move the accuracy needle?"
 subtitle: "Research memorandum — prompt version arc"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 

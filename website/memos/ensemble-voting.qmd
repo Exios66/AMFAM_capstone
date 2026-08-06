@@ -1,7 +1,9 @@
 ---
 title: "Memo: Does majority-vote ensembling improve accuracy?"
 subtitle: "Research memorandum — ensemble voting simulation"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 

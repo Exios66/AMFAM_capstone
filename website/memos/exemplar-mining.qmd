@@ -1,7 +1,9 @@
 ---
 title: "Memo: Do few-shot exemplars fix the top confusion pairs?"
 subtitle: "Research memorandum — exemplar mining & verification"
-author: "Jack J. Burleson"
+author:
+  - "Jack J. Burleson"
+  - "Grant Mooslin"
 date: "2026-08-05"
 ---
 
