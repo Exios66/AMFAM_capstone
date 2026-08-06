@@ -694,16 +694,25 @@ def chart_prompt_ablation(md_path: Path, out_name: str) -> None:
     # barh xerr expects non-negative [[left_extent], [right_extent]]
     left_extent = [max(0, d - lo) for d, lo in zip(deltas, ci_lo)]
     right_extent = [max(0, hi - d) for d, hi in zip(deltas, ci_hi)]
-    fig, ax = plt.subplots(figsize=(9, 5.5))
+    fig, ax = plt.subplots(figsize=(9.5, 5.5))
     y = np.arange(len(labels))
-    ax.barh(y, deltas, xerr=[left_extent, right_extent], capsize=3,
-            color=colors, zorder=3, error_kw=dict(elinewidth=1, ecolor="#444"))
-    for yi, d, lbl in zip(y, deltas, labels):
-        ax.text(d + 0.004, yi, f"{d:+.3f}", va="center", fontsize=8.5)
+    ax.barh(y, deltas, xerr=[left_extent, right_extent], capsize=3.5,
+            color=colors, zorder=3, error_kw=dict(elinewidth=1.2, ecolor="#444"))
+    label_x = [
+        ci_hi[i] + 0.008 if d >= 0 else ci_lo[i] - 0.008
+        for i, d in enumerate(deltas)
+    ]
+    for yi, d, lx in zip(y, deltas, label_x):
+        ax.text(lx, yi, f"{d:+.3f}", va="center",
+                ha="left" if d >= 0 else "right",
+                fontsize=9, fontweight="bold", color="#222222")
+    lo_all = min([min(ci_lo), min(label_x)])
+    hi_all = max([max(ci_hi), max(label_x)])
+    pad = (hi_all - lo_all) * 0.04
+    ax.set_xlim(lo_all - pad, hi_all + pad)
     ax.axvline(0, color="#444", linewidth=1)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=8.5)
-    ax.margins(x=0.22)
     ax.set_xlabel("Mean delta (A − B), positive favors A", fontsize=10)
     ax.set_title("Paired-bootstrap prompt ablation (95% CI, 10 000 reps)",
                  fontsize=11, fontweight="bold")
@@ -1038,7 +1047,7 @@ def chart_phrase_net(out_name: str) -> None:
     label_rank = sorted(G.nodes(), key=lambda n: stats[n]["fail"], reverse=True)
     placed_boxes: list[tuple[float, float, float, float]] = []
     labeled: dict[str, str] = {}
-    px_per_unit = 0.006
+    px_per_unit = 0.008
     label_h = 0.014
     pad = 0.004
     for node in label_rank:

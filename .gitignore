@@ -70,3 +70,6 @@ website/_site/
 
 # Generated CSS (compiled from SCSS)
 website/assets/css/custom.css
+
+/.quarto/
+**/*.quarto_ipynb
