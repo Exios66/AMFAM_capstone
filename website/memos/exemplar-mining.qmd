@@ -15,7 +15,7 @@ date: "2026-08-05"
 
 ## Answer, Response, + Summary of Results
 
-**Simulation said yes; the measured verification said no.** Mining 4 high-clarity exemplars (correct traces where runner-up = the decoy class, clarity 1.00) for the 12 worst confusion pairs was simulated to flip **32.8 of 767 corpus errors (4.27% of the error pool)** — a modest but real gain. Pairs targeted: letter→memo (53), budget→invoice (52), invoice→form (41), specification→form (41), budget→form (33), scientific_report→form (23), and more.
+**Simulation said yes; the measured verification said no.** Mining 4 high-clarity exemplars (correct traces where runner-up = the decoy class, clarity 1.00) for the 12 worst confusion pairs was simulated to flip **32.8 of 767 corpus errors (4.27% of the error pool)** — a modest but real gain. Pairs targeted: `letter`→`memo` (53), `budget`→`invoice` (52), `invoice`→`form` (41), `specification`→`form` (41), `budget`→`form` (33), `scientific_report`→`form` (23), and more.
 
 The 4 selected exemplars each teach a clean disambiguation:
 - `letter__0029` — letter vs memo (external recipient + salutation + signature)
@@ -30,7 +30,9 @@ The 4 selected exemplars each teach a clean disambiguation:
 | base (v17.2) | 48 | 33 | **0.688** |
 | exemplar (v18) | 48 | 31 | **0.646** |
 
+::: {.callout-warning title="Negative Result"}
 **Delta = −0.042 (no gain measured).** The exemplar run *regressed* slightly. Per-image, the exemplars fixed nothing that held and flipped a few previously-correct rows (`invoice__0003` form→budget, `invoice__0008` invoice→form, `scientific_report__0003` → budget).
+:::
 
 **Conclusion.** The simulated exemplar gain did not materialize when measured — a textbook simulated-vs-measured gap. The mined traces are high-clarity, but adding them as in-context examples at 48-row scale neither recovered near-misses nor preserved prior correct answers. **Exemplars are not a free accuracy lever here; the prompt-rules approach remains the primary fix.**
 

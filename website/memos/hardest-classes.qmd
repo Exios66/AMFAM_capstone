@@ -15,26 +15,30 @@ date: "2026-08-05"
 
 ## Answer, Response, + Summary of Results
 
-Three classes are the persistent over-attractors and one pair is the hardest discriminator. On the 4,641-row / 1,512-image Monte Carlo corpus, the top off-diagonal confusion pairs are:
+Three classes are the persistent **over-attractors** and one pair is the hardest discriminator. On the 4,641-row / 1,512-image Monte Carlo corpus, the top off-diagonal confusion pairs are:
 
 | Expected → Predicted | Errors |
 |---|---:|
-| letter → memo | 53 |
-| budget → invoice | 52 |
-| invoice → form | 41 |
-| specification → form | 41 |
-| budget → form | 33 |
-| scientific_report → form | 23 |
+| `letter` → `memo` | 53 |
+| `budget` → `invoice` | 52 |
+| `invoice` → `form` | 41 |
+| `specification` → `form` | 41 |
+| `budget` → `form` | 33 |
+| `scientific_report` → `form` | 23 |
 
-**`form` is the dominant error sink**: `* → form` pairs (invoice, specification, budget, scientific_report, resume, questionnaire) account for the single largest share of the miss budget, driven by filled analytical/QA data sheets and labeled charts/tables whose form-layout footer (fields, approval blocks) pulls check 10 ahead of checks 7/8/9/13.
+::: {.callout-warning title="Form is the Dominant Error Sink"}
+**`form`** is the dominant error sink: `*` → `form` pairs (`invoice`, `specification`, `budget`, `scientific_report`, `resume`, `questionnaire`) account for the single largest share of the miss budget, driven by filled analytical/QA data sheets and labeled charts/tables whose form-layout footer (fields, approval blocks) pulls check 10 ahead of checks 7/8/9/13.
+:::
 
 ![Per-class accuracy on the 1,120-image slice](../charts/per_class_accuracy_qwen3.7-flash_v11.8_reasoning_1600_balanced_1120.svg)
 
 **Per-class accuracy on the 1,120-image slice (v11.8):** easiest classes `email`, `resume`, `memo`, `file_folder`, `advertisement` (~90%+); hardest `budget` (~65%), `presentation` (~69%), `scientific_report` (~73%), `letter` (~74%).
 
-**Near-miss ceiling:** of 195 errors on the 1,120 run, **72 (36.9%) were near-misses** — the runner-up label equals the ground truth. Those are recoverable in principle without new model knowledge, making ~37% of the remaining error budget a *labeling/selection* problem rather than a *perception* problem.
+::: {.callout-important title="Near-Miss Ceiling"}
+Of 195 errors on the 1,120 run, **72 (36.9%) were near-misses** — the runner-up label equals the ground truth. Those are recoverable in principle without new model knowledge, making ~37% of the remaining error budget a **labeling/selection problem** rather than a **perception problem**.
+:::
 
-**Conclusion.** Effort should concentrate on (1) the form over-attractor (check-10 ordering vs the analytical-content checks), (2) the budget↔invoice estimate/billing boundary, and (3) letter↔memo correspondence headers — in that order. Full reasoning traces for all 195 errors (70 pairs) are browsable in the [misclassification appendix](../appendix/misclassifications.html).
+**Conclusion.** Effort should concentrate on (1) the `form` over-attractor (check-10 ordering vs the analytical-content checks), (2) the `budget`↔`invoice` estimate/billing boundary, and (3) `letter`↔`memo` correspondence headers — in that order. Full reasoning traces for all 195 errors (70 pairs) are browsable in the [misclassification appendix](../appendix/misclassifications.html).
 
 ::: {.memo-sources}
 *Sources:* `reports/monte_carlo/corpus.summary.md` · `reports/misclassification_reasoning_*_1600_balanced_1120.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
@@ -44,7 +48,7 @@ Three classes are the persistent over-attractors and one pair is the hardest dis
 
 ## What questions or uncertainties remain?
 
-Per-class difficulty is slice-dependent — the 160 curated slice shows near-perfect per-class scores while 1,120 shows the collapse above. Whether the difficulty ordering (form, budget/invoice, letter/memo) is stable across production-noise samples is untested; the v3/v4 disjoint slices (96.2% / 79.4% at v16) hint it is only roughly stable.
+Per-class difficulty is slice-dependent — the 160 curated slice shows near-perfect per-class scores while 1,120 shows the collapse above. Whether the difficulty ordering (`form`, `budget`/`invoice`, `letter`/`memo`) is stable across production-noise samples is untested; the v3/v4 disjoint slices (96.2% / 79.4% at v16) hint it is only roughly stable.
 
 ## What other levers may also fix these classes?
 

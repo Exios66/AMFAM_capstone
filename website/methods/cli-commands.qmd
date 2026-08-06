@@ -1,12 +1,14 @@
 ---
 title: 'CLI Commands Reference'
-description: 'Every useful terminal command: setup, data pipeline, EDA, cost estimation, Braintrust evaluation.'
+subtitle: 'Every useful terminal command: setup, data pipeline, EDA, cost estimation, Braintrust evaluation.'
 toc: true
 toc-depth: 3
 ---
-The most common commands for working with this project from the terminal. Run everything from the
-repository root. Each script also supports `--help` for its full option list
-(e.g. `python scripts/braintrust/braintrust_report.py --help`).
+
+::: {.callout-tip title="Quick Start"}
+Run all commands from the **repository root**. Each script supports `--help` for its full
+option list (e.g. `python scripts/braintrust/braintrust_report.py --help`).
+:::
 
 ## Setup
 
@@ -18,7 +20,7 @@ cp .env.example .env                     # OpenRouter API key (OPENROUTER_API_KE
 cp braintrust.env.example braintrust.env # Braintrust org/project/dataset/model config
 ```
 
-Both env files are gitignored. `braintrust.env` is the single source of truth for Braintrust
+Both env files are gitignored. `braintrust.env` is the **single source of truth** for Braintrust
 settings; `.env` fills the gaps (notably `OPENROUTER_API_KEY`).
 
 ## Quick reference
@@ -42,9 +44,11 @@ settings; `.env` fills the gaps (notably `OPENROUTER_API_KEY`).
 | Run production eval queue | `python scripts/braintrust/run_eval_queue.py --dry-run` |
 | Port datasets to a new account | `python scripts/braintrust/copy_datasets_to_new_env.py --datasets <ds...> --dest-project-id <id> --dest-project-name AMFAMv2 --dest-org <org> --dest-api-key <key>` |
 
+::: {.callout-note title="Dataset Names"}
 The production queue includes `qwen3.7-flash_v14_fixed_size_sample`, which runs
 prompt `v14` with `qwen/qwen3.7-flash` on the canonical `fixed_size_sampled`
-dataset. `fixed_siz_sample` is not a repository dataset name.
+dataset. `fixed_siz_sample` is **not** a repository dataset name.
+:::
 
 ## Data pipeline
 
@@ -55,7 +59,7 @@ python scripts/datasets/download_dataset.py
 # 2. Sample a balanced subset (50 per class) — edit SOURCE_PATH/OUTPUT_PATH in the script
 python scripts/datasets/create_balanced_dataset.py
 
-# 3. Resize/sample to fixed square sets (2550x3300, 1024x1024, ...) — edit configs in the script
+# 3. Resize/sample to fixed square sets (2550×3300, 1024×1024, ...) — edit configs in the script
 python scripts/datasets/create_fixed_size_dataset.py
 
 # 4. Convert TIFF pages to 300 DPI grayscale PNGs with spatial OCR — edit INPUT/OUTPUT_DIR
@@ -68,7 +72,7 @@ python scripts/datasets/run_tiff_processing.py
 # Full analysis: class distribution, dimensions, file sizes, image modes, sample grid
 python scripts/eda/eda_analysis.py
 
-# Average image dimensions across all configured datasets -> reports/dimensions_summary.json
+# Average image dimensions across all configured datasets → reports/dimensions_summary.json
 python scripts/eda/eda_dimensions_summary.py
 ```
 
@@ -113,7 +117,7 @@ python scripts/braintrust/braintrust_report.py \
 # 5. Regenerate charts and append the results section to docs/experiments/experiment_log.md
 python scripts/braintrust/braintrust_metrics_visual.py qwen3.7-flash_v11_reasoning
 
-# 6. Assemble a regression smoke dataset from every misclassification across v1-v11
+# 6. Assemble a regression smoke dataset from every misclassification across v1–v11
 python scripts/braintrust/create_misclassification_smoke_dataset.py --dry-run   # preview first
 python scripts/braintrust/create_misclassification_smoke_dataset.py              # build + upload
 ```
@@ -144,11 +148,13 @@ copies a single dataset by editing its `SOURCE_*`/`DEST_*` constants.
 
 ## Research funding key
 
-`RESEARCH_FUNDING_API_KEY` (optional, in `.env`) is a separate OpenRouter key reserved for large
-or significant runs whose prompt has passed all vetting steps. It is **never** the default —
+::: {.callout-note title="RESEARCH_FUNDING_API_KEY"}
+`RESEARCH_FUNDING_API_KEY` (optional, in `.env`) is a separate OpenRouter key reserved for **large
+or significant runs** whose prompt has passed all vetting steps. It is **never** the default —
 routine testing/iteration runs on `OPENROUTER_API_KEY`. It is used only when a script explicitly
 requests it (e.g. `run_v11_8_800_after_480.py`) or as automatic 403-quota failover in
 `braintrust_openrouter_input.py`.
+:::
 
 ## Helpful flags
 
@@ -167,5 +173,7 @@ requests it (e.g. `run_v11_8_800_after_480.py`) or as automatic 403-quota failov
 
 ## Secrets safety
 
-- `braintrust.env` and `.env` contain live API keys and are gitignored — never commit them.
+::: {.callout-warning title="Never Commit API Keys"}
+- `braintrust.env` and `.env` contain live API keys and are gitignored — **never commit them**.
 - Commit only the templates: `.env.example`, `braintrust.env.example`.
+:::

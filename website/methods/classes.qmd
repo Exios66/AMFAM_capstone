@@ -5,25 +5,35 @@ toc: true
 toc-depth: 3
 ---
 
+::: {.callout-note title="The 16-Class Taxonomy"}
 The classifier distinguishes between these 16 RVL-CDIP document classes. They are the
-target vocabulary for the exact-match accuracy metric and the rows/columns of every
-confusion matrix on this site.
+target vocabulary for the **exact-match accuracy metric** and the rows/columns of every
+confusion matrix on this site. A prediction is scored correct **only if it exactly matches**
+the ground-truth class name (case-insensitive).
+:::
 
 | # | Class | Notes |
 |---|-------|-------|
-| 1 | `advertisement` | |
-| 2 | `budget` | |
-| 3 | `email` | |
-| 4 | `file_folder` | |
-| 5 | `form` | |
-| 6 | `handwritten` | |
-| 7 | `invoice` | |
-| 8 | `letter` | |
-| 9 | `memo` | |
-| 10 | `news_article` | |
-| 11 | `presentation` | |
-| 12 | `questionnaire` | |
-| 13 | `resume` | |
-| 14 | `scientific_publication` | |
-| 15 | `scientific_report` | |
-| 16 | `specification` | |
+| 1 | `advertisement` | Promotional and marketing materials |
+| 2 | `budget` | Financial planning, estimates, campaign contributions |
+| 3 | `email` | Mail-client formatted messages (From/To/Sent/Subject) |
+| 4 | `file_folder` | Identifier-only pages: Bates stamps, stickers, labels |
+| 5 | `form` | Administrative data-capture with fields, boxes, approval blocks |
+| 6 | `handwritten` | Majority freeform handwriting carrying the main message |
+| 7 | `invoice` | Payment demands, billing documents, vendor estimates |
+| 8 | `letter` | External correspondence with salutation and closing signature |
+| 9 | `memo` | Internal correspondence (TO:/FROM:/RE: headers, no external address) |
+| 10 | `news_article` | Newspaper/magazine editorial content with masthead |
+| 11 | `presentation` | Slide decks, covers, company statements |
+| 12 | `questionnaire` | Survey instruments with rating scales, multiple choice, open-response |
+| 13 | `resume` | CV, career history, biographical sketches (including PHS 398) |
+| 14 | `scientific_publication` | Published journal articles with volume/issue/page headers |
+| 15 | `scientific_report` | Research write-ups, lab results, study findings |
+| 16 | `specification` | Product/material documentation, MSDS, "shall/must" requirements |
+
+::: {.callout-warning title="Most Common Confusion Pairs"}
+Across all experiments, the dominant confusion pairs are:
+- **`letter` ↔ `memo`** — correspondence header ambiguity (internal vs. external)
+- **`budget` ↔ `invoice`** — financial document function (planning vs. billing)
+- *** → `form`** — structured layouts with fields/approval blocks over-attract the `form` label
+:::

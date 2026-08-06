@@ -24,8 +24,10 @@ production workloads: a full 800-image sweep, a 25,000-image batch, and a
 | `x-ai/grok-4.5` | $4.81 | $150.21 | $1,922.69 |
 | `anthropic/claude-fable-5` | $42.74 | $1,335.75 | $17,097.60 |
 
-At 320,000 images the cheapest model (`nex-n2-pro`) is over 16× cheaper than the
+::: {.callout-important title="Cost Spread"}
+At 320,000 images the cheapest model (`nex-n2-pro`) is **over 16× cheaper** than the
 most expensive (`claude-fable-5`).
+:::
 
 ## How the numbers were measured
 
@@ -50,15 +52,17 @@ or cheap input tokens win the scale-up comparison.
 
 ## What the production runs actually billed
 
+::: {.callout-note title="Prompt Caching Discount"}
 The projections above use list-price extrapolation. The Braintrust experiments
-record what OpenRouter actually billed per row, and reality is cheaper than list
-price thanks to prompt caching:
+record what OpenRouter **actually billed** per row, and reality is cheaper than list
+price thanks to prompt caching.
+:::
 
 - **v11.8 @ 1,120 images** — billed **$0.4937** actual vs $0.6815 list-price
-  expected (+27.5%), averaging **$0.000441/image**. ~63% of prompt tokens were
+  expected (**+27.5% discount**), averaging **$0.000441/image**. ~63% of prompt tokens were
   cache hits billed at ~10% of input price.
 - Extrapolating the *billed* number: **$0.35** for 800, **$11.02** for 25,000,
-  **$141.07** for 320,000 — about a 3.5× discount vs the list-price projection
+  **$141.07** for 320,000 — about a **3.5× discount** vs the list-price projection
   for `qwen3.7-flash`.
 
 See the [cost estimation](../cost/cost-estimation.qmd) page for the raw

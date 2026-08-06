@@ -26,11 +26,13 @@ On the 160-image `fixed_size_sampled` slice with comparable v11.8-era prompts, *
 | google/gemini-2.5-flash | v3/v4 | 77.4% / 77.7% | pre-v7 prompt family |
 | moonshotai/kimi-k3 | v1 | 70.0% (112/160) | reasoning-model token budget issues |
 
-The gap is **prompt-family × model interaction**, not raw capability: qwen3.7-flash with the same prompt family reaches 91–97% from v7 onward while gemini-2.5-flash stays at ~77% (see the cross-model note in the experiment log). qwen's forced high-effort reasoning produces the structured 14-check scratchpad the v7+ cascade depends on; gemini's medium-effort reasoning follows the cascade less reliably. Only one row type is model-agnostic: the recurring `jed71e00` (form → presentation) deck-chart miss appears in every qwen run but **not** in gemini's.
+::: {.callout-important title="Prompt-Family × Model Interaction"}
+The gap is a **prompt-family × model interaction**, not raw capability: qwen3.7-flash with the same prompt family reaches 91–97% from v7 onward while gemini-2.5-flash stays at ~77%. qwen's forced high-effort reasoning produces the structured 14-check scratchpad the v7+ cascade depends on; gemini's medium-effort reasoning follows the cascade less reliably.
+:::
 
 **Cost-adjusted view:** qwen3.7-flash is also the cheapest among the live runs — see the [cost memo](cost-per-image.qmd). Gemini-2.5-flash-lite, at 86.9% with zero failed rows, is a credible fallback/second-opinion model for the routing study.
 
-**Conclusion.** For this 16-class cascade, qwen3.7-flash + v11.8/v17.x is the best accuracy and cost choice; the other models bracket a 12–29 *pp* accuracy range that prompt family largely explains.
+**Conclusion.** For this 16-class cascade, `qwen3.7-flash` + v11.8/v17.x is the best accuracy and cost choice; the other models bracket a 12–29 *pp* accuracy range that prompt family largely explains.
 
 ::: {.memo-sources}
 *Sources:* `docs/experiments/experiment_log.md` · `reports/report_*_v11_8_*.md` · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)

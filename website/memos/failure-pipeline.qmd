@@ -15,9 +15,9 @@ date: "2026-08-05"
 
 ## Answer, Response, + Summary of Results
 
-**With fallback enabled, the pipeline failure rate is ~0.11% — a 24× reduction over the observed 2.72% single-pass rate.** The fitted model: P(first success) = 0.946, provider transient/quota 429 failures ≈ 0, max_tries = 3, two API keys, fallback on.
+**With fallback enabled, the pipeline failure rate is ~0.11% — a 24× reduction over the observed 2.72% single-pass rate.** The fitted model: *P*(first success) = 0.946, provider transient/quota 429 failures ≈ 0, `max_tries` = 3, two API keys, fallback on.
 
-| Scale | Expected failures | 95% *CI* | P(>1%) | P(>5%) |
+| Scale | Expected failures | 95% *CI* | *P*(>1%) | *P*(>5%) |
 |---:|---:|---:|---:|---:|
 | 800 | 1 | 0–3 | 0.000 | 0.000 |
 | 25,000 | 28 | 19–39 | 0.000 | 0.000 |
@@ -32,9 +32,11 @@ The dominant failure driver is the **first-attempt success rate** (94.6%), not r
 | 3 | on | 0.114% | 1.06 |
 | 5 | on | 0.114% | 1.06 |
 
-Adding a fallback key reduces failure ~24×; raising max_tries beyond 3 adds nothing because the residual failures are persistent (content-filter / token-cap), not transient.
+::: {.callout-important title="Fallback is the Key"}
+Adding a fallback key reduces failure ~**24×**; raising `max_tries` beyond 3 adds nothing because the residual failures are persistent (content-filter / token-cap), not transient.
+:::
 
-**Conclusion.** The pipeline is production-safe for failures: even at 320K images, expected failures ≈ 364 with P(>5%) ≈ 0. Per-row failure rows are handled as explicit misses (the `failure` Braintrust scorer), so they do not silently contaminate accuracy.
+**Conclusion.** The pipeline is **production-safe for failures**: even at 320K images, expected failures ≈ 364 with *P*(>5%) ≈ 0. Per-row failure rows are handled as explicit misses (the `failure` Braintrust scorer), so they do not silently contaminate accuracy.
 
 ::: {.memo-sources}
 *Sources:* `reports/monte_carlo/failure_pipeline.md` · `src/evaluation.py` (ManifestStore resume) · [github.com/Exios66/AMFAM_capstone](https://github.com/Exios66/AMFAM_capstone)
@@ -44,7 +46,7 @@ Adding a fallback key reduces failure ~24×; raising max_tries beyond 3 adds not
 
 ## What questions or uncertainties remain?
 
-The model is fitted on qwen3.7-flash-specific failure data; other providers (gemini, kimi) have different transient/429 profiles and were not fitted. The 94.6% first-success rate will drift with provider status and prompt length (longer v11.8+ prompts push token caps). The residual failures are persistent, so no retry policy eliminates them — only a fundamentally different fallback (e.g., a cheaper non-reasoning model) would.
+The model is fitted on `qwen3.7-flash`-specific failure data; other providers (gemini, kimi) have different transient/429 profiles and were not fitted. The 94.6% first-success rate will drift with provider status and prompt length (longer v11.8+ prompts push token caps). The residual failures are persistent, so no retry policy eliminates them — only a fundamentally different fallback (e.g., a cheaper non-reasoning model) would.
 
 ## What other levers may also improve accuracy?
 

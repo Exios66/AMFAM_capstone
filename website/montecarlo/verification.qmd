@@ -1,9 +1,10 @@
 ---
 title: 'Verification Evals — Measured vs Simulated'
-description: 'Spend-minimal verification: escalation slice and exemplar slice, measured vs predicted.'
+subtitle: 'Spend-minimal verification: escalation slice and exemplar slice, measured vs predicted.'
 toc: true
 toc-depth: 3
 ---
+
 ## Escalation slice (low-confidence tail)
 
 | run | rows | correct | accuracy |
@@ -11,11 +12,18 @@ toc-depth: 3
 | base (v11.8) | 48 | 32 | 0.667 |
 | escalated (max effort) | 48 | 30 | 0.625 |
 
+::: {.callout-warning title="Measured Negative Result"}
+**Escalating to the SAME model at higher reasoning effort did NOT help** — accuracy
+regressed from 0.667 to 0.625. The simulated assumption of a 90%-accurate escalation
+model was not met. Escalation requires a **genuinely stronger model**, not more effort.
+:::
+
 **Simulated reference:** corpus `p_correct` mean on these images and the
 assumed escalated accuracy (~0.90). Compare measured vs simulated to
 validate the confidence ordering.
 
-**Paired check:** 48 images matched to corpus sim; simulated mean p_correct = 0.425, measured base accuracy = 0.667.
+**Paired check:** 48 images matched to corpus sim; simulated mean p_correct = 0.425,
+measured base accuracy = 0.667.
 
 ![Measured vs simulated accuracy: escalation + exemplar slices](../charts/verification.svg)
 
@@ -26,7 +34,14 @@ validate the confidence ordering.
 | base (v17.2) | 48 | 33 | 0.688 |
 | exemplar (v18) | 48 | 31 | 0.646 |
 
-**Delta (v18 - v17.2): -0.042** (no gain measured).
+**Delta (v18 − v17.2): −0.042 (no gain measured).**
+
+::: {.callout-important title="Exemplar Negative Result"}
+The exemplar appendix **did not improve accuracy** on the targeted slice; it slightly
+hurt (−4.2 *pp*). v18 should **not** be promoted to default on this evidence. The four
+appended worked examples (11,383 chars) added verbosity without correcting the
+runner-up-vs-final decision. The fix is a **decision rule change**, not more text.
+:::
 
 ### Per-image flips
 
