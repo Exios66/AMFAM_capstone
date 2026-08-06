@@ -330,3 +330,67 @@ class TestSiteIntegrity:
         defined = set(re.findall(r"(--[\w-]+)\s*:", scss))
         missing = used - defined
         assert not missing, f"undefined theme tokens: {sorted(missing)}"
+
+
+class TestNotebookPages:
+    """The four site notebooks must stay valid nbformat v4 and keep their cell
+    sources in the spec-standard LIST form.
+
+    Quarto's notebook reader mis-parses single-string sources: it strips the
+    in-cell newlines, flattening every markdown/code cell into one run-on block
+    (headings swallow paragraphs, lists lose their numbering, code loses its
+    line breaks) — the "notebook display mess" regression. The generator
+    (``scripts/site/build_notebooks.py``) always emits list-form sources, and
+    each notebook's opening raw cell carries Quarto title/subtitle frontmatter.
+    """
+
+    NOTEBOOK_NAMES = [
+        "01_env_setup_and_single_image",
+        "02_balanced_sampling_and_braintrust_upload",
+        "03_watchers_evaluators_full_experiment",
+        "04_interactive_cost_and_experiments",
+    ]
+
+    @pytest.fixture(scope="class", params=NOTEBOOK_NAMES)
+    def notebook(self, request):
+        path = WEBSITE / "notebooks" / f"{request.param}.ipynb"
+        assert path.exists(), f"missing notebook: {path}"
+        # Load the raw JSON: nbformat.read(as_version=4) normalizes list-form
+        # sources to strings, but the *file* must carry list sources for
+        # Quarto to render cells without flattening them.
+        import nbformat
+
+        nb = json.loads(path.read_text(encoding="utf-8"))
+        nbformat.validate(nb)
+        return nb
+
+    def test_sources_are_lists(self, notebook):
+        # Guards the Quarto flattening bug: single-string sources lose their
+        # newlines and every cell renders as a run-on block.
+        for cell in notebook["cells"]:
+            assert isinstance(cell["source"], list), (
+                f"{cell['cell_type']} cell source must be a list of lines"
+            )
+            assert all(isinstance(ln, str) for ln in cell["source"])
+
+    def test_first_cell_is_raw_frontmatter(self, notebook):
+        first = notebook["cells"][0]
+        assert first["cell_type"] == "raw"
+        text = "".join(first["source"])
+        assert re.search(r"^---\s*$", text, re.M), "frontmatter must open with ---"
+        assert re.search(r"^title:\s*['\"]?", text, re.M), "frontmatter must carry a title"
+        assert re.search(r"^subtitle:\s*['\"]?", text, re.M), "frontmatter must carry a subtitle"
+
+    def test_opening_markdown_cell_is_framed(self, notebook):
+        cells = [c for c in notebook["cells"] if c["cell_type"] == "markdown"]
+        assert cells, "notebook has no markdown cells"
+        opening = "".join(cells[0]["source"])
+        # The generator strips the duplicated H1 and prepends a static-render
+        # note, so the first markdown content is a framing callout.
+        assert "Static render" in opening
+
+    def test_site_and_repo_notebooks_match(self):
+        for name in self.NOTEBOOK_NAMES:
+            site = (WEBSITE / "notebooks" / f"{name}.ipynb").read_bytes()
+            repo = (ROOT / "notebooks" / f"{name}.ipynb").read_bytes()
+            assert site == repo, f"site/repo notebooks out of sync: {name}"

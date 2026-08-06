@@ -92,10 +92,10 @@ def raw(src: str) -> dict:
     return {"cell_type": "raw", "id": uuid.uuid4().hex, "metadata": {}, "source": _src_lines(src)}
 
 
-def notebook(title: str, cells: list[dict], description: str = "") -> dict:
+def notebook(title: str, description: str, cells: list[dict]) -> dict:
     fm = [f"title: {title!r}"]
     if description:
-        fm.append(f"description: {description!r}")
+        fm.append(f"subtitle: {description!r}")
     frontmatter = raw("---\n" + "\n".join(fm) + "\n---\n")
     cells = list(cells)
     if cells and cells[0]["cell_type"] == "markdown":
