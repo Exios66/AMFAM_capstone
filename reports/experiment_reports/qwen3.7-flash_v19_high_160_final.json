@@ -1,0 +1,134 @@
+{
+  "experiment": "qwen3.7-flash_v19_high_160",
+  "dataset": "fixed_size_sampled",
+  "model": "qwen/qwen3.7-flash",
+  "prompt_version": "v19",
+  "max_tokens": 4096,
+  "reasoning_effort": "high",
+  "total_rows": 160,
+  "completed": 159,
+  "error": 1,
+  "empty": 0,
+  "failed_rows": 1,
+  "failure_rate": 0.00625,
+  "exact_match": 155,
+  "exact_match_accuracy": 0.96875,
+  "near_miss": 2,
+  "near_miss_accuracy": 0.0125,
+  "near_miss_share_of_misses": 0.5,
+  "near_miss_filenames": [
+    "test_imagesd_d_a_v_dav40c00_ti16801308.tif.png",
+    "test_imagesw_w_c_e_wce83f00_0001140924.tif.png"
+  ],
+  "runner_up_coverage": 149,
+  "total_cost_usd": 0.059866,
+  "cost_coverage": 159,
+  "avg_cost_per_image_usd": 0.00037652,
+  "per_class": {
+    "advertisement": {
+      "total": 10,
+      "correct": 9,
+      "errors": 1,
+      "accuracy": 0.9
+    },
+    "budget": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "email": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "file_folder": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "form": {
+      "total": 10,
+      "correct": 9,
+      "errors": 0,
+      "accuracy": 0.9
+    },
+    "handwritten": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "invoice": {
+      "total": 10,
+      "correct": 7,
+      "errors": 0,
+      "accuracy": 0.7
+    },
+    "letter": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "memo": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "news_article": {
+      "total": 9,
+      "correct": 9,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "presentation": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "questionnaire": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "resume": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "scientific_publication": {
+      "total": 11,
+      "correct": 11,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "scientific_report": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "specification": {
+      "total": 10,
+      "correct": 10,
+      "errors": 0,
+      "accuracy": 1.0
+    }
+  },
+  "error_filenames": [
+    "test_imagesw_w_a_t_wat19d00_502218643.tif.png"
+  ],
+  "miss_filenames": [
+    "test_imagesj_j_e_d_jed71e00_03701993_03702011.tif.png",
+    "test_imagesd_d_a_v_dav40c00_ti16801308.tif.png",
+    "test_imagesw_w_c_e_wce83f00_0001140924.tif.png",
+    "test_imagesy_y_n_j_ynj47c00_2084022615.tif.png"
+  ]
+}

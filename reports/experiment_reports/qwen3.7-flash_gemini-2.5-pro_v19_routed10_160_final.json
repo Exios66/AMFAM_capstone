@@ -1,0 +1,98 @@
+{
+  "experiment": "qwen3.7-flash_gemini-2.5-pro_v19_routed10_160",
+  "dataset": "fixed_size_sampled",
+  "model": "qwen/qwen3.7-flash",
+  "prompt_version": "v19",
+  "max_tokens": 4096,
+  "reasoning_effort": "high",
+  "total_rows": 16,
+  "completed": 15,
+  "error": 1,
+  "empty": 0,
+  "failed_rows": 1,
+  "failure_rate": 0.0625,
+  "exact_match": 14,
+  "exact_match_accuracy": 0.875,
+  "near_miss": 0,
+  "near_miss_accuracy": 0.0,
+  "near_miss_share_of_misses": 0.0,
+  "near_miss_filenames": [],
+  "runner_up_coverage": 15,
+  "total_cost_usd": 0.407666,
+  "cost_coverage": 15,
+  "avg_cost_per_image_usd": 0.02717773,
+  "per_class": {
+    "advertisement": {
+      "total": 1,
+      "correct": 0,
+      "errors": 1,
+      "accuracy": 0.0
+    },
+    "email": {
+      "total": 1,
+      "correct": 1,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "file_folder": {
+      "total": 2,
+      "correct": 2,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "handwritten": {
+      "total": 4,
+      "correct": 4,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "letter": {
+      "total": 1,
+      "correct": 1,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "memo": {
+      "total": 2,
+      "correct": 2,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "news_article": {
+      "total": 1,
+      "correct": 1,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "presentation": {
+      "total": 1,
+      "correct": 1,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "scientific_publication": {
+      "total": 1,
+      "correct": 1,
+      "errors": 0,
+      "accuracy": 1.0
+    },
+    "scientific_report": {
+      "total": 1,
+      "correct": 0,
+      "errors": 0,
+      "accuracy": 0.0
+    },
+    "specification": {
+      "total": 1,
+      "correct": 1,
+      "errors": 0,
+      "accuracy": 1.0
+    }
+  },
+  "error_filenames": [
+    "test_imagesw_w_a_t_wat19d00_502218643.tif.png"
+  ],
+  "miss_filenames": [
+    "test_imagesw_w_z_j_wzj74c00_81190731_0743.tif.png"
+  ]
+}
